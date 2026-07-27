@@ -287,6 +287,11 @@ def test_static_ui_exposes_graphical_configuration_views() -> None:
     assert 'id="architecture-mode-move"' in response.text
     assert 'id="architecture-mode-link"' in response.text
     assert 'id="architecture-add-service-to-device"' in response.text
+    assert 'data-configuration-tab="plugins"' in response.text
+    assert 'id="plugins-configuration-panel"' in response.text
+    assert 'id="plugin-cards"' in response.text
+    assert 'id="plugin-configuration-form"' in response.text
+    assert 'id="plugin-test"' in response.text
     assert '<option value="fiber">Fibre</option>' in response.text
     assert '<option value="10000">10Gbps</option>' in response.text
     assert '<option value="8000">8Gbps</option>' in response.text
@@ -304,6 +309,12 @@ def test_static_ui_exposes_configuration_controller() -> None:
     assert "ConfigurationController" in response.text
     assert "administrationDHCP" in response.text
     assert "administrationInfrastructure" in response.text
+    assert "administrationPlugins" in response.text
+    assert "administrationPluginTest" in response.text
+    assert "renderPlugins()" in response.text
+    assert "savePluginConfiguration" in response.text
+    assert "testSelectedPlugin" in response.text
+    assert "pluginConfigurationPayload" in response.text
     assert "async reload()" in response.text
     assert "structuredClone(this.dhcp)" in response.text
     assert "handleArchitectureDrop" in response.text

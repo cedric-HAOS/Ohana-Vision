@@ -84,7 +84,9 @@ ni modifier de fichier YAML :
   réservations et consultation des baux actifs ;
 - **Architecture** : cartographie sur grille, déplacement par glisser-déposer,
   association des services aux équipements et création des liaisons en
-  sélectionnant leur source puis leur destination.
+  sélectionnant leur source puis leur destination ;
+- **Plugins** : état, activation, configuration et test immédiat des plugins
+  DNS, NTP et MQTT réellement enregistrés dans Ohana-Agent.
 
 Vision présente et valide les formulaires, puis transmet la demande à l'API
 locale authentifiée d'Ohana-Agent. L'Agent reste seul propriétaire des fichiers
@@ -189,6 +191,9 @@ Le frontend reste un moteur de rendu. La validation, les projections, la santé 
 | `GET` | `/api/administration/capabilities` | Lire les opérations Agent disponibles |
 | `GET/PUT` | `/api/administration/dhcp` | Lire ou modifier le serveur DHCP |
 | `GET/PUT` | `/api/administration/infrastructure` | Lire ou modifier l'architecture |
+| `GET` | `/api/administration/plugins` | Lister les plugins Agent |
+| `GET/PUT` | `/api/administration/plugins/{id}` | Lire ou modifier un plugin |
+| `POST` | `/api/administration/plugins/{id}/test` | Tester immédiatement un plugin |
 | WebSocket | `/ws` | Recevoir les mises à jour temps réel |
 
 La documentation OpenAPI est disponible sur `/docs` lorsque son exposition est activée dans la configuration.
@@ -279,13 +284,13 @@ Les scénarios d'intégration réels ont également été validés :
 
 ## État actuel
 
-La version **1.2.0** introduit l'administration graphique de
-l'infrastructure portée par Ohana-Agent.
+La version **1.3.0** complète l'administration graphique portée par
+Ohana-Agent avec la gestion des plugins DNS, NTP et MQTT.
 
-Vision permet désormais de consulter et modifier la configuration DHCP,
-les réservations, les équipements, les liaisons et les services associés.
-Les modifications sont envoyées à l'API d'administration de l'Agent, qui
-reste propriétaire de la configuration et de son application.
+Vision permet de consulter et modifier la configuration DHCP, les réservations,
+les équipements, les liaisons, les services associés et les paramètres des
+plugins. Les modifications sont envoyées à l'API d'administration de l'Agent,
+qui reste propriétaire de la configuration et de son application.
 
 Le jeton d'administration de l'Agent reste exclusivement utilisé par le
 backend de Vision et n'est jamais exposé au navigateur.

@@ -11,6 +11,14 @@ export const API = Object.freeze({
         "/api/administration/dhcp",
     administrationInfrastructure:
         "/api/administration/infrastructure",
+    administrationPlugins:
+        "/api/administration/plugins",
+    administrationPlugin(identifier) {
+        return `/api/administration/plugins/${encodeURIComponent(identifier)}`;
+    },
+    administrationPluginTest(identifier) {
+        return `${this.administrationPlugin(identifier)}/test`;
+    },
 });
 
 /**

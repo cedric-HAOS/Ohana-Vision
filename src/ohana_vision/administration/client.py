@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 
@@ -53,6 +54,36 @@ class AgentAdministrationClient:
             "PUT",
             "/v1/dhcp",
             payload,
+        )
+
+    def read_plugins(self) -> dict[str, Any]:
+        """Read registered plugins and their runtime state."""
+        return self._request("GET", "/v1/plugins")
+
+    def read_plugin(self, identifier: str) -> dict[str, Any]:
+        """Read one registered plugin."""
+        return self._request(
+            "GET",
+            f"/v1/plugins/{quote(identifier, safe='')}",
+        )
+
+    def write_plugin(
+        self,
+        identifier: str,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Apply one plugin configuration through Agent."""
+        return self._request(
+            "PUT",
+            f"/v1/plugins/{quote(identifier, safe='')}",
+            payload,
+        )
+
+    def test_plugin(self, identifier: str) -> dict[str, Any]:
+        """Execute one immediate plugin check through Agent."""
+        return self._request(
+            "POST",
+            f"/v1/plugins/{quote(identifier, safe='')}/test",
         )
 
     def read_infrastructure(self) -> dict[str, Any]:

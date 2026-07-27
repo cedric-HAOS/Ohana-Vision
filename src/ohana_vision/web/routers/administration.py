@@ -68,6 +68,50 @@ def write_dhcp(
     )
 
 
+@router.get("/plugins")
+def read_plugins(request: Request) -> dict[str, Any]:
+    """Read plugins registered by Agent."""
+    client = _client(request)
+    return _call(client.read_plugins)
+
+
+@router.get("/plugins/{identifier}")
+def read_plugin(
+    identifier: str,
+    request: Request,
+) -> dict[str, Any]:
+    """Read one plugin configuration and runtime state."""
+    client = _client(request)
+    return _call(
+        lambda: client.read_plugin(identifier),
+    )
+
+
+@router.put("/plugins/{identifier}")
+def write_plugin(
+    identifier: str,
+    request: Request,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    """Apply one plugin configuration through Agent."""
+    client = _client(request)
+    return _call(
+        lambda: client.write_plugin(identifier, payload),
+    )
+
+
+@router.post("/plugins/{identifier}/test")
+def test_plugin(
+    identifier: str,
+    request: Request,
+) -> dict[str, Any]:
+    """Execute one immediate plugin capability test."""
+    client = _client(request)
+    return _call(
+        lambda: client.test_plugin(identifier),
+    )
+
+
 @router.get("/infrastructure")
 def read_infrastructure(request: Request) -> dict[str, Any]:
     """Read Agent's infrastructure source of truth."""

@@ -609,6 +609,17 @@
         >
          Architecture
         </button>
+        <button
+         aria-controls="plugins-configuration-panel"
+         aria-selected="false"
+         class="configuration-tab"
+         data-configuration-tab="plugins"
+         id="plugins-configuration-tab"
+         role="tab"
+         type="button"
+        >
+         Plugins
+        </button>
        </div>
        <div class="alert alert--error hidden" id="configuration-error" role="alert">
        </div>
@@ -942,6 +953,45 @@
             Appliquer l’architecture
            </button>
           </div>
+         </aside>
+        </div>
+       </section>
+       <section
+        aria-labelledby="plugins-configuration-tab"
+        class="configuration-panel"
+        data-configuration-panel="plugins"
+        id="plugins-configuration-panel"
+        role="tabpanel"
+        hidden
+       >
+        <div class="configuration-grid configuration-grid--plugins">
+         <section class="configuration-card">
+          <div class="configuration-card__heading">
+           <div>
+            <p class="panel-heading__kicker">Extensions Agent</p>
+            <h2>Plugins enregistrés</h2>
+            <p>Consultez leur état, leur planification et leur dernière exécution.</p>
+           </div>
+           <span class="side-panel-card__count" id="plugin-count">0</span>
+          </div>
+          <div aria-live="polite" class="plugin-cards" id="plugin-cards">
+           <p class="empty-state">Chargement des plugins…</p>
+          </div>
+         </section>
+         <aside class="configuration-card configuration-editor plugin-inspector">
+          <div class="plugin-inspector__empty" id="plugin-inspector-empty">
+           <img alt="" src="/ui/assets/icons/empty-states/puzzle.svg">
+           <h2>Sélectionnez un plugin</h2>
+           <p>La configuration reste validée et appliquée par Ohana-Agent.</p>
+          </div>
+          <form id="plugin-configuration-form" hidden>
+           <div id="plugin-inspector-content"></div>
+           <div class="plugin-test-result hidden" id="plugin-test-result" role="status"></div>
+           <div class="configuration-form-actions">
+            <button class="configuration-secondary-button" id="plugin-test" type="button">Tester maintenant</button>
+            <button class="button" type="submit">Appliquer</button>
+           </div>
+          </form>
          </aside>
         </div>
        </section>

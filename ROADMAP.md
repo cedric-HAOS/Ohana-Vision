@@ -176,6 +176,80 @@ de l'Agent.
 
 ---
 
+# Version 1.3.0 — Administration des plugins
+
+## 1.3.1 — Contrat d’administration dans Agent
+
+- opérations `plugins.read`, `plugins.write` et `plugins.test`
+- modèles versionnés pour l’état, la configuration et le résultat de test
+
+**Statut :** ✅ Terminé
+
+## 1.3.2 — Exposition du plugin DNS
+
+- inventaire réel du `PluginManager`
+- état, version, tâches, exécutions et configuration publique
+
+**Statut :** ✅ Terminé
+
+## 1.3.3 — Reconfiguration et test immédiat du DNS
+
+- écriture atomique
+- replanification sans redémarrage
+- restauration en cas d’échec
+
+**Statut :** ✅ Terminé
+
+## 1.3.4 — Proxy d’administration dans Vision
+
+- inventaire, lecture, modification et test
+- conservation du jeton côté backend
+
+**Statut :** ✅ Terminé
+
+## 1.3.5 — Onglet Plugins et cartes d’état
+
+- cartes responsive
+- états actif, en attente, désactivé et dégradé
+- métriques d’exécution et dernière erreur
+
+**Statut :** ✅ Terminé
+
+## 1.3.6 — Inspecteur et formulaires
+
+- paramètres communs
+- formulaires DNS, NTP et MQTT
+- protection du mot de passe MQTT
+
+**Statut :** ✅ Terminé
+
+## 1.3.7 — États vides, erreurs et confirmations
+
+- Agent non compatible
+- inventaire vide ou indisponible
+- confirmation avant application
+- résultat du test immédiat
+
+**Statut :** ✅ Terminé
+
+## 1.3.8 — Tests et documentation
+
+- tests du proxy et du frontend statique
+- documentation d’utilisation et de sécurité
+- 759 tests réussis
+
+**Statut :** ✅ Terminé
+
+## 1.3.9 — Intégration progressive
+
+- DNS, NTP et MQTT administrables
+- DHCP conservé dans son écran dédié tant qu’il n’est pas un plugin
+  d’observation enregistré dans Agent
+
+**Statut :** ✅ Terminé
+
+---
+
 # Prochaines évolutions
 
 - historique avancé

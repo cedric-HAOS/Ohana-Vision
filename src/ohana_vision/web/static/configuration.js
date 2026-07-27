@@ -23,6 +23,20 @@ const DHCP_CATEGORY_LABELS = Object.freeze({
 const ARCHITECTURE_MINIMUM_COLUMNS = 10;
 const ARCHITECTURE_MINIMUM_ROWS = 8;
 
+const PLUGIN_STATUS_LABELS = Object.freeze({
+    active: "Actif",
+    idle: "En attente",
+    disabled: "Désactivé",
+    degraded: "Dégradé",
+    error: "En erreur",
+});
+
+const PLUGIN_ICONS = Object.freeze({
+    dns: "/ui/assets/icons/network/globe-2.svg",
+    ntp: "/ui/assets/icons/network/clock-3.svg",
+    mqtt: "/ui/assets/icons/services/radio.svg",
+});
+
 /**
  * Controls graphical infrastructure administration.
  */
@@ -30,6 +44,10 @@ export class ConfigurationController {
     constructor() {
         this.dhcp = null;
         this.infrastructure = null;
+        this.plugins = [];
+        this.pluginsAvailable = false;
+        this.pluginsLoadError = null;
+        this.selectedPluginId = null;
         this.loaded = false;
         this.selectedArchitectureItem = null;
         this.architectureInteractionMode = "move";
@@ -123,6 +141,17 @@ export class ConfigurationController {
                 byId("architecture-delete"),
             architectureApply:
                 byId("architecture-apply"),
+            pluginCards: byId("plugin-cards"),
+            pluginCount: byId("plugin-count"),
+            pluginInspectorEmpty:
+                byId("plugin-inspector-empty"),
+            pluginForm:
+                byId("plugin-configuration-form"),
+            pluginInspectorContent:
+                byId("plugin-inspector-content"),
+            pluginTest: byId("plugin-test"),
+            pluginTestResult:
+                byId("plugin-test-result"),
         };
     }
 
@@ -310,6 +339,37 @@ export class ConfigurationController {
                     void this.applyArchitecture();
                 },
             );
+
+        this.elements.pluginCards
+            ?.addEventListener(
+                "click",
+                (event) => {
+                    const card = event.target.closest(
+                        "[data-plugin-id]",
+                    );
+
+                    if (card) {
+                        this.selectPlugin(
+                            card.dataset.pluginId,
+                        );
+                    }
+                },
+            );
+        this.elements.pluginForm
+            ?.addEventListener(
+                "submit",
+                (event) => {
+                    event.preventDefault();
+                    void this.savePluginConfiguration();
+                },
+            );
+        this.elements.pluginTest
+            ?.addEventListener(
+                "click",
+                () => {
+                    void this.testSelectedPlugin();
+                },
+            );
     }
 
     async load() {
@@ -365,8 +425,45 @@ export class ConfigurationController {
                 );
             }
 
+            this.plugins = [];
+            this.pluginsAvailable = operations.includes(
+                "plugins.read",
+            );
+            this.pluginsLoadError = null;
+
+            const pluginsTab =
+                this.elements.tabs.find(
+                    (tab) =>
+                        tab.dataset.configurationTab
+                        === "plugins",
+                );
+
+            if (pluginsTab) {
+                pluginsTab.disabled =
+                    !this.pluginsAvailable;
+                pluginsTab.setAttribute(
+                    "aria-disabled",
+                    String(!this.pluginsAvailable),
+                );
+            }
+
+            if (this.pluginsAvailable) {
+                try {
+                    const pluginsPayload =
+                        await fetchJson(
+                            API.administrationPlugins,
+                        );
+                    this.plugins =
+                        pluginsPayload.plugins ?? [];
+                } catch (error) {
+                    this.pluginsLoadError =
+                        this.errorMessage(error);
+                }
+            }
+
             this.loaded = true;
             this.renderArchitecture();
+            this.renderPlugins();
 
             if (this.dhcp) {
                 this.renderDHCP();
@@ -2277,6 +2374,546 @@ export class ConfigurationController {
         this.infrastructure.topology.devices ??= [];
         this.infrastructure.topology.links ??= [];
         this.infrastructure.topology.layouts ??= [];
+    }
+
+    renderPlugins() {
+        if (!this.elements.pluginCards) {
+            return;
+        }
+
+        this.elements.pluginCount.textContent =
+            String(this.plugins.length);
+
+        if (!this.pluginsAvailable) {
+            this.elements.pluginCards.innerHTML = `
+                <div class="plugin-empty-state">
+                    <img alt="" src="/ui/assets/icons/empty-states/puzzle.svg">
+                    <h3>Administration indisponible</h3>
+                    <p>Agent n’expose pas encore la gestion des plugins.</p>
+                </div>
+            `;
+            this.selectedPluginId = null;
+            this.renderPluginInspector();
+            return;
+        }
+
+        if (this.pluginsLoadError) {
+            this.elements.pluginCards.innerHTML = `
+                <div class="plugin-empty-state plugin-empty-state--error">
+                    <img alt="" src="/ui/assets/icons/empty-states/server-crash.svg">
+                    <h3>Plugins indisponibles</h3>
+                    <p>${escapeHtml(this.pluginsLoadError)}</p>
+                </div>
+            `;
+            this.selectedPluginId = null;
+            this.renderPluginInspector();
+            return;
+        }
+
+        if (this.plugins.length === 0) {
+            this.elements.pluginCards.innerHTML = `
+                <div class="plugin-empty-state">
+                    <img alt="" src="/ui/assets/icons/empty-states/puzzle.svg">
+                    <h3>Aucun plugin enregistré</h3>
+                    <p>Les plugins intégrés à Agent apparaîtront ici.</p>
+                </div>
+            `;
+            this.selectedPluginId = null;
+            this.renderPluginInspector();
+            return;
+        }
+
+        if (
+            !this.plugins.some(
+                (plugin) =>
+                    plugin.id === this.selectedPluginId,
+            )
+        ) {
+            this.selectedPluginId = this.plugins[0].id;
+        }
+
+        this.elements.pluginCards.innerHTML =
+            this.plugins.map((plugin) => {
+                const selected =
+                    plugin.id === this.selectedPluginId;
+                const statusLabel =
+                    PLUGIN_STATUS_LABELS[plugin.status]
+                    ?? plugin.status;
+                const lastExecution =
+                    this.formatPluginDate(
+                        plugin.last_execution_at,
+                    );
+                const error = plugin.last_error
+                    ? `
+                        <p class="plugin-card__error">
+                            ${escapeHtml(plugin.last_error)}
+                        </p>
+                    `
+                    : "";
+
+                return `
+                    <button
+                        aria-pressed="${selected}"
+                        class="plugin-card ${selected ? "is-selected" : ""}"
+                        data-plugin-id="${escapeHtml(plugin.id)}"
+                        type="button"
+                    >
+                        <span class="plugin-card__icon">
+                            <img
+                                alt=""
+                                src="${escapeHtml(PLUGIN_ICONS[plugin.id] ?? "/ui/assets/icons/plugins/puzzle.svg")}"
+                            >
+                        </span>
+                        <span class="plugin-card__content">
+                            <span class="plugin-card__heading">
+                                <span>
+                                    <strong>${escapeHtml(plugin.name)}</strong>
+                                    <small>v${escapeHtml(plugin.version)}</small>
+                                </span>
+                                <span class="plugin-status plugin-status--${escapeHtml(plugin.status)}">
+                                    ${escapeHtml(statusLabel)}
+                                </span>
+                            </span>
+                            <span class="plugin-card__description">
+                                ${escapeHtml(plugin.description || "Plugin Ohana-Agent")}
+                            </span>
+                            <span class="plugin-card__metrics">
+                                <span>${plugin.task_count} tâche${plugin.task_count > 1 ? "s" : ""}</span>
+                                <span>${plugin.execution_count} exécution${plugin.execution_count > 1 ? "s" : ""}</span>
+                                <span>${escapeHtml(lastExecution)}</span>
+                            </span>
+                            ${error}
+                        </span>
+                    </button>
+                `;
+            }).join("");
+
+        this.renderPluginInspector();
+    }
+
+    selectPlugin(identifier) {
+        if (
+            !this.plugins.some(
+                (plugin) => plugin.id === identifier,
+            )
+        ) {
+            return;
+        }
+
+        this.selectedPluginId = identifier;
+        this.renderPlugins();
+    }
+
+    selectedPlugin() {
+        return this.plugins.find(
+            (plugin) =>
+                plugin.id === this.selectedPluginId,
+        ) ?? null;
+    }
+
+    renderPluginInspector() {
+        const plugin = this.selectedPlugin();
+
+        if (
+            !plugin
+            || !this.elements.pluginForm
+            || !this.elements.pluginInspectorContent
+        ) {
+            if (this.elements.pluginForm) {
+                this.elements.pluginForm.hidden = true;
+            }
+
+            if (this.elements.pluginInspectorEmpty) {
+                this.elements.pluginInspectorEmpty.hidden = false;
+            }
+            return;
+        }
+
+        this.elements.pluginInspectorEmpty.hidden = true;
+        this.elements.pluginForm.hidden = false;
+        this.elements.pluginTestResult.classList.add(
+            "hidden",
+        );
+        this.elements.pluginTestResult.textContent = "";
+
+        const statusLabel =
+            PLUGIN_STATUS_LABELS[plugin.status]
+            ?? plugin.status;
+        const capabilities =
+            plugin.capabilities.length > 0
+                ? plugin.capabilities.map(
+                    (capability) => `
+                        <span class="plugin-capability">
+                            ${escapeHtml(capability)}
+                        </span>
+                    `,
+                ).join("")
+                : '<span class="plugin-capability">Aucune capacité</span>';
+
+        this.elements.pluginInspectorContent.innerHTML = `
+            <div class="configuration-card__heading plugin-inspector__heading">
+                <div>
+                    <p class="panel-heading__kicker">Plugin ${escapeHtml(plugin.id)}</p>
+                    <h2>${escapeHtml(plugin.name)}</h2>
+                    <p>${escapeHtml(plugin.description || "Plugin Ohana-Agent")}</p>
+                </div>
+                <span class="plugin-status plugin-status--${escapeHtml(plugin.status)}">
+                    ${escapeHtml(statusLabel)}
+                </span>
+            </div>
+            <div class="plugin-capabilities">
+                ${capabilities}
+            </div>
+            <div class="plugin-runtime-summary">
+                <span>
+                    <small>Tâches</small>
+                    <strong>${plugin.task_count}</strong>
+                </span>
+                <span>
+                    <small>Dernière exécution</small>
+                    <strong>${escapeHtml(this.formatPluginDate(plugin.last_execution_at))}</strong>
+                </span>
+                <span>
+                    <small>Prochaine exécution</small>
+                    <strong>${escapeHtml(this.formatPluginDate(plugin.next_run_at, "Non planifiée"))}</strong>
+                </span>
+            </div>
+            <div class="configuration-form-grid plugin-configuration-fields">
+                <label class="configuration-check configuration-span-2">
+                    <input id="plugin-enabled" type="checkbox" ${plugin.enabled ? "checked" : ""}>
+                    Plugin activé
+                </label>
+                ${this.pluginConfigurationFields(plugin)}
+            </div>
+            <p class="plugin-inspector__hint">
+                Les serveurs et courtiers ciblés proviennent des services déclarés dans l’onglet Architecture.
+            </p>
+        `;
+    }
+
+    pluginConfigurationFields(plugin) {
+        const configuration = plugin.configuration ?? {};
+        const numberField = (
+            id,
+            label,
+            value,
+            options = "",
+        ) => `
+            <label>
+                ${escapeHtml(label)}
+                <input id="${id}" type="number" value="${escapeHtml(value)}" ${options}>
+            </label>
+        `;
+
+        const common = `
+            ${numberField(
+                "plugin-interval-seconds",
+                "Intervalle (secondes)",
+                configuration.interval_seconds ?? 60,
+                'min="1" required',
+            )}
+            ${numberField(
+                "plugin-timeout",
+                "Délai maximal (secondes)",
+                configuration.timeout ?? 2,
+                'min="0.1" step="0.1" required',
+            )}
+            ${numberField(
+                "plugin-retries",
+                "Nouvelles tentatives",
+                configuration.retries ?? 1,
+                'min="0" step="1" required',
+            )}
+        `;
+
+        if (plugin.id === "dns") {
+            return `
+                <label class="configuration-span-2">
+                    Noms à résoudre
+                    <input
+                        id="plugin-dns-queries"
+                        type="text"
+                        value="${escapeHtml((configuration.queries ?? []).join(", "))}"
+                        placeholder="example.com, ohana.lan"
+                        required
+                    >
+                </label>
+                ${common}
+                ${numberField(
+                    "plugin-dns-minimum-healthy",
+                    "Serveurs sains minimum",
+                    configuration.policy?.minimum_healthy_servers ?? 1,
+                    'min="1" step="1" required',
+                )}
+            `;
+        }
+
+        if (plugin.id === "ntp") {
+            return `
+                ${common}
+                ${numberField(
+                    "plugin-ntp-maximum-offset",
+                    "Décalage maximal (ms)",
+                    configuration.policy?.maximum_offset_ms ?? 1000,
+                    'min="0.1" step="0.1" required',
+                )}
+                ${numberField(
+                    "plugin-ntp-maximum-stratum",
+                    "Strate maximale",
+                    configuration.policy?.maximum_stratum ?? 15,
+                    'min="1" max="15" step="1" required',
+                )}
+            `;
+        }
+
+        if (plugin.id === "mqtt") {
+            const authentication =
+                configuration.authentication ?? {};
+            const tls = configuration.tls ?? {};
+            const passwordHint =
+                authentication.password_configured
+                    ? "Un mot de passe est déjà configuré. Laissez vide pour le conserver."
+                    : "Laissez vide si aucune authentification n’est requise.";
+
+            return `
+                ${common}
+                ${numberField(
+                    "plugin-mqtt-keepalive",
+                    "Keepalive (secondes)",
+                    configuration.keepalive_seconds ?? 60,
+                    'min="1" step="1" required',
+                )}
+                <label>
+                    QoS
+                    <select id="plugin-mqtt-qos">
+                        ${[0, 1, 2].map(
+                            (qos) => `
+                                <option value="${qos}" ${Number(configuration.qos ?? 1) === qos ? "selected" : ""}>
+                                    ${qos}
+                                </option>
+                            `,
+                        ).join("")}
+                    </select>
+                </label>
+                <label class="configuration-span-2">
+                    Préfixe du client
+                    <input id="plugin-mqtt-client-prefix" type="text" value="${escapeHtml(configuration.client_id_prefix ?? "ohana-agent")}" required>
+                </label>
+                <label class="configuration-span-2">
+                    Préfixe du sujet
+                    <input id="plugin-mqtt-topic-prefix" type="text" value="${escapeHtml(configuration.topic_prefix ?? "ohana/agent/check")}" required>
+                </label>
+                <label>
+                    Utilisateur
+                    <input id="plugin-mqtt-username" type="text" value="${escapeHtml(authentication.username ?? "")}">
+                </label>
+                <label>
+                    Mot de passe
+                    <input id="plugin-mqtt-password" type="password" value="" autocomplete="new-password">
+                    <small>${escapeHtml(passwordHint)}</small>
+                </label>
+                <label class="configuration-check">
+                    <input id="plugin-mqtt-tls-enabled" type="checkbox" ${tls.enabled ? "checked" : ""}>
+                    TLS activé
+                </label>
+                <label class="configuration-check">
+                    <input id="plugin-mqtt-tls-insecure" type="checkbox" ${tls.insecure ? "checked" : ""}>
+                    Autoriser un certificat non vérifié
+                </label>
+                <label class="configuration-span-2">
+                    Autorité de certification
+                    <input id="plugin-mqtt-ca-file" type="text" value="${escapeHtml(tls.ca_file ?? "")}" placeholder="/etc/ssl/certs/ohana-ca.pem">
+                </label>
+            `;
+        }
+
+        return common;
+    }
+
+    pluginConfigurationPayload(plugin) {
+        const configuration = structuredClone(
+            plugin.configuration ?? {},
+        );
+        configuration.interval_seconds = Number(
+            this.value("plugin-interval-seconds"),
+        );
+        configuration.timeout = Number(
+            this.value("plugin-timeout"),
+        );
+        configuration.retries = Number(
+            this.value("plugin-retries"),
+        );
+
+        if (plugin.id === "dns") {
+            configuration.queries = this.listValue(
+                "plugin-dns-queries",
+            );
+            configuration.policy = {
+                minimum_healthy_servers: Number(
+                    this.value(
+                        "plugin-dns-minimum-healthy",
+                    ),
+                ),
+            };
+        } else if (plugin.id === "ntp") {
+            configuration.policy = {
+                maximum_offset_ms: Number(
+                    this.value(
+                        "plugin-ntp-maximum-offset",
+                    ),
+                ),
+                maximum_stratum: Number(
+                    this.value(
+                        "plugin-ntp-maximum-stratum",
+                    ),
+                ),
+            };
+        } else if (plugin.id === "mqtt") {
+            configuration.keepalive_seconds = Number(
+                this.value("plugin-mqtt-keepalive"),
+            );
+            configuration.qos = Number(
+                this.value("plugin-mqtt-qos"),
+            );
+            configuration.client_id_prefix =
+                this.value("plugin-mqtt-client-prefix");
+            configuration.topic_prefix =
+                this.value("plugin-mqtt-topic-prefix");
+            configuration.authentication = {
+                username:
+                    this.value("plugin-mqtt-username")
+                    || null,
+                password:
+                    this.value("plugin-mqtt-password")
+                    || null,
+            };
+            configuration.tls = {
+                enabled: this.checked(
+                    "plugin-mqtt-tls-enabled",
+                ),
+                ca_file:
+                    this.value("plugin-mqtt-ca-file")
+                    || null,
+                insecure: this.checked(
+                    "plugin-mqtt-tls-insecure",
+                ),
+            };
+        }
+
+        return {
+            enabled: this.checked("plugin-enabled"),
+            configuration,
+        };
+    }
+
+    async savePluginConfiguration() {
+        const plugin = this.selectedPlugin();
+
+        if (
+            !plugin
+            || !window.confirm(
+                `Appliquer la configuration du plugin ${plugin.name} ?`,
+            )
+        ) {
+            return;
+        }
+
+        hideError(this.elements.error);
+
+        try {
+            const updated = await requestJson(
+                API.administrationPlugin(plugin.id),
+                {
+                    method: "PUT",
+                    body: JSON.stringify(
+                        this.pluginConfigurationPayload(plugin),
+                    ),
+                },
+            );
+            this.plugins = this.plugins.map(
+                (item) =>
+                    item.id === updated.id
+                        ? updated
+                        : item,
+            );
+            this.selectedPluginId = updated.id;
+            this.renderPlugins();
+            this.showNotice(
+                `Plugin ${updated.name} configuré et replanifié par Agent.`,
+            );
+        } catch (error) {
+            showError(
+                this.elements.error,
+                "Configuration du plugin refusée : "
+                + this.errorMessage(error),
+            );
+        }
+    }
+
+    async testSelectedPlugin() {
+        const plugin = this.selectedPlugin();
+
+        if (!plugin) {
+            return;
+        }
+
+        hideError(this.elements.error);
+        this.elements.pluginTest.disabled = true;
+        this.elements.pluginTestResult.textContent =
+            "Test en cours…";
+        this.elements.pluginTestResult.className =
+            "plugin-test-result";
+
+        try {
+            const result = await requestJson(
+                API.administrationPluginTest(plugin.id),
+                {
+                    method: "POST",
+                },
+            );
+            const message = result.message
+                || (
+                    result.success
+                        ? "Test réussi."
+                        : "Test échoué."
+                );
+            this.elements.pluginTestResult.innerHTML = `
+                <strong>${result.success ? "Test réussi" : "Test échoué"}</strong>
+                <span>${escapeHtml(message)}</span>
+                <small>${Number(result.latency_ms).toFixed(2)} ms</small>
+            `;
+            this.elements.pluginTestResult.className =
+                `plugin-test-result plugin-test-result--${result.success ? "success" : "error"}`;
+        } catch (error) {
+            this.elements.pluginTestResult.innerHTML = `
+                <strong>Test impossible</strong>
+                <span>${escapeHtml(this.errorMessage(error))}</span>
+            `;
+            this.elements.pluginTestResult.className =
+                "plugin-test-result plugin-test-result--error";
+        } finally {
+            this.elements.pluginTest.disabled = false;
+        }
+    }
+
+    formatPluginDate(value, fallback = "Jamais") {
+        if (!value) {
+            return fallback;
+        }
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return fallback;
+        }
+
+        return new Intl.DateTimeFormat(
+            "fr-FR",
+            {
+                dateStyle: "short",
+                timeStyle: "medium",
+            },
+        ).format(date);
     }
 
     clearArchitectureEditor() {

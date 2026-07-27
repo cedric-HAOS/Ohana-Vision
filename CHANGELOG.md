@@ -6,6 +6,33 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# v1.3.0 — Administration des plugins — 2026-07-27
+
+## Ajouté
+
+- Onglet **Plugins** dans la section Configuration.
+- Cartes d’état pour les plugins DNS, NTP et MQTT enregistrés dans Agent.
+- Inspecteur affichant version, capacités, planification, exécutions et dernière
+  erreur.
+- Formulaires spécialisés pour DNS, NTP et MQTT.
+- Activation, désactivation et reconfiguration à chaud après confirmation.
+- Test immédiat avec résultat, message et latence.
+- États vides, indisponibles, dégradés et erreurs d’application.
+- Proxy backend pour l’inventaire, la lecture, l’écriture et le test des plugins.
+
+## Sécurité
+
+- Aucun fichier YAML de plugin n’est lu ou écrit par Vision.
+- Le jeton d’administration reste exclusivement dans le backend.
+- Le mot de passe MQTT n’est jamais affiché et une saisie vide conserve le
+  secret existant.
+
+## Qualité
+
+- 759 tests réussis.
+- Syntaxe des modules JavaScript validée avec Node.js.
+- Construction validée des artefacts wheel et sdist 1.3.0.
+
 # v1.2.0 — Administration graphique — 2026-07-24
 
 ## Ajouté

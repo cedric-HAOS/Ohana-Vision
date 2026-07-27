@@ -1,15 +1,48 @@
 # Administration graphique
 
-Ohana-Vision 1.2.0 permet d'administrer le DHCP et l'architecture sans modifier
-directement les fichiers YAML. Vision présente les formulaires et transmet les
-changements à l'API locale authentifiée d'Ohana-Agent. Agent valide et écrit
-seul la configuration.
+Ohana-Vision 1.3.0 permet d'administrer le DHCP, l'architecture et les plugins
+intégrés sans modifier directement les fichiers YAML. Vision présente les
+formulaires et transmet les changements à l'API locale authentifiée
+d'Ohana-Agent. Agent valide, écrit et applique seul la configuration.
 
 ## Ouvrir la configuration
 
 1. Ouvrir `http://ADRESSE_DU_SERVEUR:8000`.
 2. Choisir **Configuration** dans la barre latérale.
-3. Choisir **Baux DHCP** ou **Architecture**.
+3. Choisir **Baux DHCP**, **Architecture** ou **Plugins**.
+
+Les onglets indisponibles sont désactivés selon les capacités réellement
+annoncées par l'Agent.
+
+## Administrer les plugins
+
+L'onglet **Plugins** présente les plugins réellement enregistrés dans
+Ohana-Agent. La version 1.3.0 prend en charge DNS, NTP et MQTT.
+
+Chaque carte indique :
+
+- l'état actif, désactivé, en attente ou dégradé ;
+- la version ;
+- le nombre de tâches et d'exécutions ;
+- la dernière exécution ;
+- la dernière erreur connue.
+
+La sélection d'une carte ouvre l'inspecteur. Il permet de :
+
+- activer ou désactiver le plugin ;
+- modifier son intervalle, son délai maximal et ses tentatives ;
+- modifier les paramètres propres à DNS, NTP ou MQTT ;
+- appliquer la configuration après confirmation ;
+- lancer un test immédiat et consulter son résultat.
+
+Les services DNS, NTP et MQTT ciblés restent déclarés dans l'onglet
+**Architecture**. Les formulaires de plugins ne dupliquent pas leurs adresses.
+
+Le mot de passe MQTT n'est jamais affiché. Lorsque le champ est laissé vide,
+Agent conserve le secret déjà enregistré.
+
+DHCP reste administré dans l'onglet **Baux DHCP**. Il n'est pas présenté comme
+un plugin tant qu'Agent ne dispose pas d'un véritable plugin d'observation DHCP.
 
 ## Cartographier les équipements
 
@@ -49,11 +82,25 @@ et la destination peuvent être changées : un équipement peut ainsi être reli
 à la box, à un commutateur déterminé, à un point d'accès ou à tout autre
 équipement déclaré.
 
+## États et erreurs
+
+L'interface distingue :
+
+- Agent ne proposant pas l'administration des plugins ;
+- aucun plugin enregistré ;
+- erreur de chargement de l'inventaire ;
+- configuration refusée par Agent ;
+- test réussi, échoué ou impossible.
+
+Une modification refusée laisse le formulaire affiché et présente le message
+retourné par Agent.
+
 ## Sécurité et validation
 
 - le jeton Agent n'est jamais envoyé au navigateur ;
 - toute application complète demande confirmation ;
-- Agent refuse les références inconnues, les positions dupliquées et les
-  liaisons invalides ;
-- les écritures sont atomiques et la configuration précédente est préservée en
-  cas d'échec.
+- Vision ne lit et n'écrit aucun fichier de configuration de plugin ;
+- Agent refuse les documents invalides ;
+- les écritures sont atomiques et la configuration précédente est restaurée en
+  cas d'échec d'application ;
+- les secrets MQTT ne transitent jamais vers le navigateur.
