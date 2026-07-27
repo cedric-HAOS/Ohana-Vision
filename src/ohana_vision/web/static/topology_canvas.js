@@ -13,6 +13,14 @@ class TopologyCanvas {
 
     static ZOOM_STEP = 1.2;
 
+    static ROUTE_CLEARANCE = 28;
+
+    static ROUTE_LEAD = 52;
+
+    static ROUTE_CORNER_RADIUS = 26;
+
+    static ROUTE_LANE_GAP = 18;
+
     constructor({
         container,
         layoutLabel,
@@ -918,6 +926,7 @@ class TopologyCanvas {
         const layer = svg.querySelector(
             ".topology-canvas__links",
         );
+        const routedLinks = [];
 
         for (const [order, link] of links.entries()) {
             const sourcePosition =
@@ -929,16 +938,609 @@ class TopologyCanvas {
                 continue;
             }
 
+            routedLinks.push({
+                link,
+                order,
+                sourcePosition,
+                targetPosition,
+                routing: {
+                    source: {
+                        side: this.linkSide(
+                            link.source_device_id,
+                            sourcePosition,
+                            targetPosition,
+                            positions,
+                        ),
+                        offset: 0,
+                    },
+                    target: {
+                        side: this.linkSide(
+                            link.target_device_id,
+                            targetPosition,
+                            sourcePosition,
+                            positions,
+                        ),
+                        offset: 0,
+                    },
+                },
+            });
+        }
+
+        this.distributeLinkAnchors(routedLinks);
+        this.routeLinks(routedLinks, positions);
+
+        for (const routedLink of routedLinks) {
             layer.append(
                 this.createLink(
-                    link,
-                    sourcePosition,
-                    targetPosition,
-                    this.linkHealth(link),
-                    order,
+                    routedLink.link,
+                    routedLink.sourcePosition,
+                    routedLink.targetPosition,
+                    this.linkHealth(routedLink.link),
+                    routedLink.order,
+                    routedLink.routing,
                 ),
             );
         }
+    }
+
+    distributeLinkAnchors(routedLinks) {
+        this.distributeLinkEndpoint(
+            routedLinks,
+            "source",
+        );
+        this.distributeLinkEndpoint(
+            routedLinks,
+            "target",
+        );
+    }
+
+    distributeLinkEndpoint(routedLinks, endpoint) {
+        const groups = new Map();
+
+        for (const routedLink of routedLinks) {
+            const link = routedLink.link;
+            const deviceId = endpoint === "source"
+                ? link.source_device_id
+                : link.target_device_id;
+            const side = routedLink.routing[endpoint].side;
+            const key = `${deviceId}:${side}`;
+
+            if (!groups.has(key)) {
+                groups.set(key, []);
+            }
+
+            groups.get(key).push(routedLink);
+        }
+
+        for (const group of groups.values()) {
+            this.assignLinkOffsets(group, endpoint);
+        }
+    }
+
+    assignLinkOffsets(routedLinks, endpoint) {
+        if (routedLinks.length === 1) {
+            return;
+        }
+
+        const side =
+            routedLinks[0].routing[endpoint].side;
+        const horizontalSide =
+            side === "top" || side === "bottom";
+        const oppositeEndpoint = endpoint === "source"
+            ? "targetPosition"
+            : "sourcePosition";
+
+        routedLinks.sort((first, second) => {
+            const firstPosition = first[oppositeEndpoint];
+            const secondPosition = second[oppositeEndpoint];
+            const firstValue = horizontalSide
+                ? firstPosition.x
+                : firstPosition.y;
+            const secondValue = horizontalSide
+                ? secondPosition.x
+                : secondPosition.y;
+
+            if (firstValue !== secondValue) {
+                return firstValue - secondValue;
+            }
+
+            return String(first.link.link_id).localeCompare(
+                String(second.link.link_id),
+            );
+        });
+
+        const availableSpan = horizontalSide
+            ? TopologyCanvas.DEVICE_WIDTH - 48
+            : TopologyCanvas.DEVICE_HEIGHT - 40;
+        const step = availableSpan
+            / (routedLinks.length - 1);
+        const start = -availableSpan / 2;
+
+        routedLinks.forEach((routedLink, index) => {
+            routedLink.routing[endpoint].offset =
+                start + step * index;
+        });
+    }
+
+    routeLinks(routedLinks, positions) {
+        const obstacles = this.linkObstacles(positions);
+        const occupiedSegments = [];
+        const routingOrder = [...routedLinks].sort(
+            (first, second) => (
+                this.linkDistance(first)
+                - this.linkDistance(second)
+            ),
+        );
+
+        for (const routedLink of routingOrder) {
+            const source = this.linkAnchor(
+                routedLink.sourcePosition,
+                routedLink.routing.source,
+            );
+            const target = this.linkAnchor(
+                routedLink.targetPosition,
+                routedLink.routing.target,
+            );
+            const sourceLead = this.linkLead(
+                source,
+                routedLink.routing.source.side,
+            );
+            const targetLead = this.linkLead(
+                target,
+                routedLink.routing.target.side,
+            );
+            const candidates = this.linkRouteCandidates(
+                sourceLead,
+                targetLead,
+                obstacles,
+            );
+            let route = null;
+            let routeScore = Infinity;
+
+            for (const candidate of candidates) {
+                const candidateScore =
+                    this.linkRouteScore(
+                        candidate,
+                        obstacles,
+                        occupiedSegments,
+                    );
+
+                if (candidateScore < routeScore) {
+                    route = candidate;
+                    routeScore = candidateScore;
+                }
+            }
+            const points = this.simplifyLinkPoints([
+                source,
+                ...(route ?? [sourceLead, targetLead]),
+                target,
+            ]);
+
+            routedLink.routing.path =
+                this.roundedLinkPath(points);
+            occupiedSegments.push(
+                ...this.linkPathSegments(
+                    route ?? [sourceLead, targetLead],
+                ),
+            );
+        }
+    }
+
+    linkDistance(routedLink) {
+        return Math.hypot(
+            routedLink.targetPosition.x
+                - routedLink.sourcePosition.x,
+            routedLink.targetPosition.y
+                - routedLink.sourcePosition.y,
+        );
+    }
+
+    linkObstacles(positions) {
+        return Object.entries(positions).map(
+            ([deviceId, position]) => ({
+                deviceId,
+                left:
+                    position.x
+                    - TopologyCanvas.DEVICE_WIDTH / 2
+                    - TopologyCanvas.ROUTE_CLEARANCE,
+                right:
+                    position.x
+                    + TopologyCanvas.DEVICE_WIDTH / 2
+                    + TopologyCanvas.ROUTE_CLEARANCE,
+                top:
+                    position.y
+                    - TopologyCanvas.DEVICE_HEIGHT / 2
+                    - TopologyCanvas.ROUTE_CLEARANCE,
+                bottom:
+                    position.y
+                    + TopologyCanvas.DEVICE_HEIGHT / 2
+                    + TopologyCanvas.ROUTE_CLEARANCE,
+            }),
+        );
+    }
+
+    linkRouteCandidates(source, target, obstacles) {
+        const candidates = [
+            [
+                source,
+                {x: target.x, y: source.y},
+                target,
+            ],
+            [
+                source,
+                {x: source.x, y: target.y},
+                target,
+            ],
+        ];
+        const horizontalLanes = new Set([
+            source.y,
+            target.y,
+            (source.y + target.y) / 2,
+        ]);
+        const verticalLanes = new Set([
+            source.x,
+            target.x,
+            (source.x + target.x) / 2,
+        ]);
+
+        for (const obstacle of obstacles) {
+            horizontalLanes.add(
+                obstacle.top
+                - TopologyCanvas.ROUTE_LANE_GAP,
+            );
+            horizontalLanes.add(
+                obstacle.bottom
+                + TopologyCanvas.ROUTE_LANE_GAP,
+            );
+            verticalLanes.add(
+                obstacle.left
+                - TopologyCanvas.ROUTE_LANE_GAP,
+            );
+            verticalLanes.add(
+                obstacle.right
+                + TopologyCanvas.ROUTE_LANE_GAP,
+            );
+        }
+
+        for (const laneY of horizontalLanes) {
+            candidates.push([
+                source,
+                {x: source.x, y: laneY},
+                {x: target.x, y: laneY},
+                target,
+            ]);
+        }
+
+        for (const laneX of verticalLanes) {
+            candidates.push([
+                source,
+                {x: laneX, y: source.y},
+                {x: laneX, y: target.y},
+                target,
+            ]);
+        }
+
+        return candidates.map(
+            (candidate) => this.simplifyLinkPoints(
+                candidate,
+            ),
+        );
+    }
+
+    linkRouteScore(
+        points,
+        obstacles,
+        occupiedSegments,
+    ) {
+        const segments = this.linkPathSegments(points);
+        let obstacleHits = 0;
+        let overlap = 0;
+        let crossings = 0;
+        let length = 0;
+
+        for (const segment of segments) {
+            length += Math.hypot(
+                segment.target.x - segment.source.x,
+                segment.target.y - segment.source.y,
+            );
+
+            for (const obstacle of obstacles) {
+                if (
+                    this.linkSegmentIntersectsObstacle(
+                        segment,
+                        obstacle,
+                    )
+                ) {
+                    obstacleHits += 1;
+                }
+            }
+
+            for (const occupied of occupiedSegments) {
+                overlap += this.linkSegmentOverlap(
+                    segment,
+                    occupied,
+                );
+
+                if (
+                    this.linkSegmentsCross(
+                        segment,
+                        occupied,
+                    )
+                ) {
+                    crossings += 1;
+                }
+            }
+        }
+
+        return obstacleHits * 100000000
+            + overlap * 600
+            + crossings * 160
+            + length
+            + Math.max(0, points.length - 2) * 24;
+    }
+
+    linkPathSegments(points) {
+        const segments = [];
+
+        for (
+            let index = 1;
+            index < points.length;
+            index += 1
+        ) {
+            segments.push({
+                source: points[index - 1],
+                target: points[index],
+            });
+        }
+
+        return segments;
+    }
+
+    linkSegmentIntersectsObstacle(segment, obstacle) {
+        const horizontal =
+            segment.source.y === segment.target.y;
+
+        if (horizontal) {
+            const minimumX = Math.min(
+                segment.source.x,
+                segment.target.x,
+            );
+            const maximumX = Math.max(
+                segment.source.x,
+                segment.target.x,
+            );
+
+            return segment.source.y >= obstacle.top
+                && segment.source.y <= obstacle.bottom
+                && maximumX >= obstacle.left
+                && minimumX <= obstacle.right;
+        }
+
+        const minimumY = Math.min(
+            segment.source.y,
+            segment.target.y,
+        );
+        const maximumY = Math.max(
+            segment.source.y,
+            segment.target.y,
+        );
+
+        return segment.source.x >= obstacle.left
+            && segment.source.x <= obstacle.right
+            && maximumY >= obstacle.top
+            && minimumY <= obstacle.bottom;
+    }
+
+    linkSegmentOverlap(first, second) {
+        const firstHorizontal =
+            first.source.y === first.target.y;
+        const secondHorizontal =
+            second.source.y === second.target.y;
+
+        if (
+            firstHorizontal
+            && secondHorizontal
+            && first.source.y === second.source.y
+        ) {
+            return this.linkIntervalOverlap(
+                first.source.x,
+                first.target.x,
+                second.source.x,
+                second.target.x,
+            );
+        }
+
+        if (
+            !firstHorizontal
+            && !secondHorizontal
+            && first.source.x === second.source.x
+        ) {
+            return this.linkIntervalOverlap(
+                first.source.y,
+                first.target.y,
+                second.source.y,
+                second.target.y,
+            );
+        }
+
+        return 0;
+    }
+
+    linkIntervalOverlap(
+        firstStart,
+        firstEnd,
+        secondStart,
+        secondEnd,
+    ) {
+        return Math.max(
+            0,
+            Math.min(
+                Math.max(firstStart, firstEnd),
+                Math.max(secondStart, secondEnd),
+            )
+            - Math.max(
+                Math.min(firstStart, firstEnd),
+                Math.min(secondStart, secondEnd),
+            ),
+        );
+    }
+
+    linkSegmentsCross(first, second) {
+        const firstHorizontal =
+            first.source.y === first.target.y;
+        const secondHorizontal =
+            second.source.y === second.target.y;
+
+        if (firstHorizontal === secondHorizontal) {
+            return false;
+        }
+
+        const horizontal = firstHorizontal
+            ? first
+            : second;
+        const vertical = firstHorizontal
+            ? second
+            : first;
+        const horizontalMinimum = Math.min(
+            horizontal.source.x,
+            horizontal.target.x,
+        );
+        const horizontalMaximum = Math.max(
+            horizontal.source.x,
+            horizontal.target.x,
+        );
+        const verticalMinimum = Math.min(
+            vertical.source.y,
+            vertical.target.y,
+        );
+        const verticalMaximum = Math.max(
+            vertical.source.y,
+            vertical.target.y,
+        );
+
+        return vertical.source.x > horizontalMinimum
+            && vertical.source.x < horizontalMaximum
+            && horizontal.source.y > verticalMinimum
+            && horizontal.source.y < verticalMaximum;
+    }
+
+    simplifyLinkPoints(points) {
+        const simplified = [];
+
+        for (const point of points) {
+            const previous = simplified.at(-1);
+
+            if (
+                previous
+                && previous.x === point.x
+                && previous.y === point.y
+            ) {
+                continue;
+            }
+
+            simplified.push(point);
+
+            while (simplified.length >= 3) {
+                const first = simplified.at(-3);
+                const middle = simplified.at(-2);
+                const last = simplified.at(-1);
+                const horizontal =
+                    first.y === middle.y
+                    && middle.y === last.y;
+                const vertical =
+                    first.x === middle.x
+                    && middle.x === last.x;
+
+                if (!horizontal && !vertical) {
+                    break;
+                }
+
+                simplified.splice(-2, 1);
+            }
+        }
+
+        return simplified;
+    }
+
+    roundedLinkPath(points) {
+        if (points.length < 2) {
+            return null;
+        }
+
+        const commands = [
+            `M ${this.formatLinkPoint(points[0])}`,
+        ];
+
+        for (
+            let index = 1;
+            index < points.length - 1;
+            index += 1
+        ) {
+            const previous = points[index - 1];
+            const corner = points[index];
+            const next = points[index + 1];
+            const previousDistance = Math.hypot(
+                corner.x - previous.x,
+                corner.y - previous.y,
+            );
+            const nextDistance = Math.hypot(
+                next.x - corner.x,
+                next.y - corner.y,
+            );
+            const radius = Math.min(
+                TopologyCanvas.ROUTE_CORNER_RADIUS,
+                previousDistance / 2,
+                nextDistance / 2,
+            );
+
+            if (radius === 0) {
+                continue;
+            }
+
+            const before = {
+                x:
+                    corner.x
+                    + (
+                        previous.x - corner.x
+                    ) * radius / previousDistance,
+                y:
+                    corner.y
+                    + (
+                        previous.y - corner.y
+                    ) * radius / previousDistance,
+            };
+            const after = {
+                x:
+                    corner.x
+                    + (
+                        next.x - corner.x
+                    ) * radius / nextDistance,
+                y:
+                    corner.y
+                    + (
+                        next.y - corner.y
+                    ) * radius / nextDistance,
+            };
+
+            commands.push(
+                `L ${this.formatLinkPoint(before)}`,
+                `Q ${this.formatLinkPoint(corner)} `
+                    + this.formatLinkPoint(after),
+            );
+        }
+
+        commands.push(
+            `L ${this.formatLinkPoint(points.at(-1))}`,
+        );
+
+        return commands.join(" ");
+    }
+
+    formatLinkPoint(point) {
+        return [
+            Math.round(point.x * 100) / 100,
+            Math.round(point.y * 100) / 100,
+        ].join(" ");
     }
 
     createLink(
@@ -947,6 +1549,7 @@ class TopologyCanvas {
         targetPosition,
         health,
         order = 0,
+        routing = null,
     ) {
         const group = this.createSvgElement("g");
         const normalizedKind = this.normalizeClassName(
@@ -993,6 +1596,7 @@ class TopologyCanvas {
         const coordinates = this.linkCoordinates(
             sourcePosition,
             targetPosition,
+            routing,
         );
 
         const glow = this.createSvgElement("path");
@@ -1006,22 +1610,9 @@ class TopologyCanvas {
         path.setAttribute("d", coordinates.path);
         this.applyLinkDirection(path, link.direction);
 
-        const sourceConnector =
-            this.createLinkConnector(
-                coordinates.sourceX,
-                coordinates.sourceY,
-            );
-        const targetConnector =
-            this.createLinkConnector(
-                coordinates.targetX,
-                coordinates.targetY,
-            );
-
         group.append(
             glow,
             path,
-            sourceConnector,
-            targetConnector,
         );
 
         return group;
@@ -1123,10 +1714,200 @@ class TopologyCanvas {
         return "unknown";
     }
 
+    linkSide(
+        deviceId,
+        position,
+        oppositePosition,
+        positions = null,
+    ) {
+        const candidates = this.linkSideCandidates(
+            position,
+            oppositePosition,
+        );
+
+        if (!positions) {
+            return candidates[0];
+        }
+
+        return candidates.find((side) => (
+            this.linkLeadIsClear(
+                deviceId,
+                position,
+                side,
+                positions,
+            )
+        )) ?? candidates[0];
+    }
+
+    linkSideCandidates(position, oppositePosition) {
+        const deltaX =
+            oppositePosition.x - position.x;
+        const deltaY =
+            oppositePosition.y - position.y;
+        const distance = Math.hypot(deltaX, deltaY) || 1;
+        const direction = {
+            x: deltaX / distance,
+            y: deltaY / distance,
+        };
+        const sides = [
+            "top",
+            "right",
+            "bottom",
+            "left",
+        ];
+
+        return sides.sort((first, second) => {
+            const firstVector =
+                this.linkSideVector(first);
+            const secondVector =
+                this.linkSideVector(second);
+            const firstScore =
+                firstVector.x * direction.x
+                + firstVector.y * direction.y;
+            const secondScore =
+                secondVector.x * direction.x
+                + secondVector.y * direction.y;
+
+            return secondScore - firstScore;
+        });
+    }
+
+    linkLeadIsClear(
+        deviceId,
+        position,
+        side,
+        positions,
+    ) {
+        const anchor = this.linkAnchor(
+            position,
+            {side, offset: 0},
+        );
+        const lead = this.linkLead(anchor, side);
+        const segment = {
+            source: anchor,
+            target: lead,
+        };
+        const padding = 8;
+
+        return Object.entries(positions).every(
+            ([otherDeviceId, otherPosition]) => {
+                if (otherDeviceId === deviceId) {
+                    return true;
+                }
+
+                return !this.linkSegmentIntersectsObstacle(
+                    segment,
+                    {
+                        left:
+                            otherPosition.x
+                            - TopologyCanvas.DEVICE_WIDTH / 2
+                            - padding,
+                        right:
+                            otherPosition.x
+                            + TopologyCanvas.DEVICE_WIDTH / 2
+                            + padding,
+                        top:
+                            otherPosition.y
+                            - TopologyCanvas.DEVICE_HEIGHT / 2
+                            - padding,
+                        bottom:
+                            otherPosition.y
+                            + TopologyCanvas.DEVICE_HEIGHT / 2
+                            + padding,
+                    },
+                );
+            },
+        );
+    }
+
+    linkAnchor(position, endpointRouting) {
+        const offset = endpointRouting.offset ?? 0;
+
+        if (endpointRouting.side === "top") {
+            return {
+                x: position.x + offset,
+                y:
+                    position.y
+                    - TopologyCanvas.DEVICE_HEIGHT / 2,
+            };
+        }
+
+        if (endpointRouting.side === "bottom") {
+            return {
+                x: position.x + offset,
+                y:
+                    position.y
+                    + TopologyCanvas.DEVICE_HEIGHT / 2,
+            };
+        }
+
+        if (endpointRouting.side === "left") {
+            return {
+                x:
+                    position.x
+                    - TopologyCanvas.DEVICE_WIDTH / 2,
+                y: position.y + offset,
+            };
+        }
+
+        return {
+            x:
+                position.x
+                + TopologyCanvas.DEVICE_WIDTH / 2,
+            y: position.y + offset,
+        };
+    }
+
+    linkLead(anchor, side) {
+        const vector = this.linkSideVector(side);
+
+        return {
+            x:
+                anchor.x
+                + vector.x * TopologyCanvas.ROUTE_LEAD,
+            y:
+                anchor.y
+                + vector.y * TopologyCanvas.ROUTE_LEAD,
+        };
+    }
+
+    linkSideVector(side) {
+        const vectors = {
+            top: {x: 0, y: -1},
+            right: {x: 1, y: 0},
+            bottom: {x: 0, y: 1},
+            left: {x: -1, y: 0},
+        };
+
+        return vectors[side] ?? vectors.right;
+    }
+
     linkCoordinates(
         sourcePosition,
         targetPosition,
+        routing = null,
     ) {
+        if (routing?.path) {
+            const source = this.linkAnchor(
+                sourcePosition,
+                routing.source,
+            );
+            const target = this.linkAnchor(
+                targetPosition,
+                routing.target,
+            );
+
+            return {
+                sourceX: source.x,
+                sourceY: source.y,
+                targetX: target.x,
+                targetY: target.y,
+                labelX: (source.x + target.x) / 2,
+                labelY: (source.y + target.y) / 2,
+                path: routing.path,
+            };
+        }
+
         const deltaX =
             targetPosition.x - sourcePosition.x;
         const deltaY =
@@ -1204,21 +1985,6 @@ class TopologyCanvas {
                 `${targetX} ${targetY}`,
             ].join(" "),
         };
-    }
-
-    createLinkConnector(x, y) {
-        const connector = this.createSvgElement(
-            "circle",
-        );
-
-        connector.classList.add(
-            "topology-link__connector",
-        );
-        connector.setAttribute("cx", x);
-        connector.setAttribute("cy", y);
-        connector.setAttribute("r", 6);
-
-        return connector;
     }
 
     renderDevices(svg, devices, positions) {

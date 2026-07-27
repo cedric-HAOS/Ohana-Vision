@@ -95,12 +95,6 @@
         stroke-width 180ms ease;
 }
 
-.topology-link__connector {
-    fill: var(--surface);
-    stroke: var(--link-color);
-    stroke-width: 4;
-}
-
 /* Link technology is identified by its stroke pattern.
  * Negotiated capacity is identified primarily by colour and
  * secondarily by a restrained width progression. Device health
@@ -419,12 +413,6 @@
     animation: topology-link-flow 2.4s linear infinite;
 }
 
-.topology-link--focused .topology-link__connector {
-    animation: topology-connector-pulse 1.8s ease-in-out infinite;
-    transform-box: fill-box;
-    transform-origin: center;
-}
-
 .topology-link--dimmed {
     opacity: 0.16;
 }
@@ -452,13 +440,6 @@
 @keyframes topology-link-flow {
     to {
         stroke-dashoffset: -48;
-    }
-}
-
-@keyframes topology-connector-pulse {
-    50% {
-        opacity: 0.72;
-        transform: scale(1.22);
     }
 }
 
@@ -846,8 +827,7 @@
     .topology-device,
     .topology-link,
     .topology-device__halo,
-    .topology-link__path,
-    .topology-link__connector {
+    .topology-link__path {
         animation: none !important;
         transition: none !important;
     }

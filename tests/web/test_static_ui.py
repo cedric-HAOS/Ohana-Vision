@@ -1048,7 +1048,7 @@ def test_topology_stylesheet_contains_devices_and_links() -> None:
     assert ".topology-device__card {" in response.text
     assert ".topology-device--health-healthy {" in response.text
     assert ".topology-link__path {" in response.text
-    assert ".topology-link__connector {" in response.text
+    assert ".topology-link__connector {" not in response.text
     assert ".dashboard-primary--topology {" in response.text
     assert ".topology-heading-status {" in response.text
 

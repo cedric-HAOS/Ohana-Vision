@@ -34,6 +34,31 @@ def test_topology_canvas_renders_curved_links() -> None:
     assert '"path"' in response.text
 
 
+def test_topology_canvas_routes_links_around_devices() -> None:
+    """Link routing must use free lanes and distinct card anchors."""
+    client = make_client()
+
+    response = client.get("/ui/topology_canvas.js")
+
+    assert response.status_code == 200
+    assert "distributeLinkAnchors(" in response.text
+    assert "linkRouteCandidates(" in response.text
+    assert "linkRouteScore(" in response.text
+    assert "linkSegmentIntersectsObstacle(" in response.text
+    assert "roundedLinkPath(" in response.text
+
+
+def test_topology_canvas_does_not_render_link_connectors() -> None:
+    """Links must join device cards without endpoint circles."""
+    client = make_client()
+
+    response = client.get("/ui/topology_canvas.js")
+
+    assert response.status_code == 200
+    assert "createLinkConnector(" not in response.text
+    assert '"topology-link__connector"' not in response.text
+
+
 def test_topology_canvas_renders_devices() -> None:
     """The topology canvas must render topology devices."""
     client = make_client()
@@ -368,7 +393,7 @@ def test_topology_canvas_applies_derived_link_health() -> None:
     response = client.get("/ui/topology_canvas.js")
 
     assert response.status_code == 200
-    assert "this.linkHealth(link)" in response.text
+    assert "this.linkHealth(routedLink.link)" in response.text
 
 
 def test_topology_canvas_renders_health_halos() -> None:
@@ -431,7 +456,7 @@ def test_topology_styles_use_discreet_motion() -> None:
     assert "@keyframes topology-device-enter" in response.text
     assert "@keyframes topology-link-enter" in response.text
     assert "@keyframes topology-link-flow" in response.text
-    assert "@keyframes topology-connector-pulse" in response.text
+    assert "@keyframes topology-connector-pulse" not in response.text
     assert ".topology-link--focused" in response.text
 
 
