@@ -112,7 +112,6 @@ def test_topology_canvas_uses_device_metadata() -> None:
     response = client.get("/ui/topology_canvas.js")
 
     assert response.status_code == 200
-    assert "device.metadata?.model" in response.text
     assert "device.metadata?.role" in response.text
 
 
@@ -191,8 +190,26 @@ def test_static_ui_contains_device_details_panel() -> None:
     assert 'id="device-details-primary"' in response.text
     assert 'id="device-details-health"' in response.text
     assert 'id="device-details-supervision"' in response.text
-    assert 'id="device-details-manufacturer"' in response.text
+    assert 'id="device-services-list"' in response.text
+    assert 'id="device-services-count"' in response.text
+    assert 'id="device-details-manufacturer"' not in response.text
+    assert 'id="device-details-model"' not in response.text
     assert 'id="device-links-list"' in response.text
+
+
+def test_device_details_renders_hosted_services() -> None:
+    """Selected devices must expose configured hosted services."""
+    client = make_client()
+
+    response = client.get("/ui/device_details.js")
+
+    assert response.status_code == 200
+    assert "renderServices(device)" in response.text
+    assert "servicesForDevice(device)" in response.text
+    assert "device.metadata?.services" in response.text
+    assert "service.name ?? service.service_id" in response.text
+    assert "this.state.timeline?.nodes" in response.text
+    assert "device-details__service" in response.text
 
 
 def test_topology_canvas_supports_zoom() -> None:
@@ -266,8 +283,11 @@ def test_topology_canvas_styles_link_kinds() -> None:
 
     assert response.status_code == 200
     assert ".topology-link--visual-ethernet" in response.text
+    assert ".topology-link--visual-ethernet-100m" in response.text
     assert ".topology-link--visual-ethernet-1g" in response.text
     assert ".topology-link--visual-ethernet-2-5g" in response.text
+    assert ".topology-link--visual-ethernet-5g" in response.text
+    assert ".topology-link--visual-ethernet-8g" in response.text
     assert ".topology-link--visual-ethernet-10g" in response.text
     assert ".topology-link--visual-wifi" in response.text
     assert ".topology-link--visual-fiber" in response.text
@@ -287,8 +307,11 @@ def test_topology_canvas_derives_fiber_and_bandwidth_styles() -> None:
     assert "linkVisualKind(link)" in response.text
     assert 'link.metadata?.role === "internet_uplink"' in response.text
     assert 'return "fiber"' in response.text
+    assert 'return "ethernet-100m"' in response.text
     assert 'return "ethernet-1g"' in response.text
     assert 'return "ethernet-2-5g"' in response.text
+    assert 'return "ethernet-5g"' in response.text
+    assert 'return "ethernet-8g"' in response.text
     assert 'return "ethernet-10g"' in response.text
     assert "`topology-link--visual-${normalizedVisualKind}`" in response.text
     assert "group.dataset.visualKind" in response.text
@@ -306,10 +329,16 @@ def test_topology_links_use_capacity_colours() -> None:
     assert "--link-color: #a78bfa;" in response.text
     assert ".topology-link--visual-wifi" in response.text
     assert "--link-color: #38bdf8;" in response.text
+    assert ".topology-link--visual-ethernet-100m" in response.text
+    assert "--link-color: #64748b;" in response.text
     assert ".topology-link--visual-ethernet-1g" in response.text
     assert "--link-color: #8fa4b8;" in response.text
     assert ".topology-link--visual-ethernet-2-5g" in response.text
     assert "--link-color: #5ba8ff;" in response.text
+    assert ".topology-link--visual-ethernet-5g" in response.text
+    assert "--link-color: #4f8cff;" in response.text
+    assert ".topology-link--visual-ethernet-8g" in response.text
+    assert "--link-color: #22b8cf;" in response.text
     assert ".topology-link--visual-ethernet-10g" in response.text
     assert "--link-color: #28d7c0;" in response.text
     assert ".topology-link--health-healthy {" not in response.text
@@ -556,8 +585,11 @@ def test_topology_canvas_renders_unified_tools_panel() -> None:
     assert "Liaisons" in response.text
     assert "États" in response.text
     assert "Fibre" in response.text
+    assert "Ethernet 100 Mb/s" in response.text
     assert "Ethernet 1 Gb/s" in response.text
     assert "Ethernet 2,5 Gb/s" in response.text
+    assert "Ethernet 5 Gb/s" in response.text
+    assert "Ethernet 8 Gb/s" in response.text
     assert "Ethernet 10 Gb/s" in response.text
     assert "WAN" not in response.text
     assert "Équipements" not in response.text
@@ -595,8 +627,11 @@ def test_topology_tools_panel_is_fixed_and_responsive() -> None:
     assert "position: static;" in response.text
     assert ".topology-tools-panel__line--fiber" in response.text
     assert ".topology-tools-panel__line--wifi" in response.text
+    assert ".topology-tools-panel__line--ethernet-100m" in response.text
     assert ".topology-tools-panel__line--ethernet-1g" in response.text
     assert ".topology-tools-panel__line--ethernet-2-5g" in response.text
+    assert ".topology-tools-panel__line--ethernet-5g" in response.text
+    assert ".topology-tools-panel__line--ethernet-8g" in response.text
     assert ".topology-tools-panel__line--ethernet-10g" in response.text
     assert "background: #a78bfa;" in response.text
     assert "border-top: 3px dotted #38bdf8;" in response.text

@@ -60,6 +60,31 @@
 
     .application-views[
         data-active-view="infrastructure"
+    ] {
+        overflow: hidden;
+    }
+
+    .application-views[
+        data-active-view="infrastructure"
+    ] > [data-view="infrastructure"],
+    .application-views[
+        data-active-view="infrastructure"
+    ] .dashboard-primary--topology,
+    .application-views[
+        data-active-view="infrastructure"
+    ] .topology-workspace,
+    .application-views[
+        data-active-view="infrastructure"
+    ] .topology-container,
+    .application-views[
+        data-active-view="infrastructure"
+    ] .topology-canvas {
+        height: 100%;
+        min-height: 0;
+    }
+
+    .application-views[
+        data-active-view="infrastructure"
     ] .application-view.is-active,
     .application-views[
         data-active-view="timeline"

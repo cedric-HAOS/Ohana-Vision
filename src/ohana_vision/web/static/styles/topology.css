@@ -111,6 +111,12 @@
     --link-width: 3.25;
 }
 
+.topology-link--visual-ethernet-100m {
+    --link-color: #64748b;
+    --link-glow: rgb(100 116 139 / 12%);
+    --link-width: 3;
+}
+
 .topology-link--visual-ethernet-1g {
     --link-color: #8fa4b8;
     --link-glow: rgb(143 164 184 / 12%);
@@ -121,6 +127,18 @@
     --link-color: #5ba8ff;
     --link-glow: rgb(91 168 255 / 14%);
     --link-width: 4;
+}
+
+.topology-link--visual-ethernet-5g {
+    --link-color: #4f8cff;
+    --link-glow: rgb(79 140 255 / 15%);
+    --link-width: 4.5;
+}
+
+.topology-link--visual-ethernet-8g {
+    --link-color: #22b8cf;
+    --link-glow: rgb(34 184 207 / 15%);
+    --link-width: 4.75;
 }
 
 .topology-link--visual-ethernet-10g {
@@ -1044,6 +1062,11 @@
     background: none;
 }
 
+.topology-tools-panel__line--ethernet-100m {
+    height: 3px;
+    background: #64748b;
+}
+
 .topology-tools-panel__line--ethernet-1g {
     height: 3.25px;
     background: #8fa4b8;
@@ -1052,6 +1075,16 @@
 .topology-tools-panel__line--ethernet-2-5g {
     height: 4px;
     background: #5ba8ff;
+}
+
+.topology-tools-panel__line--ethernet-5g {
+    height: 4.5px;
+    background: #4f8cff;
+}
+
+.topology-tools-panel__line--ethernet-8g {
+    height: 4.75px;
+    background: #22b8cf;
 }
 
 .topology-tools-panel__line--ethernet-10g {

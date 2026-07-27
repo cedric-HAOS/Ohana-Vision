@@ -332,6 +332,7 @@ export class ApplicationController {
                 timeline,
             );
             this.timeline.render();
+            this.deviceDetails.refresh();
         } catch (error) {
             setTimeline(
                 null,

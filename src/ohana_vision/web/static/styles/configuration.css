@@ -299,7 +299,8 @@
 }
 
 .architecture-board {
-    min-height: 26rem;
+    height: clamp(34rem, 68vh, 48rem);
+    min-height: 34rem;
     overflow: auto;
     border:
         var(--ohana-border-width-thin)
@@ -414,6 +415,41 @@
     stroke: var(--ohana-text-muted);
     stroke-width: 4;
     vector-effect: non-scaling-stroke;
+}
+
+.architecture-map-link__line--ethernet-100m {
+    stroke: #64748b;
+    stroke-width: 3;
+}
+
+.architecture-map-link__line--ethernet-1g {
+    stroke: #8fa4b8;
+    stroke-width: 3.5;
+}
+
+.architecture-map-link__line--ethernet-2-5g {
+    stroke: #5ba8ff;
+    stroke-width: 4;
+}
+
+.architecture-map-link__line--ethernet-5g {
+    stroke: #4f8cff;
+    stroke-width: 4.5;
+}
+
+.architecture-map-link__line--ethernet-8g {
+    stroke: #22b8cf;
+    stroke-width: 4.75;
+}
+
+.architecture-map-link__line--ethernet-10g {
+    stroke: #28d7c0;
+    stroke-width: 5;
+}
+
+.architecture-map-link__line--fiber {
+    stroke: #a78bfa;
+    stroke-width: 5.5;
 }
 
 .architecture-map-link__line--wifi {

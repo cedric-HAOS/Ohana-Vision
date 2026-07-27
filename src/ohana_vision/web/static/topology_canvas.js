@@ -182,12 +182,24 @@ class TopologyCanvas {
                             Wi-Fi
                         </li>
                         <li>
+                            <span class="topology-tools-panel__line topology-tools-panel__line--ethernet-100m"></span>
+                            Ethernet 100 Mb/s
+                        </li>
+                        <li>
                             <span class="topology-tools-panel__line topology-tools-panel__line--ethernet-1g"></span>
                             Ethernet 1 Gb/s
                         </li>
                         <li>
                             <span class="topology-tools-panel__line topology-tools-panel__line--ethernet-2-5g"></span>
                             Ethernet 2,5 Gb/s
+                        </li>
+                        <li>
+                            <span class="topology-tools-panel__line topology-tools-panel__line--ethernet-5g"></span>
+                            Ethernet 5 Gb/s
+                        </li>
+                        <li>
+                            <span class="topology-tools-panel__line topology-tools-panel__line--ethernet-8g"></span>
+                            Ethernet 8 Gb/s
                         </li>
                         <li>
                             <span class="topology-tools-panel__line topology-tools-panel__line--ethernet-10g"></span>
@@ -1033,12 +1045,24 @@ class TopologyCanvas {
                 return "ethernet-10g";
             }
 
+            if (bandwidth >= 8000) {
+                return "ethernet-8g";
+            }
+
+            if (bandwidth >= 5000) {
+                return "ethernet-5g";
+            }
+
             if (bandwidth >= 2500) {
                 return "ethernet-2-5g";
             }
 
             if (bandwidth >= 1000) {
                 return "ethernet-1g";
+            }
+
+            if (bandwidth >= 100) {
+                return "ethernet-100m";
             }
         }
 

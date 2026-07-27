@@ -54,11 +54,11 @@ export class DeviceDetailsController {
             role: document.querySelector(
                 "#device-details-role",
             ),
-            model: document.querySelector(
-                "#device-details-model",
+            servicesCount: document.querySelector(
+                "#device-services-count",
             ),
-            manufacturer: document.querySelector(
-                "#device-details-manufacturer",
+            servicesList: document.querySelector(
+                "#device-services-list",
             ),
             linksCount: document.querySelector(
                 "#device-links-count",
@@ -238,22 +238,6 @@ export class DeviceDetailsController {
             ),
         );
 
-        this.setText(
-            this.elements.model,
-            this.metadataValue(
-                device,
-                "model",
-            ),
-        );
-
-        this.setText(
-            this.elements.manufacturer,
-            this.metadataValue(
-                device,
-                "manufacturer",
-            ),
-        );
-
         if (this.elements.health) {
             this.elements.health.className =
                 "device-details__health "
@@ -265,6 +249,7 @@ export class DeviceDetailsController {
             healthStatusLabel(health),
         );
 
+        this.renderServices(device);
         this.renderLinks(device);
 
         this.elements.panel?.classList.remove(
@@ -275,6 +260,130 @@ export class DeviceDetailsController {
             "aria-hidden",
             "false",
         );
+    }
+
+    renderServices(device) {
+        const services = this.servicesForDevice(
+            device,
+        );
+
+        this.setText(
+            this.elements.servicesCount,
+            services.length,
+        );
+
+        if (!this.elements.servicesList) {
+            return;
+        }
+
+        if (services.length === 0) {
+            this.elements.servicesList.innerHTML = `
+                <li class="device-details__empty">
+                    Aucun service observé.
+                </li>
+            `;
+            return;
+        }
+
+        this.elements.servicesList.innerHTML =
+            services.map((service) => {
+                const status = this.currentStatus(
+                    service.periods,
+                );
+                const capabilities =
+                    service.capabilities ?? [];
+                const details = [
+                    service.service_id,
+                    service.type,
+                    capabilities.length
+                        ? `${capabilities.length} capacité${capabilities.length > 1 ? "s" : ""}`
+                        : null,
+                ].filter(Boolean).join(" · ");
+
+                return `
+                    <li class="device-details__service">
+                        <div>
+                            <strong>${escapeHtml(service.name ?? service.service_id)}</strong>
+                            <span>${escapeHtml(details)}</span>
+                        </div>
+                        <small class="device-details__service-status device-details__service-status--${escapeHtml(status)}">
+                            ${escapeHtml(healthStatusLabel(status))}
+                        </small>
+                    </li>
+                `;
+            }).join("");
+    }
+
+    servicesForDevice(device) {
+        if (!device.node_id) {
+            return [];
+        }
+
+        const configuredServices = Array.isArray(
+            device.metadata?.services,
+        )
+            ? device.metadata.services
+            : [];
+        const nodes = this.state.timeline?.nodes ?? [];
+        const node = Array.isArray(nodes)
+            ? nodes.find(
+                (candidate) =>
+                    candidate.node_id
+                    === device.node_id,
+            )
+            : nodes[device.node_id];
+        const observedServices = Array.isArray(
+            node?.services,
+        )
+            ? node.services
+            : [];
+        const observedById = new Map(
+            observedServices.map((service) => [
+                service.service_id,
+                service,
+            ]),
+        );
+
+        if (configuredServices.length > 0) {
+            return configuredServices.map(
+                (service) => ({
+                    ...service,
+                    ...(
+                        observedById.get(
+                            service.service_id,
+                        ) ?? {}
+                    ),
+                }),
+            );
+        }
+
+        return observedServices;
+    }
+
+    currentStatus(periods) {
+        if (!Array.isArray(periods)) {
+            return "unknown";
+        }
+
+        const openPeriod = periods.find(
+            (period) => !period.ended_at,
+        );
+
+        if (openPeriod?.status) {
+            return openPeriod.status;
+        }
+
+        const latestPeriod = periods
+            .slice()
+            .sort((first, second) => {
+                return new Date(
+                    second.started_at,
+                ).getTime() - new Date(
+                    first.started_at,
+                ).getTime();
+            })[0];
+
+        return latestPeriod?.status ?? "unknown";
     }
 
     renderLinks(device) {
@@ -443,7 +552,6 @@ export class DeviceDetailsController {
         return (
             device.address
             ?? device.node_id
-            ?? device.metadata?.model
             ?? device.device_id
         );
     }

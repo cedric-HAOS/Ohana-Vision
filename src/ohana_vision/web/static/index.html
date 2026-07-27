@@ -105,7 +105,7 @@
         Ohana-Vision
     </span>
     <span class="sidebar-version__number">
-        v1.2.0
+        v1.2.1
     </span>
 </div>
     </div>
@@ -470,23 +470,19 @@
              —
             </dd>
            </div>
-           <div>
-            <dt>
-             Constructeur
-            </dt>
-            <dd id="device-details-manufacturer">
-             —
-            </dd>
-           </div>
-           <div>
-            <dt>
-             Modèle
-            </dt>
-            <dd id="device-details-model">
-             —
-            </dd>
-           </div>
           </dl>
+         </section>
+         <section aria-labelledby="device-services-title" class="device-details__section">
+          <div class="device-details__section-heading">
+           <h4 id="device-services-title">
+            Services hébergés
+           </h4>
+           <span id="device-services-count">
+            0
+           </span>
+          </div>
+          <ul class="device-details__services" id="device-services-list">
+          </ul>
          </section>
          <section aria-labelledby="device-links-title" class="device-details__section">
           <div class="device-details__section-heading">
@@ -903,6 +899,7 @@
             <label>
              Technologie
              <select id="architecture-link-kind">
+              <option value="fiber">Fibre</option>
               <option value="ethernet">Ethernet</option>
               <option value="wifi">Wi-Fi</option>
               <option value="wireguard">WireGuard</option>
@@ -923,8 +920,15 @@
              </select>
             </label>
             <label class="configuration-span-2">
-             Débit en Mbit/s
-             <input id="architecture-link-bandwidth" min="0.1" step="0.1" type="number">
+             Débit
+             <select id="architecture-link-bandwidth">
+              <option value="10000">10Gbps</option>
+              <option value="8000">8Gbps</option>
+              <option value="5000">5Gbps</option>
+              <option value="2500">2.5Gbps</option>
+              <option value="1000">1Gbps</option>
+              <option value="100">100Mbps</option>
+             </select>
             </label>
            </div>
            <div class="configuration-form-actions" id="architecture-editor-actions" hidden>

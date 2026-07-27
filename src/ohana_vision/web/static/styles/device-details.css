@@ -300,12 +300,66 @@
     overflow-wrap: anywhere;
 }
 
+.device-details__services,
 .device-details__links {
     display: grid;
     gap: 0.6rem;
     margin: 0;
     padding: 0;
     list-style: none;
+}
+
+.device-details__service {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgb(24 35 60 / 72%);
+}
+
+.device-details__service > div {
+    display: grid;
+    min-width: 0;
+    gap: 0.2rem;
+}
+
+.device-details__service strong {
+    color: var(--text);
+    font-size: 0.82rem;
+    overflow-wrap: anywhere;
+}
+
+.device-details__service span {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+}
+
+.device-details__service-status {
+    flex: 0 0 auto;
+    padding: 0.32rem 0.5rem;
+    border-radius: 999px;
+    color: var(--text-muted);
+    background: rgb(141 153 174 / 10%);
+    font-size: 0.66rem;
+    font-weight: 800;
+}
+
+.device-details__service-status--healthy {
+    color: var(--healthy);
+    background: rgb(71 209 140 / 10%);
+}
+
+.device-details__service-status--degraded {
+    color: var(--degraded);
+    background: rgb(245 183 71 / 10%);
+}
+
+.device-details__service-status--unhealthy {
+    color: var(--unhealthy);
+    background: rgb(255 99 132 / 10%);
 }
 
 .device-details__link {

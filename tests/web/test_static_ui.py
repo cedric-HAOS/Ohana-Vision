@@ -287,6 +287,13 @@ def test_static_ui_exposes_graphical_configuration_views() -> None:
     assert 'id="architecture-mode-move"' in response.text
     assert 'id="architecture-mode-link"' in response.text
     assert 'id="architecture-add-service-to-device"' in response.text
+    assert '<option value="fiber">Fibre</option>' in response.text
+    assert '<option value="10000">10Gbps</option>' in response.text
+    assert '<option value="8000">8Gbps</option>' in response.text
+    assert '<option value="5000">5Gbps</option>' in response.text
+    assert '<option value="2500">2.5Gbps</option>' in response.text
+    assert '<option value="1000">1Gbps</option>' in response.text
+    assert '<option value="100">100Mbps</option>' in response.text
 
 
 def test_static_ui_exposes_configuration_controller() -> None:
@@ -302,8 +309,41 @@ def test_static_ui_exposes_configuration_controller() -> None:
     assert "handleArchitectureDrop" in response.text
     assert "selectLinkEndpoint" in response.text
     assert "layout.positions[deviceId]" in response.text
+    assert "ARCHITECTURE_MINIMUM_COLUMNS = 10" in response.text
+    assert "ARCHITECTURE_MINIMUM_ROWS = 8" in response.text
+    assert "compareIPAddresses(" in response.text
+    assert "nodeStillUsed" in response.text
+    assert 'metadata.medium = "fiber"' in response.text
+    assert 'return "ethernet-8g"' in response.text
+    assert 'return "ethernet-5g"' in response.text
+    assert 'return "ethernet-100m"' in response.text
     assert "Enregistrer la " in response.text
     assert "DHCP de ${reservation.hostname} ?" in response.text
+
+
+def test_configuration_deletes_device_dependencies_coherently() -> None:
+    """Deleting a device must remove its dependent architecture data."""
+    response = make_client().get("/ui/configuration.js")
+
+    assert response.status_code == 200
+    assert "item.id !== selection.id" in response.text
+    assert "item.source" in response.text
+    assert "item.target" in response.text
+    assert "item.node !== nodeId" in response.text
+    assert "item.id !== nodeId" in response.text
+    assert "nodeStillUsed" in response.text
+    assert "delete layout.positions[" in response.text
+
+
+def test_infrastructure_view_disables_desktop_vertical_scrolling() -> None:
+    """The full infrastructure map must fit without a page scrollbar."""
+    response = make_client().get("/ui/styles/responsive.css")
+
+    assert response.status_code == 200
+    assert 'data-active-view="infrastructure"' in response.text
+    assert "overflow: hidden;" in response.text
+    assert '.topology-container' in response.text
+    assert "height: 100%;" in response.text
 
 
 def test_static_ui_loads_navigation_as_javascript_module() -> None:

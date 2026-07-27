@@ -20,6 +20,9 @@ const DHCP_CATEGORY_LABELS = Object.freeze({
     critical: "Critique",
 });
 
+const ARCHITECTURE_MINIMUM_COLUMNS = 10;
+const ARCHITECTURE_MINIMUM_ROWS = 8;
+
 /**
  * Controls graphical infrastructure administration.
  */
@@ -520,10 +523,13 @@ export class ConfigurationController {
                         .toUpperCase(),
                 );
 
-                return this.reservationRow(
-                    reservation,
-                    active,
-                );
+                return {
+                    address: reservation.address,
+                    markup: this.reservationRow(
+                        reservation,
+                        active,
+                    ),
+                };
             },
         );
 
@@ -534,14 +540,25 @@ export class ConfigurationController {
                 ),
             )
             .forEach((lease) => {
-                rows.push(
-                    this.dynamicLeaseRow(lease),
-                );
+                rows.push({
+                    address: lease.address,
+                    markup:
+                        this.dynamicLeaseRow(lease),
+                });
             });
+
+        rows.sort((first, second) => {
+            return this.compareIPAddresses(
+                first.address,
+                second.address,
+            );
+        });
 
         this.elements.dhcpTable.innerHTML =
             rows.length
-                ? rows.join("")
+                ? rows.map(
+                    (row) => row.markup,
+                ).join("")
                 : (
                     "<tr><td colspan=\"6\">"
                     + "Aucun bail DHCP."
@@ -596,6 +613,46 @@ export class ConfigurationController {
                 <td></td>
             </tr>
         `;
+    }
+
+    compareIPAddresses(firstAddress, secondAddress) {
+        const firstValue = this.ipv4AddressValue(
+            firstAddress,
+        );
+        const secondValue = this.ipv4AddressValue(
+            secondAddress,
+        );
+
+        if (firstValue !== secondValue) {
+            return firstValue - secondValue;
+        }
+
+        return String(firstAddress).localeCompare(
+            String(secondAddress),
+        );
+    }
+
+    ipv4AddressValue(address) {
+        const octets = String(address)
+            .split(".")
+            .map((octet) => Number(octet));
+
+        if (
+            octets.length !== 4
+            || octets.some(
+                (octet) =>
+                    !Number.isInteger(octet)
+                    || octet < 0
+                    || octet > 255,
+            )
+        ) {
+            return Number.MAX_SAFE_INTEGER;
+        }
+
+        return octets.reduce(
+            (value, octet) => value * 256 + octet,
+            0,
+        );
     }
 
     async saveDHCPSettings() {
@@ -885,12 +942,12 @@ export class ConfigurationController {
         );
 
         const maximumColumn = Math.max(
-            4,
+            ARCHITECTURE_MINIMUM_COLUMNS - 1,
             ...Object.values(layout.positions)
                 .map((position) => position.column),
         );
         const maximumRow = Math.max(
-            3,
+            ARCHITECTURE_MINIMUM_ROWS - 1,
             ...Object.values(layout.positions)
                 .map((position) => position.row),
         );
@@ -953,6 +1010,10 @@ export class ConfigurationController {
                         ?.mode === "link"
                     && this.selectedArchitectureItem
                         .id === link.id;
+                const visualKind =
+                    this.architectureLinkVisualKind(
+                        link,
+                    );
                 const x1 =
                     source.column * cellWidth
                     + cellWidth / 2;
@@ -975,7 +1036,7 @@ export class ConfigurationController {
                         tabindex="0"
                     >
                         <line class="architecture-map-link__hitbox" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"></line>
-                        <line class="architecture-map-link__line architecture-map-link__line--${escapeHtml(link.kind)}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"></line>
+                        <line class="architecture-map-link__line architecture-map-link__line--${escapeHtml(visualKind)}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"></line>
                     </g>
                 `;
             },
@@ -1565,7 +1626,7 @@ export class ConfigurationController {
         );
         this.setValue(
             "architecture-link-kind",
-            link.kind,
+            this.linkEditorKind(link),
         );
         this.setValue(
             "architecture-link-direction",
@@ -1853,13 +1914,26 @@ export class ConfigurationController {
         const bandwidth = this.value(
             "architecture-link-bandwidth",
         );
+        const editorKind = this.value(
+            "architecture-link-kind",
+        );
+        const metadata = {
+            ...(link?.metadata ?? {}),
+        };
+
+        if (editorKind === "fiber") {
+            metadata.medium = "fiber";
+        } else if (metadata.medium === "fiber") {
+            delete metadata.medium;
+        }
+
         const values = {
             id,
             source,
             target,
-            kind: this.value(
-                "architecture-link-kind",
-            ),
+            kind: editorKind === "fiber"
+                ? "ethernet"
+                : editorKind,
             direction: this.value(
                 "architecture-link-direction",
             ),
@@ -1869,7 +1943,7 @@ export class ConfigurationController {
             bandwidth_mbps: bandwidth
                 ? Number(bandwidth)
                 : null,
-            metadata: link?.metadata ?? {},
+            metadata,
         };
 
         if (link) {
@@ -1945,18 +2019,27 @@ export class ConfigurationController {
                     );
 
             if (nodeId) {
-                this.infrastructure.services =
-                    this.infrastructure.services
-                        .filter(
+                const nodeStillUsed =
+                    this.infrastructure.topology
+                        .devices.some(
                             (item) =>
-                                item.node !== nodeId,
+                                item.node === nodeId,
                         );
-                this.infrastructure.nodes =
-                    this.infrastructure.nodes
-                        .filter(
-                            (item) =>
-                                item.id !== nodeId,
-                        );
+
+                if (!nodeStillUsed) {
+                    this.infrastructure.services =
+                        this.infrastructure.services
+                            .filter(
+                                (item) =>
+                                    item.node !== nodeId,
+                            );
+                    this.infrastructure.nodes =
+                        this.infrastructure.nodes
+                            .filter(
+                                (item) =>
+                                    item.id !== nodeId,
+                            );
+                }
             }
 
             this.infrastructure.topology.layouts
@@ -1973,6 +2056,57 @@ export class ConfigurationController {
             "Suppression préparée. Appliquez "
             + "l’architecture pour confirmer.",
         );
+    }
+
+    linkEditorKind(link) {
+        if (link.metadata?.medium === "fiber") {
+            return "fiber";
+        }
+
+        return link.kind;
+    }
+
+    architectureLinkVisualKind(link) {
+        if (
+            link.metadata?.medium === "fiber"
+            || link.metadata?.role === "internet_uplink"
+        ) {
+            return "fiber";
+        }
+
+        if (link.kind !== "ethernet") {
+            return link.kind;
+        }
+
+        const bandwidth = Number(
+            link.bandwidth_mbps ?? 0,
+        );
+
+        if (bandwidth >= 10000) {
+            return "ethernet-10g";
+        }
+
+        if (bandwidth >= 8000) {
+            return "ethernet-8g";
+        }
+
+        if (bandwidth >= 5000) {
+            return "ethernet-5g";
+        }
+
+        if (bandwidth >= 2500) {
+            return "ethernet-2-5g";
+        }
+
+        if (bandwidth >= 1000) {
+            return "ethernet-1g";
+        }
+
+        if (bandwidth >= 100) {
+            return "ethernet-100m";
+        }
+
+        return "ethernet";
     }
 
     async applyArchitecture() {
