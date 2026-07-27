@@ -299,6 +299,10 @@
     --presence-color: var(--unknown);
 }
 
+.device-details__presence-status--disabled {
+    --presence-color: var(--text-muted);
+}
+
 .device-details__presence-message {
     margin: -0.15rem 0 0.8rem;
     color: var(--text-muted);

@@ -47,9 +47,6 @@ export class DeviceDetailsController {
             id: document.querySelector(
                 "#device-details-id",
             ),
-            node: document.querySelector(
-                "#device-details-node",
-            ),
             address: document.querySelector(
                 "#device-details-address",
             ),
@@ -243,12 +240,6 @@ export class DeviceDetailsController {
         );
 
         this.setText(
-            this.elements.node,
-            device.node_id
-                ?? "Non supervisé",
-        );
-
-        this.setText(
             this.elements.address,
             device.address ?? "—",
         );
@@ -295,6 +286,9 @@ export class DeviceDetailsController {
             device.address
             || presence?.address,
         );
+        const isEnabled =
+            device.metadata
+                ?.network_presence_enabled !== false;
 
         this.elements.presenceSection
             ?.classList.toggle(
@@ -306,10 +300,11 @@ export class DeviceDetailsController {
             return;
         }
 
-        const status =
-            this.normalizePresenceStatus(
+        const status = isEnabled
+            ? this.normalizePresenceStatus(
                 presence?.status,
-            );
+            )
+            : "disabled";
 
         if (this.elements.presenceStatus) {
             this.elements.presenceStatus.className =
@@ -323,34 +318,49 @@ export class DeviceDetailsController {
         );
         this.setText(
             this.elements.presenceMessage,
-            presence?.message
-                ?? this.presenceFallbackMessage(
-                    status,
+            isEnabled
+                ? (
+                    presence?.message
+                    ?? this.presenceFallbackMessage(
+                        status,
+                    )
+                )
+                : (
+                    "La surveillance de présence "
+                    + "est désactivée pour cet équipement."
                 ),
         );
         this.setText(
             this.elements.presenceObservedAt,
-            formatDate(
-                presence?.observed_at,
-            ),
+            isEnabled
+                ? formatDate(
+                    presence?.observed_at,
+                )
+                : "—",
         );
         this.setText(
             this.elements.presenceMethod,
-            this.presenceMethodLabel(
-                presence?.method,
-            ),
+            isEnabled
+                ? this.presenceMethodLabel(
+                    presence?.method,
+                )
+                : "—",
         );
         this.setText(
             this.elements.presenceLatency,
-            formatLatency(
-                presence?.latency_ms,
-            ),
+            isEnabled
+                ? formatLatency(
+                    presence?.latency_ms,
+                )
+                : "—",
         );
         this.setText(
             this.elements.presenceFailures,
-            this.presenceFailureLabel(
-                presence,
-            ),
+            isEnabled
+                ? this.presenceFailureLabel(
+                    presence,
+                )
+                : "—",
         );
     }
 
@@ -363,6 +373,7 @@ export class DeviceDetailsController {
             "present",
             "absent",
             "unknown",
+            "disabled",
         ].includes(normalized)
             ? normalized
             : "unknown";
@@ -373,6 +384,7 @@ export class DeviceDetailsController {
             present: "Présent",
             absent: "Absent",
             unknown: "Inconnu",
+            disabled: "Non surveillée",
         };
 
         return labels[

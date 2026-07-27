@@ -123,7 +123,7 @@
         Ohana-Vision
     </span>
     <span class="sidebar-version__number">
-        v1.4.3
+        v1.4.4
     </span>
 </div>
     </div>
@@ -339,14 +339,6 @@
              Identifiant
             </dt>
             <dd id="device-details-id">
-             —
-            </dd>
-           </div>
-           <div>
-            <dt>
-             Nœud
-            </dt>
-            <dd id="device-details-node">
              —
             </dd>
            </div>
@@ -691,8 +683,8 @@
         hidden
        >
         <div class="configuration-grid configuration-grid--architecture">
-         <section class="configuration-card">
-          <div class="configuration-card__heading">
+         <section class="configuration-card configuration-card--architecture-workspace">
+          <div class="configuration-card__heading architecture-workspace-heading">
            <div>
             <p class="panel-heading__kicker">Cartographie interactive</p>
             <h2>Équipements, services et liaisons</h2>
@@ -711,7 +703,7 @@
             <p class="empty-state">Chargement de l’architecture…</p>
            </div>
          </section>
-         <aside class="configuration-card configuration-editor">
+         <aside class="configuration-card configuration-editor configuration-editor--architecture">
           <form id="architecture-editor-form">
            <div class="configuration-card__heading">
             <div>
@@ -751,6 +743,13 @@
             <label class="configuration-span-2">
              Adresse IP
              <input id="architecture-device-address" type="text">
+            </label>
+            <label class="configuration-check configuration-span-2 architecture-presence-toggle">
+             <input id="architecture-device-network-presence" type="checkbox">
+             <span>
+              Surveiller la présence réseau
+              <small>Disponible lorsque l’équipement possède une adresse IP.</small>
+             </span>
             </label>
              <section class="architecture-device-services-panel configuration-span-2">
               <div class="architecture-device-services-heading">
@@ -874,8 +873,8 @@
         hidden
        >
         <div class="configuration-grid configuration-grid--plugins">
-         <section class="configuration-card">
-          <div class="configuration-card__heading">
+         <section class="configuration-card plugin-browser">
+          <div class="configuration-card__heading plugin-browser__heading">
            <div>
             <p class="panel-heading__kicker">Extensions Agent</p>
             <h2>Plugins enregistrés</h2>
@@ -887,7 +886,7 @@
            <p class="empty-state">Chargement des plugins…</p>
           </div>
          </section>
-         <aside class="configuration-card configuration-editor plugin-inspector">
+         <aside class="configuration-card configuration-editor plugin-inspector configuration-editor--plugins">
           <div class="plugin-inspector__empty" id="plugin-inspector-empty">
            <img alt="" src="/ui/assets/icons/empty-states/puzzle.svg">
            <h2>Sélectionnez un plugin</h2>

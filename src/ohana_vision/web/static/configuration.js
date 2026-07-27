@@ -290,6 +290,14 @@ export class ConfigurationController {
                     this.editNewServiceForSelection();
                 },
             );
+        document.getElementById(
+            "architecture-device-address",
+        )?.addEventListener(
+            "input",
+            () => {
+                this.updateNetworkPresenceControl();
+            },
+        );
         this.elements.architectureDeviceServices
             ?.addEventListener(
                 "click",
@@ -1536,6 +1544,12 @@ export class ConfigurationController {
                 ?? device.address
                 ?? "",
         );
+        this.setChecked(
+            "architecture-device-network-presence",
+            device.metadata
+                ?.network_presence_enabled !== false,
+        );
+        this.updateNetworkPresenceControl();
         this.renderAssociatedServices(device);
     }
 
@@ -1562,7 +1576,26 @@ export class ConfigurationController {
             "architecture-device-address",
             "",
         );
+        this.setChecked(
+            "architecture-device-network-presence",
+            true,
+        );
+        this.updateNetworkPresenceControl();
         this.renderAssociatedServices(null);
+    }
+
+    updateNetworkPresenceControl() {
+        const control = document.getElementById(
+            "architecture-device-network-presence",
+        );
+
+        if (!control) {
+            return;
+        }
+
+        control.disabled = !this.value(
+            "architecture-device-address",
+        );
     }
 
     editService(serviceId) {
@@ -1858,6 +1891,9 @@ export class ConfigurationController {
         const role = this.value(
             "architecture-device-role",
         );
+        const networkPresenceEnabled = this.checked(
+            "architecture-device-network-presence",
+        );
 
         if (!name) {
             return;
@@ -1907,6 +1943,14 @@ export class ConfigurationController {
             device.metadata.role = role;
         } else {
             delete device.metadata.role;
+        }
+
+        if (address) {
+            device.metadata.network_presence_enabled =
+                networkPresenceEnabled;
+        } else {
+            delete device.metadata
+                .network_presence_enabled;
         }
 
         if (address) {
@@ -2617,10 +2661,7 @@ export class ConfigurationController {
                 </span>
             </div>
             <div class="configuration-form-grid plugin-configuration-fields">
-                <label class="configuration-check configuration-span-2">
-                    <input id="plugin-enabled" type="checkbox" ${plugin.enabled ? "checked" : ""}>
-                    ${escapeHtml(this.pluginEnabledLabel(plugin))}
-                </label>
+                ${this.pluginActivationField(plugin)}
                 ${this.pluginConfigurationFields(plugin)}
             </div>
             <p class="plugin-inspector__hint">
@@ -2638,11 +2679,28 @@ export class ConfigurationController {
         this.updatePluginConfigurationAvailability();
     }
 
-    pluginEnabledLabel(plugin) {
+    pluginActivationField(plugin) {
         if (plugin.id === "network") {
-            return "Présence réseau activée";
+            return `
+                <div class="plugin-scope configuration-span-2">
+                    <span class="plugin-scope__icon" aria-hidden="true"></span>
+                    <span>
+                        <strong>Activation par équipement</strong>
+                        <small>Choisissez les équipements surveillés dans Configuration → Architecture.</small>
+                    </span>
+                </div>
+            `;
         }
 
+        return `
+            <label class="configuration-check configuration-span-2">
+                <input id="plugin-enabled" type="checkbox" ${plugin.enabled ? "checked" : ""}>
+                ${escapeHtml(this.pluginEnabledLabel(plugin))}
+            </label>
+        `;
+    }
+
+    pluginEnabledLabel(plugin) {
         if (plugin.id === "dhcp") {
             return "Observation DHCP activée";
         }
@@ -2663,7 +2721,16 @@ export class ConfigurationController {
     }
 
     updatePluginConfigurationAvailability() {
-        const enabled = this.checked("plugin-enabled");
+        const plugin = this.selectedPlugin();
+        const activationControl =
+            document.getElementById("plugin-enabled");
+        const enabled = plugin?.id === "network"
+            ? true
+            : (
+                activationControl
+                    ? activationControl.checked
+                    : Boolean(plugin?.enabled)
+            );
 
         this.elements.pluginInspectorContent
             ?.querySelectorAll(
@@ -2949,7 +3016,9 @@ export class ConfigurationController {
         }
 
         return {
-            enabled: this.checked("plugin-enabled"),
+            enabled: plugin.id === "network"
+                ? true
+                : this.checked("plugin-enabled"),
             configuration,
         };
     }

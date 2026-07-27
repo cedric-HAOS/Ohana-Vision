@@ -1,7 +1,23 @@
+.observations-view {
+    display: grid;
+    min-height: 100%;
+}
+
+.side-panel-card--observations {
+    display: grid;
+    min-height: 0;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    overflow: hidden;
+}
+
 .recent-observations {
     display: grid;
+    min-height: 0;
+    align-content: start;
     gap: 0.5rem;
     padding: 0.65rem;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
 }
 
 .recent-observation {

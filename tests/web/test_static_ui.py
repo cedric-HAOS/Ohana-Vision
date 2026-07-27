@@ -293,6 +293,8 @@ def test_static_ui_exposes_graphical_configuration_views() -> None:
     assert 'id="architecture-mode-link"' in response.text
     assert 'id="architecture-add-service-to-device"' in response.text
     assert 'id="architecture-device-role"' in response.text
+    assert 'id="architecture-device-network-presence"' in response.text
+    assert 'id="device-details-node"' not in response.text
     assert 'id="plugins-configuration-panel"' in response.text
     assert 'id="plugin-cards"' in response.text
     assert 'id="plugin-configuration-form"' in response.text
@@ -371,16 +373,21 @@ def test_configuration_keeps_dhcp_page_accessible_when_unavailable() -> None:
     assert "La page DHCP reste accessible" in response.text
 
 
-def test_configuration_can_disable_network_presence_plugin() -> None:
-    """Network presence must expose a real disable path in Vision."""
-    response = make_client().get("/ui/configuration.js")
+def test_configuration_controls_network_presence_per_device() -> None:
+    """Network presence selection must live in the equipment editor."""
+    page = make_client().get("/ui/")
+    script = make_client().get("/ui/configuration.js")
 
-    assert response.status_code == 200
-    assert "Présence réseau activée" in response.text
-    assert "updatePluginConfigurationAvailability" in response.text
-    assert 'input:not(#plugin-enabled)' in response.text
-    assert "plugin-network-failure-threshold" in response.text
-    assert 'enabled: this.checked("plugin-enabled")' in response.text
+    assert page.status_code == 200
+    assert script.status_code == 200
+    assert 'id="architecture-device-network-presence"' in page.text
+    assert "Surveiller la présence réseau" in page.text
+    assert "network_presence_enabled" in script.text
+    assert "updateNetworkPresenceControl" in script.text
+    assert "Activation par équipement" in script.text
+    assert "Présence réseau activée" not in script.text
+    assert "plugin-network-failure-threshold" in script.text
+    assert 'plugin.id === "network"' in script.text
 
 
 def test_configuration_uses_dhcp_plugin_specific_fields() -> None:
@@ -417,6 +424,25 @@ def test_infrastructure_view_disables_desktop_vertical_scrolling() -> None:
     assert "overflow: hidden;" in response.text
     assert ".topology-container" in response.text
     assert "height: 100%;" in response.text
+
+
+def test_observations_and_configuration_use_full_height_layouts() -> None:
+    """Dense pages must fill the viewport while their content scrolls locally."""
+    responsive = make_client().get("/ui/styles/responsive.css")
+    observations = make_client().get("/ui/styles/observations.css")
+    configuration = make_client().get("/ui/styles/configuration.css")
+
+    assert responsive.status_code == 200
+    assert observations.status_code == 200
+    assert configuration.status_code == 200
+    assert 'data-active-view="observations"' in responsive.text
+    assert 'data-active-view="configuration-architecture"' in responsive.text
+    assert 'data-active-view="configuration-plugins"' in responsive.text
+    assert "grid-template-rows: auto auto minmax(0, 1fr)" in observations.text
+    assert "overflow-y: auto" in observations.text
+    assert ".configuration-card--architecture-workspace" in configuration.text
+    assert ".plugin-browser" in configuration.text
+    assert "grid-template-columns: minmax(20rem, 25rem) minmax(0, 1fr)" in configuration.text
 
 
 def test_static_ui_loads_navigation_as_javascript_module() -> None:
@@ -657,8 +683,11 @@ def test_device_details_module_renders_network_presence() -> None:
     assert "presenceStatusLabel" in response.text
     assert "presenceMethodLabel" in response.text
     assert "presenceFailureLabel" in response.text
+    assert "network_presence_enabled" in response.text
+    assert '"disabled"' in response.text
     assert "formatDate" in response.text
     assert "formatLatency" in response.text
+    assert "device-details-node" not in response.text
 
 
 def test_device_details_module_renders_connections() -> None:

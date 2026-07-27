@@ -2197,6 +2197,13 @@ class TopologyCanvas {
         const presence =
             this.devicePresence[device.device_id];
 
+        if (
+            device.metadata
+                ?.network_presence_enabled === false
+        ) {
+            return null;
+        }
+
         if (!device.address && !presence) {
             return null;
         }

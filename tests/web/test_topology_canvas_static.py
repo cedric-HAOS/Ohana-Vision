@@ -166,6 +166,7 @@ def test_topology_canvas_renders_network_presence() -> None:
     assert "topology-device--presence-" in response.text
     assert "topology-device__presence-indicator" in response.text
     assert "Présence réseau" in response.text
+    assert "network_presence_enabled" in response.text
     assert stylesheet.status_code == 200
     assert ".topology-device__presence {" in stylesheet.text
     assert ".topology-device--presence-present {" in stylesheet.text

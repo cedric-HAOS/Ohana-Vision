@@ -6,6 +6,32 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# v1.4.4 — Configuration par équipement et finitions UI — 2026-07-27
+
+## Corrigé
+
+- L’activation de la présence réseau est désormais définie sur chaque
+  équipement adressable dans la page **Architecture**.
+- Le plugin réseau conserve ses paramètres globaux de fréquence, délai et
+  seuil, sans proposer le bouton d’activation par équipement dans son
+  inspecteur.
+- La page **Observations** occupe toute la hauteur disponible et fait défiler uniquement la liste.
+- L’information technique **Nœud** a été retirée de la carte de détail d’un équipement.
+
+## Modifié
+
+- La page **Architecture** adopte un véritable espace de travail plein écran
+  avec une cartographie extensible et un inspecteur latéral indépendant.
+- La page **Plugins** utilise une disposition maître-détail plus lisible :
+  liste compacte à gauche et inspecteur principal à droite.
+- Les équipements dont la présence réseau est désactivée ne présentent plus
+  d’indicateur de présence dans la topologie.
+
+## Qualité
+
+- Tests statiques et tests de construction de la configuration réseau adaptés
+  au réglage `metadata.network_presence_enabled`.
+
 # v1.4.3 — Vue d’ensemble et navigation de configuration — 2026-07-27
 
 ## Modifié

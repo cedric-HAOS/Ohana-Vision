@@ -1,5 +1,7 @@
 .configuration-view {
     display: grid;
+    min-height: 100%;
+    grid-template-rows: auto auto minmax(0, 1fr);
     gap: var(--ohana-space-4);
     padding: var(--ohana-space-4);
 }
@@ -104,7 +106,9 @@
 }
 
 .configuration-grid--architecture {
-    grid-template-columns: minmax(0, 1.8fr) minmax(19rem, 0.72fr);
+    grid-template-columns: minmax(0, 1fr) minmax(23rem, 27rem);
+    min-height: 0;
+    align-items: stretch;
 }
 
 .configuration-card {
@@ -299,8 +303,7 @@
 }
 
 .architecture-board {
-    height: clamp(34rem, 68vh, 48rem);
-    min-height: 34rem;
+    min-height: 0;
     overflow: auto;
     border:
         var(--ohana-border-width-thin)
@@ -308,6 +311,52 @@
         var(--ohana-border-subtle);
     border-radius: var(--ohana-radius-md);
     background: var(--ohana-background-canvas);
+}
+
+.configuration-card--architecture-workspace {
+    display: grid;
+    min-height: 0;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    overflow: hidden;
+}
+
+.architecture-workspace-heading {
+    align-items: center;
+    padding-bottom: var(--ohana-space-3);
+    border-bottom:
+        var(--ohana-border-width-thin)
+        solid
+        var(--ohana-border-subtle);
+}
+
+.configuration-editor--architecture {
+    position: static;
+    max-height: 100%;
+    overflow-y: auto;
+}
+
+.architecture-presence-toggle {
+    align-items: flex-start;
+    padding: var(--ohana-space-3);
+    border:
+        var(--ohana-border-width-thin)
+        solid
+        var(--ohana-border-subtle);
+    border-radius: var(--ohana-radius-sm);
+    background: var(--ohana-background-canvas);
+}
+
+.architecture-presence-toggle > span {
+    display: grid;
+    gap: var(--ohana-space-1);
+}
+
+.architecture-presence-toggle small {
+    font-weight: var(--ohana-font-weight-regular);
+}
+
+.architecture-presence-toggle:has(input:disabled) {
+    opacity: 0.58;
 }
 
 .architecture-mode-switch {
@@ -477,8 +526,8 @@
     display: grid;
     gap: 0.15rem;
     width: min(9rem, calc(100% - 0.75rem));
-    min-height: 6.8rem;
-    padding: var(--ohana-space-3);
+    min-height: 6.25rem;
+    padding: 0.8rem;
     border:
         var(--ohana-border-width-thin)
         solid
@@ -661,13 +710,34 @@
 }
 
 .configuration-grid--plugins {
-    grid-template-columns: minmax(0, 1.45fr) minmax(22rem, 0.8fr);
+    grid-template-columns: minmax(20rem, 25rem) minmax(0, 1fr);
+    min-height: 0;
+    align-items: stretch;
+}
+
+.plugin-browser {
+    display: grid;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+}
+
+.plugin-browser__heading {
+    padding-bottom: var(--ohana-space-3);
+    border-bottom:
+        var(--ohana-border-width-thin)
+        solid
+        var(--ohana-border-subtle);
 }
 
 .plugin-cards {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--ohana-space-3);
+    min-height: 0;
+    align-content: start;
+    grid-template-columns: 1fr;
+    gap: var(--ohana-space-2);
+    padding-right: var(--ohana-space-1);
+    overflow-y: auto;
 }
 
 .plugin-card {
@@ -675,7 +745,7 @@
     grid-template-columns: auto minmax(0, 1fr);
     gap: var(--ohana-space-3);
     width: 100%;
-    padding: var(--ohana-space-4);
+    padding: var(--ohana-space-3);
     border:
         var(--ohana-border-width-thin)
         solid
@@ -749,8 +819,11 @@
 }
 
 .plugin-card__description {
-    min-height: 2.7em;
+    display: -webkit-box;
+    overflow: hidden;
     font-size: var(--ohana-font-size-sm);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
 .plugin-card__metrics {
@@ -813,6 +886,48 @@
         );
     color: var(--ohana-health-critical);
     background: var(--ohana-health-critical-soft);
+}
+
+.configuration-editor--plugins {
+    position: static;
+    max-height: 100%;
+    overflow-y: auto;
+}
+
+.plugin-scope {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ohana-space-3);
+    padding: var(--ohana-space-3);
+    border:
+        var(--ohana-border-width-thin)
+        solid
+        color-mix(
+            in srgb,
+            var(--ohana-brand-primary) 28%,
+            var(--ohana-border-subtle)
+        );
+    border-radius: var(--ohana-radius-sm);
+    background: var(--ohana-brand-primary-soft);
+}
+
+.plugin-scope__icon {
+    width: 0.75rem;
+    height: 0.75rem;
+    flex: 0 0 0.75rem;
+    margin-top: 0.2rem;
+    border-radius: var(--ohana-radius-round);
+    background: var(--ohana-brand-primary);
+    box-shadow: 0 0 0 0.25rem var(--ohana-brand-primary-soft);
+}
+
+.plugin-scope > span:last-child {
+    display: grid;
+    gap: var(--ohana-space-1);
+}
+
+.plugin-scope small {
+    color: var(--ohana-text-muted);
 }
 
 .plugin-inspector__empty,
