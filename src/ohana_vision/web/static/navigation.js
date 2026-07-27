@@ -1,5 +1,11 @@
 "use strict";
 
+const CONFIGURATION_ROUTES = Object.freeze({
+    "configuration-dhcp": "configuration",
+    "configuration-architecture": "configuration",
+    "configuration-plugins": "configuration",
+});
+
 /**
  * Controls navigation between the main Ohana-Vision views.
  */
@@ -63,6 +69,8 @@ export class NavigationController {
             updateHash = true,
         } = {},
     ) {
+        viewName = this.normalizeRoute(viewName);
+
         if (!viewName || !this.hasView(viewName)) {
             return false;
         }
@@ -126,6 +134,8 @@ export class NavigationController {
      *
      * The overview combines the dashboard, infrastructure
      * and timeline without duplicating their DOM elements.
+     * Configuration routes share one view and select their
+     * own panel through the configuration controller.
      *
      * @param {string} viewName
      * @returns {Set<string>}
@@ -140,13 +150,28 @@ export class NavigationController {
         }
 
         return new Set([
-            viewName,
+            this.routeView(viewName),
         ]);
     }
 
+    normalizeRoute(viewName) {
+        if (viewName === "configuration") {
+            return "configuration-dhcp";
+        }
+
+        return viewName;
+    }
+
+    routeView(viewName) {
+        return CONFIGURATION_ROUTES[viewName]
+            ?? viewName;
+    }
+
     hasView(viewName) {
+        const routeView = this.routeView(viewName);
+
         return this.views.some(
-            (view) => view.dataset.view === viewName,
+            (view) => view.dataset.view === routeView,
         );
     }
 

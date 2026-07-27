@@ -234,6 +234,10 @@ export class ApplicationController {
             viewName,
         );
 
+        this.timeline.setCompactMode(
+            viewName === "overview",
+        );
+
         if (
             viewName === "overview"
             || viewName === "infrastructure"
@@ -241,7 +245,13 @@ export class ApplicationController {
             this.topology.reflow();
         }
 
-        if (viewName === "configuration") {
+        if (viewName.startsWith("configuration-")) {
+            this.configuration.activateSection(
+                viewName.replace(
+                    "configuration-",
+                    "",
+                ),
+            );
             void this.configuration.load();
         }
     }

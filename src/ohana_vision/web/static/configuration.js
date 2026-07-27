@@ -32,9 +32,11 @@ const PLUGIN_STATUS_LABELS = Object.freeze({
 });
 
 const PLUGIN_ICONS = Object.freeze({
+    dhcp: "/ui/assets/icons/network/router.svg",
     dns: "/ui/assets/icons/network/globe-2.svg",
     ntp: "/ui/assets/icons/network/clock-3.svg",
     mqtt: "/ui/assets/icons/services/radio.svg",
+    network: "/ui/assets/icons/infrastructure/network.svg",
 });
 
 /**
@@ -43,6 +45,8 @@ const PLUGIN_ICONS = Object.freeze({
 export class ConfigurationController {
     constructor() {
         this.dhcp = null;
+        this.dhcpAvailable = false;
+        this.dhcpLoadError = null;
         this.infrastructure = null;
         this.plugins = [];
         this.pluginsAvailable = false;
@@ -64,11 +68,6 @@ export class ConfigurationController {
         return {
             error: byId("configuration-error"),
             notice: byId("configuration-notice"),
-            tabs: Array.from(
-                document.querySelectorAll(
-                    "[data-configuration-tab]",
-                ),
-            ),
             panels: Array.from(
                 document.querySelectorAll(
                     "[data-configuration-panel]",
@@ -156,17 +155,6 @@ export class ConfigurationController {
     }
 
     initialize() {
-        this.elements.tabs.forEach((tab) => {
-            tab.addEventListener(
-                "click",
-                () => {
-                    this.activateTab(
-                        tab.dataset.configurationTab,
-                    );
-                },
-            );
-        });
-
         this.elements.dhcpSettingsForm
             ?.addEventListener(
                 "submit",
@@ -402,26 +390,35 @@ export class ConfigurationController {
                 API.administrationInfrastructure,
             );
             this.dhcp = null;
+            this.dhcpAvailable = operations.includes(
+                "dhcp.read",
+            );
+            this.dhcpLoadError = null;
 
-            if (operations.includes("dhcp.read")) {
+            if (this.dhcpAvailable) {
                 try {
                     this.dhcp = await fetchJson(
                         API.administrationDHCP,
                     );
                 } catch (error) {
+                    this.dhcpLoadError =
+                        this.errorMessage(error);
                     this.showNotice(
                         "Le serveur DHCP est "
-                        + "indisponible, mais "
-                        + "l’architecture reste "
-                        + "modifiable : "
-                        + this.errorMessage(error),
+                        + "temporairement indisponible. "
+                        + "La page DHCP reste accessible : "
+                        + this.dhcpLoadError,
                     );
                 }
             } else {
+                this.dhcpLoadError =
+                    "Ohana-Agent n’expose pas "
+                    + "l’administration DHCP dans "
+                    + "cet environnement.";
                 this.showNotice(
-                    "Le serveur DHCP n’est pas "
-                    + "activé dans cet environnement. "
-                    + "L’architecture reste modifiable.",
+                    this.dhcpLoadError
+                    + " L’architecture reste "
+                    + "modifiable.",
                 );
             }
 
@@ -430,22 +427,6 @@ export class ConfigurationController {
                 "plugins.read",
             );
             this.pluginsLoadError = null;
-
-            const pluginsTab =
-                this.elements.tabs.find(
-                    (tab) =>
-                        tab.dataset.configurationTab
-                        === "plugins",
-                );
-
-            if (pluginsTab) {
-                pluginsTab.disabled =
-                    !this.pluginsAvailable;
-                pluginsTab.setAttribute(
-                    "aria-disabled",
-                    String(!this.pluginsAvailable),
-                );
-            }
 
             if (this.pluginsAvailable) {
                 try {
@@ -468,23 +449,10 @@ export class ConfigurationController {
             if (this.dhcp) {
                 this.renderDHCP();
             } else {
-                const dhcpTab =
-                    this.elements.tabs.find(
-                        (tab) =>
-                            tab.dataset
-                                .configurationTab
-                            === "dhcp",
-                    );
-
-                if (dhcpTab) {
-                    dhcpTab.disabled = true;
-                    dhcpTab.setAttribute(
-                        "aria-disabled",
-                        "true",
-                    );
-                }
-
-                this.activateTab("architecture");
+                this.renderDHCPUnavailable(
+                    this.dhcpLoadError
+                    ?? "Configuration DHCP indisponible.",
+                );
             }
         } catch (error) {
             showError(
@@ -500,32 +468,33 @@ export class ConfigurationController {
         await this.load();
     }
 
-    activateTab(tabName) {
-        this.elements.tabs.forEach((tab) => {
-            const active =
-                tab.dataset.configurationTab
-                === tabName;
-            tab.classList.toggle(
-                "is-active",
-                active,
-            );
-            tab.setAttribute(
-                "aria-selected",
-                String(active),
-            );
-        });
+    activateSection(sectionName) {
+        const availableSections = new Set(
+            this.elements.panels.map(
+                (panel) =>
+                    panel.dataset.configurationPanel,
+            ),
+        );
+
+        if (!availableSections.has(sectionName)) {
+            return false;
+        }
 
         this.elements.panels.forEach((panel) => {
             panel.hidden =
                 panel.dataset.configurationPanel
-                !== tabName;
+                !== sectionName;
         });
+
+        return true;
     }
 
     renderDHCP() {
         if (!this.dhcp) {
             return;
         }
+
+        this.setDHCPControlsEnabled(true);
 
         const settings = this.dhcp.settings;
         const reservations =
@@ -592,6 +561,52 @@ export class ConfigurationController {
             reservations,
             leases,
         );
+    }
+
+    renderDHCPUnavailable(message) {
+        this.setDHCPControlsEnabled(false);
+
+        if (this.elements.dhcpServer) {
+            this.elements.dhcpServer.textContent = "Indisponible";
+        }
+        if (this.elements.dhcpRangeSummary) {
+            this.elements.dhcpRangeSummary.textContent = "—";
+        }
+        if (this.elements.dhcpLeaseDurationSummary) {
+            this.elements.dhcpLeaseDurationSummary.textContent =
+                "Administration non chargée";
+        }
+        if (this.elements.dhcpActiveLeasesCount) {
+            this.elements.dhcpActiveLeasesCount.textContent = "—";
+        }
+        if (this.elements.dhcpReservationsCount) {
+            this.elements.dhcpReservationsCount.textContent =
+                "Réessayez avec Actualiser";
+        }
+        if (this.elements.dhcpTable) {
+            this.elements.dhcpTable.innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        ${escapeHtml(message)}
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    setDHCPControlsEnabled(enabled) {
+        this.elements.dhcpSettingsForm
+            ?.querySelectorAll(
+                "input, select, button",
+            )
+            .forEach((control) => {
+                control.disabled = !enabled;
+            });
+
+        if (this.elements.dhcpAddReservation) {
+            this.elements.dhcpAddReservation.disabled =
+                !enabled;
+        }
     }
 
     renderDHCPTable(
@@ -1512,6 +1527,10 @@ export class ConfigurationController {
             device.kind,
         );
         this.setValue(
+            "architecture-device-role",
+            device.metadata?.role ?? "",
+        );
+        this.setValue(
             "architecture-device-address",
             node?.endpoint?.address
                 ?? device.address
@@ -1534,6 +1553,10 @@ export class ConfigurationController {
         this.setValue(
             "architecture-device-kind",
             "server",
+        );
+        this.setValue(
+            "architecture-device-role",
+            "",
         );
         this.setValue(
             "architecture-device-address",
@@ -1832,6 +1855,9 @@ export class ConfigurationController {
         const address = this.value(
             "architecture-device-address",
         );
+        const role = this.value(
+            "architecture-device-role",
+        );
 
         if (!name) {
             return;
@@ -1859,7 +1885,11 @@ export class ConfigurationController {
                 ),
                 node: address ? id : null,
                 address: address || null,
-                metadata: {},
+                metadata: role
+                    ? {
+                        role,
+                    }
+                    : {},
             };
             this.infrastructure.topology.devices
                 .push(device);
@@ -1869,6 +1899,14 @@ export class ConfigurationController {
                 "architecture-device-kind",
             );
             device.address = address || null;
+        }
+
+        device.metadata ??= {};
+
+        if (role) {
+            device.metadata.role = role;
+        } else {
+            delete device.metadata.role;
         }
 
         if (address) {
@@ -2581,14 +2619,63 @@ export class ConfigurationController {
             <div class="configuration-form-grid plugin-configuration-fields">
                 <label class="configuration-check configuration-span-2">
                     <input id="plugin-enabled" type="checkbox" ${plugin.enabled ? "checked" : ""}>
-                    Plugin activé
+                    ${escapeHtml(this.pluginEnabledLabel(plugin))}
                 </label>
                 ${this.pluginConfigurationFields(plugin)}
             </div>
             <p class="plugin-inspector__hint">
-                Les serveurs et courtiers ciblés proviennent des services déclarés dans l’onglet Architecture.
+                ${escapeHtml(this.pluginConfigurationHint(plugin))}
             </p>
         `;
+
+        document.getElementById("plugin-enabled")
+            ?.addEventListener(
+                "change",
+                () => {
+                    this.updatePluginConfigurationAvailability();
+                },
+            );
+        this.updatePluginConfigurationAvailability();
+    }
+
+    pluginEnabledLabel(plugin) {
+        if (plugin.id === "network") {
+            return "Présence réseau activée";
+        }
+
+        if (plugin.id === "dhcp") {
+            return "Observation DHCP activée";
+        }
+
+        return "Plugin activé";
+    }
+
+    pluginConfigurationHint(plugin) {
+        if (plugin.id === "network") {
+            return "Les équipements adressables sont découverts automatiquement depuis l’onglet Architecture.";
+        }
+
+        if (plugin.id === "dhcp") {
+            return "Cette observation surveille le service et l’occupation du pool. Les baux et réservations restent gérés dans la page DHCP.";
+        }
+
+        return "Les serveurs et courtiers ciblés proviennent des services déclarés dans l’onglet Architecture.";
+    }
+
+    updatePluginConfigurationAvailability() {
+        const enabled = this.checked("plugin-enabled");
+
+        this.elements.pluginInspectorContent
+            ?.querySelectorAll(
+                "input:not(#plugin-enabled), select, textarea",
+            )
+            .forEach((control) => {
+                control.disabled = !enabled;
+            });
+
+        if (this.elements.pluginTest) {
+            this.elements.pluginTest.disabled = !enabled;
+        }
     }
 
     pluginConfigurationFields(plugin) {
@@ -2625,6 +2712,45 @@ export class ConfigurationController {
                 'min="0" step="1" required',
             )}
         `;
+
+        if (plugin.id === "dhcp") {
+            return `
+                ${numberField(
+                    "plugin-interval-seconds",
+                    "Intervalle (secondes)",
+                    configuration.interval_seconds ?? 60,
+                    'min="1" required',
+                )}
+                ${numberField(
+                    "plugin-timeout",
+                    "Délai maximal (secondes)",
+                    configuration.timeout ?? 3,
+                    'min="0.1" step="0.1" required',
+                )}
+                <label class="configuration-check">
+                    <input id="plugin-dhcp-check-service" type="checkbox" ${configuration.check_service_active !== false ? "checked" : ""}>
+                    Vérifier le service dnsmasq
+                </label>
+                ${numberField(
+                    "plugin-dhcp-maximum-pool-usage",
+                    "Occupation maximale du pool (%)",
+                    configuration.policy?.maximum_pool_usage_percent ?? 90,
+                    'min="0.1" max="100" step="0.1" required',
+                )}
+            `;
+        }
+
+        if (plugin.id === "network") {
+            return `
+                ${common}
+                ${numberField(
+                    "plugin-network-failure-threshold",
+                    "Échecs avant absence",
+                    configuration.failure_threshold ?? 3,
+                    'min="1" step="1" required',
+                )}
+            `;
+        }
 
         if (plugin.id === "dns") {
             return `
@@ -2740,11 +2866,33 @@ export class ConfigurationController {
         configuration.timeout = Number(
             this.value("plugin-timeout"),
         );
-        configuration.retries = Number(
-            this.value("plugin-retries"),
-        );
 
-        if (plugin.id === "dns") {
+        if (plugin.id === "dhcp") {
+            delete configuration.retries;
+            configuration.check_service_active =
+                this.checked(
+                    "plugin-dhcp-check-service",
+                );
+            configuration.policy = {
+                maximum_pool_usage_percent: Number(
+                    this.value(
+                        "plugin-dhcp-maximum-pool-usage",
+                    ),
+                ),
+            };
+        } else {
+            configuration.retries = Number(
+                this.value("plugin-retries"),
+            );
+        }
+
+        if (plugin.id === "network") {
+            configuration.failure_threshold = Number(
+                this.value(
+                    "plugin-network-failure-threshold",
+                ),
+            );
+        } else if (plugin.id === "dns") {
             configuration.queries = this.listValue(
                 "plugin-dns-queries",
             );

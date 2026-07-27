@@ -1162,22 +1162,3 @@
     );
 }
 
-.application-views[data-active-view="overview"]
-.dashboard-layout {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-        "kpis"
-        "topology"
-        "timeline";
-}
-
-.application-views[data-active-view="overview"]
-.dashboard-primary {
-    min-height: clamp(25rem, 58vh, 42rem);
-}
-
-.application-views[data-active-view="overview"]
-.dashboard-timeline {
-    min-height: 8.5rem;
-    max-height: 12rem;
-}

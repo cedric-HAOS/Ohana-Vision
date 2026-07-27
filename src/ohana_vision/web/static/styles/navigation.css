@@ -340,3 +340,24 @@
     -webkit-mask-image:
         url("../assets/icons/navigation/settings.svg");
 }
+
+.sidebar-navigation__icon--dhcp {
+    mask-image:
+        url("../assets/icons/network/router.svg");
+    -webkit-mask-image:
+        url("../assets/icons/network/router.svg");
+}
+
+.sidebar-navigation__icon--architecture {
+    mask-image:
+        url("../assets/icons/navigation/network.svg");
+    -webkit-mask-image:
+        url("../assets/icons/navigation/network.svg");
+}
+
+.sidebar-navigation__icon--plugins {
+    mask-image:
+        url("../assets/icons/plugins/puzzle.svg");
+    -webkit-mask-image:
+        url("../assets/icons/plugins/puzzle.svg");
+}

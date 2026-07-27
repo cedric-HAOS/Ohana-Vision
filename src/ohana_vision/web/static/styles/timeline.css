@@ -775,3 +775,122 @@
     border-radius: var(--ohana-radius-round);
     background: var(--ohana-border-default);
 }
+.timeline-current-states {
+    display: grid;
+    gap: var(--ohana-space-2);
+    padding: var(--ohana-space-3);
+}
+
+.timeline-current-state {
+    display: grid;
+    min-width: 0;
+    grid-template-columns:
+        auto
+        minmax(0, 1fr)
+        auto;
+    align-items: center;
+    gap: var(--ohana-space-3);
+
+    padding:
+        var(--ohana-space-3)
+        var(--ohana-space-3);
+
+    border:
+        var(--ohana-border-width-thin)
+        solid
+        var(--ohana-border-subtle);
+    border-radius: var(--ohana-radius-sm);
+
+    color: var(--ohana-text-primary);
+    background: var(--ohana-background-surface-raised);
+
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+
+    transition:
+        border-color var(--ohana-duration-fast)
+            var(--ohana-easing-standard),
+        background-color var(--ohana-duration-fast)
+            var(--ohana-easing-standard);
+}
+
+.timeline-current-state:hover {
+    border-color:
+        color-mix(
+            in srgb,
+            var(--ohana-brand-primary) 30%,
+            var(--ohana-border-default)
+        );
+    background: var(--ohana-background-surface);
+}
+
+.timeline-current-state:focus-visible {
+    outline:
+        var(--ohana-border-width-medium)
+        solid
+        var(--ohana-border-focus);
+    outline-offset: 2px;
+}
+
+.timeline-current-state__identity {
+    display: grid;
+    min-width: 0;
+    gap: var(--ohana-space-1);
+}
+
+.timeline-current-state__identity strong,
+.timeline-current-state__identity small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.timeline-current-state__identity strong {
+    font-size: var(--ohana-font-size-sm);
+}
+
+.timeline-current-state__identity small,
+.timeline-current-state time {
+    color: var(--ohana-text-muted);
+    font-size: var(--ohana-font-size-xs);
+}
+
+.timeline-current-state time {
+    font-family: var(--ohana-font-family-mono);
+    white-space: nowrap;
+}
+
+.application-views[data-active-view="overview"]
+.dashboard-timeline {
+    grid-template-rows:
+        auto
+        minmax(0, 1fr);
+}
+
+.application-views[data-active-view="overview"]
+.timeline-header {
+    padding:
+        var(--ohana-space-3)
+        var(--ohana-space-4);
+}
+
+.application-views[data-active-view="overview"]
+.timeline-range,
+.application-views[data-active-view="overview"]
+.timeline-legend {
+    display: none;
+}
+
+.application-views[data-active-view="overview"]
+#timeline-content {
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color:
+        rgb(125 162 255 / 25%)
+        transparent;
+}

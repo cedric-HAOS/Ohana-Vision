@@ -6,6 +6,51 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# v1.4.3 — Vue d’ensemble et navigation de configuration — 2026-07-27
+
+## Modifié
+
+- La vue d’ensemble place désormais l’état courant de l’infrastructure à droite
+  de la topologie.
+- Le panneau latéral n’affiche que le dernier état connu de chaque nœud et
+  dispose d’un défilement vertical lorsque la liste dépasse la hauteur
+  disponible.
+- La topologie utilise toute la hauteur restante sous les indicateurs.
+- Les pages **DHCP**, **Architecture** et **Plugins** sont maintenant accessibles
+  directement depuis le menu **Configuration**, sans onglets internes.
+
+## Ajouté
+
+- Le formulaire d’un équipement permet de renseigner son rôle.
+- Le rôle est conservé dans `topology.devices[].metadata.role` et reste affiché
+  dans la carte et l’inspecteur de l’équipement.
+
+## Qualité
+
+- Tests statiques adaptés à la navigation séparée, au rôle d’équipement et au
+  mode compact de la timeline.
+
+# v1.4.2 — Configuration réseau et DHCP — 2026-07-27
+
+## Corrigé
+
+- La présence réseau peut être désactivée depuis l’onglet **Plugins** sans que
+  les champs obligatoires du formulaire empêchent l’application de
+  `enabled: false`.
+- Le formulaire de présence réseau expose désormais le seuil d’échecs avant
+  de déclarer un équipement absent.
+- L’onglet **Baux DHCP** reste accessible lorsque l’administration DHCP est
+  indisponible ou non exposée par Agent ; un état explicite remplace la
+  désactivation complète de l’onglet.
+- Les contrôles DHCP sont protégés tant que la configuration n’est pas chargée.
+- Le nouveau plugin d’observation DHCP utilise un formulaire conforme au modèle
+  strict d’Agent, sans champ `retries` non supporté.
+
+## Qualité
+
+- Tests statiques ajoutés pour la désactivation de la présence réseau,
+  l’accessibilité du panneau DHCP et le formulaire du plugin DHCP.
+
 # v1.4.0 — Présence réseau des équipements — 2026-07-27
 
 ## Ajouté

@@ -93,10 +93,17 @@ export class TimelineController {
 
         this.state = state;
         this.onNodeSelected = onNodeSelected;
+        this.compactMode = false;
 
         this.elements = {
             content: document.querySelector(
                 "#timeline-content",
+            ),
+            title: document.querySelector(
+                "#timeline-heading",
+            ),
+            kicker: document.querySelector(
+                ".dashboard-timeline .panel-heading__kicker",
             ),
             periodCount: document.querySelector(
                 "#timeline-period-count",
@@ -151,6 +158,33 @@ export class TimelineController {
     }
 
     /**
+     * Switch between the compact overview and the full history.
+     *
+     * @param {boolean} compactMode
+     */
+    setCompactMode(compactMode) {
+        const nextMode = Boolean(compactMode);
+
+        this.compactMode = nextMode;
+
+        if (this.elements.kicker) {
+            this.elements.kicker.textContent =
+                nextMode
+                    ? "Infrastructure"
+                    : "Historique";
+        }
+
+        if (this.elements.title) {
+            this.elements.title.textContent =
+                nextMode
+                    ? "État courant"
+                    : "Timeline de l’infrastructure";
+        }
+
+        this.render();
+    }
+
+    /**
      * Return all loaded periods.
      *
      * @returns {TimelinePeriod[]}
@@ -168,6 +202,11 @@ export class TimelineController {
         this.updatePeriods();
 
         if (!this.elements.content) {
+            return;
+        }
+
+        if (this.compactMode) {
+            this.renderCurrentStates();
             return;
         }
 
@@ -236,6 +275,92 @@ export class TimelineController {
         `;
 
         this.bindTimelineInteractions();
+    }
+
+    renderCurrentStates() {
+        const currentStates =
+            this.periodGroups
+                .map((group) => ({
+                    nodeId: group.nodeId,
+                    period: group.periods.at(-1) ?? null,
+                }))
+                .filter((group) => group.period !== null);
+
+        this.renderPeriodCount(
+            currentStates.length,
+        );
+
+        if (currentStates.length === 0) {
+            this.elements.content.innerHTML = `
+                <div
+                    class="timeline-empty"
+                    role="status"
+                >
+                    <div class="timeline-empty__content">
+                        <strong>
+                            Aucun état courant
+                        </strong>
+                        <p>
+                            Les états apparaîtront après la
+                            première observation d’Agent.
+                        </p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        this.elements.content.innerHTML = `
+            <div class="timeline-current-states">
+                ${currentStates
+                    .map((group) =>
+                        this.renderCurrentState(group),
+                    )
+                    .join("")}
+            </div>
+        `;
+
+        this.bindTimelineInteractions();
+    }
+
+    renderCurrentState({
+        nodeId,
+        period,
+    }) {
+        const status = normalizeHealthStatus(
+            period.status,
+        );
+        const statusLabel = healthStatusLabel(
+            status,
+        );
+        const startedAt = this.timelineTimeLabel(
+            period.startedAt,
+        );
+
+        return `
+            <button
+                class="timeline-current-state"
+                type="button"
+                data-timeline-node="${escapeHtml(nodeId)}"
+                title="Sélectionner ${escapeHtml(nodeId)}"
+            >
+                <span
+                    aria-hidden="true"
+                    class="timeline-row__status
+                        timeline-row__status--${status}"
+                ></span>
+                <span class="timeline-current-state__identity">
+                    <strong>${escapeHtml(nodeId)}</strong>
+                    <small>${escapeHtml(statusLabel)}</small>
+                </span>
+                <time datetime="${escapeHtml(
+                    period.startedAt.toISOString(),
+                )}">
+                    ${period.isOpen ? "Depuis" : "À"}
+                    ${escapeHtml(startedAt)}
+                </time>
+            </button>
+        `;
     }
 
     /**

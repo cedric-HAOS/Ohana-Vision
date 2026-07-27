@@ -277,19 +277,22 @@ def test_static_ui_declares_all_navigation_views() -> None:
 
 
 def test_static_ui_exposes_graphical_configuration_views() -> None:
-    """DHCP and architecture must be editable without YAML."""
+    """Configuration pages must be available without YAML or inner tabs."""
     response = make_client().get("/ui/")
 
     assert response.status_code == 200
-    assert 'data-navigation-target="configuration"' in response.text
+    assert 'data-navigation-target="configuration-dhcp"' in response.text
+    assert 'data-navigation-target="configuration-architecture"' in response.text
+    assert 'data-navigation-target="configuration-plugins"' in response.text
     assert 'data-view="configuration"' in response.text
+    assert 'data-configuration-tab=' not in response.text
     assert 'id="dhcp-settings-form"' in response.text
     assert 'id="dhcp-reservations-table"' in response.text
     assert 'id="architecture-board"' in response.text
     assert 'id="architecture-mode-move"' in response.text
     assert 'id="architecture-mode-link"' in response.text
     assert 'id="architecture-add-service-to-device"' in response.text
-    assert 'data-configuration-tab="plugins"' in response.text
+    assert 'id="architecture-device-role"' in response.text
     assert 'id="plugins-configuration-panel"' in response.text
     assert 'id="plugin-cards"' in response.text
     assert 'id="plugin-configuration-form"' in response.text
@@ -332,6 +335,63 @@ def test_static_ui_exposes_configuration_controller() -> None:
     assert 'return "ethernet-100m"' in response.text
     assert "Enregistrer la " in response.text
     assert "DHCP de ${reservation.hostname} ?" in response.text
+
+
+def test_configuration_persists_device_role_in_metadata() -> None:
+    """The architecture editor must preserve and update a device role."""
+    response = make_client().get("/ui/configuration.js")
+
+    assert response.status_code == 200
+    assert '"architecture-device-role"' in response.text
+    assert "device.metadata?.role" in response.text
+    assert "device.metadata.role = role" in response.text
+    assert "delete device.metadata.role" in response.text
+
+
+def test_timeline_exposes_compact_current_state_mode() -> None:
+    """Overview must render only the latest state of each timeline node."""
+    response = make_client().get("/ui/timeline.js")
+
+    assert response.status_code == 200
+    assert "setCompactMode(compactMode)" in response.text
+    assert "renderCurrentStates()" in response.text
+    assert "group.periods.at(-1)" in response.text
+    assert "timeline-current-state" in response.text
+
+
+def test_configuration_keeps_dhcp_page_accessible_when_unavailable() -> None:
+    """A DHCP read failure must not hide its dedicated configuration page."""
+    response = make_client().get("/ui/configuration.js")
+
+    assert response.status_code == 200
+    assert "renderDHCPUnavailable" in response.text
+    assert "setDHCPControlsEnabled(false)" in response.text
+    assert "activateSection(sectionName)" in response.text
+    assert "dhcpTab.disabled" not in response.text
+    assert "La page DHCP reste accessible" in response.text
+
+
+def test_configuration_can_disable_network_presence_plugin() -> None:
+    """Network presence must expose a real disable path in Vision."""
+    response = make_client().get("/ui/configuration.js")
+
+    assert response.status_code == 200
+    assert "Présence réseau activée" in response.text
+    assert "updatePluginConfigurationAvailability" in response.text
+    assert 'input:not(#plugin-enabled)' in response.text
+    assert "plugin-network-failure-threshold" in response.text
+    assert 'enabled: this.checked("plugin-enabled")' in response.text
+
+
+def test_configuration_uses_dhcp_plugin_specific_fields() -> None:
+    """The DHCP observation form must match Agent's strict model."""
+    response = make_client().get("/ui/configuration.js")
+
+    assert response.status_code == 200
+    assert "plugin-dhcp-check-service" in response.text
+    assert "plugin-dhcp-maximum-pool-usage" in response.text
+    assert "delete configuration.retries" in response.text
+    assert "Les baux et réservations restent gérés" in response.text
 
 
 def test_configuration_deletes_device_dependencies_coherently() -> None:
@@ -1619,14 +1679,17 @@ def test_navigation_overview_combines_main_dashboard_views() -> None:
 
 
 def test_navigation_specialized_views_remain_independent() -> None:
-    """Specialized navigation targets must remain available."""
+    """Specialized and configuration routes must remain available."""
     response = make_client().get(
         "/ui/navigation.js",
     )
 
     assert response.status_code == 200
     assert "return new Set([" in response.text
-    assert "viewName," in response.text
+    assert "this.routeView(viewName)" in response.text
+    assert '"configuration-dhcp": "configuration"' in response.text
+    assert '"configuration-architecture": "configuration"' in response.text
+    assert '"configuration-plugins": "configuration"' in response.text
 
 
 def test_application_reflows_visible_topology_after_navigation() -> None:
@@ -2094,23 +2157,26 @@ def test_timeline_renders_period_durations() -> None:
     assert "transform: translateY(-50%);" in stylesheet_response.text
 
 
-def test_overview_reserves_enough_space_for_timeline() -> None:
-    """Overview must not clip the complete infrastructure timeline."""
+def test_overview_places_current_state_timeline_beside_topology() -> None:
+    """Overview must reserve its remaining height for topology and state list."""
     client = make_client()
 
     layout_response = client.get(
         "/ui/styles/layout.css",
     )
-    responsive_response = client.get(
-        "/ui/styles/responsive.css",
+    timeline_response = client.get(
+        "/ui/styles/timeline.css",
     )
 
     assert layout_response.status_code == 200
-    assert responsive_response.status_code == 200
+    assert timeline_response.status_code == 200
 
-    assert "minmax(12rem, auto)" in layout_response.text
+    assert '"topology timeline"' in layout_response.text
+    assert "minmax(0, 1fr)" in layout_response.text
     assert 'data-active-view="overview"' in layout_response.text
-    assert "min-height: 12rem;" in responsive_response.text
+    assert ".timeline-current-states" in timeline_response.text
+    assert "overflow-y: auto;" in timeline_response.text
+    assert ".timeline-range," in timeline_response.text
 
 
 def test_timeline_periods_expose_accessible_details() -> None:

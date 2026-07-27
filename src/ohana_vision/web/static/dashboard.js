@@ -24,9 +24,17 @@ const VIEW_HEADERS = Object.freeze({
         kicker: "Activité",
         title: "Observations",
     },
-    configuration: {
+    "configuration-dhcp": {
         kicker: "Configuration",
-        title: "Réseau & architecture",
+        title: "DHCP",
+    },
+    "configuration-architecture": {
+        kicker: "Configuration",
+        title: "Architecture",
+    },
+    "configuration-plugins": {
+        kicker: "Configuration",
+        title: "Plugins",
     },
 });
 

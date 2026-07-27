@@ -74,13 +74,31 @@
      <p class="sidebar-navigation__title">
       Configuration
      </p>
-     <button class="sidebar-navigation__item" data-navigation-target="configuration" type="button">
+     <button class="sidebar-navigation__item" data-navigation-target="configuration-dhcp" type="button">
       <span
     aria-hidden="true"
-    class="sidebar-navigation__icon sidebar-navigation__icon--configuration"
+    class="sidebar-navigation__icon sidebar-navigation__icon--dhcp"
 ></span>
       <span>
-       Réseau &amp; architecture
+       DHCP
+      </span>
+     </button>
+     <button class="sidebar-navigation__item" data-navigation-target="configuration-architecture" type="button">
+      <span
+    aria-hidden="true"
+    class="sidebar-navigation__icon sidebar-navigation__icon--architecture"
+></span>
+      <span>
+       Architecture
+      </span>
+     </button>
+     <button class="sidebar-navigation__item" data-navigation-target="configuration-plugins" type="button">
+      <span
+    aria-hidden="true"
+    class="sidebar-navigation__icon sidebar-navigation__icon--plugins"
+></span>
+      <span>
+       Plugins
       </span>
      </button>
     </nav>
@@ -105,7 +123,7 @@
         Ohana-Vision
     </span>
     <span class="sidebar-version__number">
-        v1.4.0
+        v1.4.3
     </span>
 </div>
     </div>
@@ -511,51 +529,15 @@
      </section>
      <section aria-labelledby="configuration-heading" class="application-view" data-view="configuration" hidden="">
       <div class="configuration-view">
-       <div class="configuration-tabs" role="tablist" aria-label="Configuration de l’infrastructure">
-        <button
-         aria-controls="dhcp-configuration-panel"
-         aria-selected="true"
-         class="configuration-tab is-active"
-         data-configuration-tab="dhcp"
-         id="dhcp-configuration-tab"
-         role="tab"
-         type="button"
-        >
-         Baux DHCP
-        </button>
-        <button
-         aria-controls="architecture-configuration-panel"
-         aria-selected="false"
-         class="configuration-tab"
-         data-configuration-tab="architecture"
-         id="architecture-configuration-tab"
-         role="tab"
-         type="button"
-        >
-         Architecture
-        </button>
-        <button
-         aria-controls="plugins-configuration-panel"
-         aria-selected="false"
-         class="configuration-tab"
-         data-configuration-tab="plugins"
-         id="plugins-configuration-tab"
-         role="tab"
-         type="button"
-        >
-         Plugins
-        </button>
-       </div>
        <div class="alert alert--error hidden" id="configuration-error" role="alert">
        </div>
        <div class="configuration-notice hidden" id="configuration-notice" role="status">
        </div>
        <section
-        aria-labelledby="dhcp-configuration-tab"
+        aria-label="Configuration DHCP"
         class="configuration-panel"
         data-configuration-panel="dhcp"
         id="dhcp-configuration-panel"
-        role="tabpanel"
        >
         <div class="configuration-summary">
          <article class="configuration-summary-card">
@@ -702,11 +684,10 @@
         </dialog>
        </section>
        <section
-        aria-labelledby="architecture-configuration-tab"
+        aria-label="Configuration de l’architecture"
         class="configuration-panel"
         data-configuration-panel="architecture"
         id="architecture-configuration-panel"
-        role="tabpanel"
         hidden
        >
         <div class="configuration-grid configuration-grid--architecture">
@@ -763,10 +744,14 @@
               <option value="other">Autre</option>
              </select>
             </label>
-             <label>
-              Adresse IP
-              <input id="architecture-device-address" type="text">
-             </label>
+            <label>
+             Rôle
+             <input id="architecture-device-role" placeholder="Passerelle, serveur DNS, caméra…" type="text">
+            </label>
+            <label class="configuration-span-2">
+             Adresse IP
+             <input id="architecture-device-address" type="text">
+            </label>
              <section class="architecture-device-services-panel configuration-span-2">
               <div class="architecture-device-services-heading">
                <div>
@@ -882,11 +867,10 @@
         </div>
        </section>
        <section
-        aria-labelledby="plugins-configuration-tab"
+        aria-label="Configuration des plugins"
         class="configuration-panel"
         data-configuration-panel="plugins"
         id="plugins-configuration-panel"
-        role="tabpanel"
         hidden
        >
         <div class="configuration-grid configuration-grid--plugins">
