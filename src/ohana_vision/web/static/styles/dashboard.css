@@ -1055,3 +1055,129 @@
         animation: none;
     }
 }
+/* Compact overview approved for the v1.3 dashboard. */
+.dashboard-kpis {
+    grid-template-columns: repeat(8, minmax(7.5rem, 1fr));
+}
+
+.dashboard-kpi {
+    display: grid;
+    min-height: 4.9rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: 1fr auto;
+    align-items: center;
+    gap: 0.45rem 0.65rem;
+    padding: 0.7rem;
+}
+
+.dashboard-kpi__content {
+    min-width: 0;
+}
+
+.dashboard-kpi__icon {
+    width: 1.8rem;
+    height: 1.8rem;
+    flex-basis: 1.8rem;
+}
+
+.dashboard-kpi__label {
+    margin-bottom: 0.2rem;
+    color: var(--ohana-text-secondary);
+    font-size: 0.64rem;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.dashboard-kpi__value {
+    margin-bottom: 0.15rem;
+    font-size: clamp(1.15rem, 1.45vw, 1.55rem);
+}
+
+.dashboard-kpi__hint,
+.dashboard-kpi__trend {
+    display: block;
+    font-size: 0.62rem;
+}
+
+.dashboard-kpi__progress {
+    grid-column: 1 / -1;
+    width: 100%;
+    height: 0.18rem;
+    margin-top: 0;
+}
+
+.dashboard-kpi__health-label {
+    display: block;
+    color: var(--ohana-health-healthy);
+    font-size: 0.72rem;
+    font-weight: var(--ohana-font-weight-semibold);
+    line-height: 1.25;
+}
+
+.dashboard-kpi--distribution {
+    grid-template-columns: auto minmax(0, 1fr);
+}
+
+.capability-distribution {
+    position: relative;
+    display: grid;
+    width: 2.65rem;
+    height: 2.65rem;
+    place-items: center;
+}
+
+.capability-distribution__ring {
+    --healthy-percentage: 0%;
+
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background:
+        radial-gradient(
+            circle,
+            var(--ohana-background-surface-raised) 53%,
+            transparent 55%
+        ),
+        conic-gradient(
+            var(--ohana-health-healthy) var(--healthy-percentage),
+            var(--ohana-health-unknown-soft) 0
+        );
+}
+
+.capability-distribution strong {
+    position: relative;
+    z-index: 1;
+    font-size: 0.8rem;
+}
+
+.dashboard-kpi__icon--timeline::before {
+    width: 1rem;
+    height: 1rem;
+    content: "";
+    background: currentcolor;
+    clip-path: polygon(
+        8% 12%, 92% 12%, 92% 24%, 18% 24%,
+        18% 42%, 78% 42%, 78% 54%, 18% 54%,
+        18% 72%, 62% 72%, 62% 84%, 8% 84%
+    );
+}
+
+.application-views[data-active-view="overview"]
+.dashboard-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+        "kpis"
+        "topology"
+        "timeline";
+}
+
+.application-views[data-active-view="overview"]
+.dashboard-primary {
+    min-height: clamp(25rem, 58vh, 42rem);
+}
+
+.application-views[data-active-view="overview"]
+.dashboard-timeline {
+    min-height: 8.5rem;
+    max-height: 12rem;
+}

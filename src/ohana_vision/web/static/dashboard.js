@@ -95,9 +95,33 @@ export class DashboardController {
                 document.querySelector(
                     "#services-count",
                 ),
-            capabilitiesCount:
+            incidentsCount:
                 document.querySelector(
-                    "#capabilities-count",
+                    "#incidents-count",
+                ),
+            incidentsStatus:
+                document.querySelector(
+                    "#incidents-status",
+                ),
+            availabilitySummaryValue:
+                document.querySelector(
+                    "#availability-summary-value",
+                ),
+            globalHealthLabel:
+                document.querySelector(
+                    "#global-health-label",
+                ),
+            capabilityDistributionRing:
+                document.querySelector(
+                    "#capability-distribution-ring",
+                ),
+            capabilityDistributionTotal:
+                document.querySelector(
+                    "#capability-distribution-total",
+                ),
+            capabilityDistributionSummary:
+                document.querySelector(
+                    "#capability-distribution-summary",
                 ),
 
             alertsKpi:
@@ -113,10 +137,6 @@ export class DashboardController {
                     "#alerts-kpi-status",
                 ),
 
-            activityCount:
-                document.querySelector(
-                    "#activity-count",
-                ),
 
             topologyHealthIndicator:
                 document.querySelector(
@@ -243,9 +263,9 @@ export class DashboardController {
         );
 
         this.renderServiceCount();
-        this.renderCapabilityCount();
         this.renderAlertsKpi(health);
-        this.renderActivityCount();
+        this.renderIncidents(health);
+        this.renderCapabilityDistribution();
     }
 
     /**
@@ -382,11 +402,18 @@ export class DashboardController {
                 );
         }
 
-        this.setText(
-            this.elements.topologyHealthLabel,
+        const label =
             this.formatGlobalTopologyHealth(
                 status,
-            ),
+            );
+
+        this.setText(
+            this.elements.topologyHealthLabel,
+            label,
+        );
+        this.setText(
+            this.elements.globalHealthLabel,
+            label,
         );
     }
 
@@ -399,6 +426,10 @@ export class DashboardController {
         if (availability === null) {
             this.updateAnimatedText(
                 this.elements.availabilityValue,
+                "—",
+            );
+            this.updateAnimatedText(
+                this.elements.availabilitySummaryValue,
                 "—",
             );
 
@@ -419,9 +450,16 @@ export class DashboardController {
             return;
         }
 
+        const formattedAvailability =
+            `${availability.toFixed(1)} %`;
+
         this.updateAnimatedText(
             this.elements.availabilityValue,
-            `${availability.toFixed(1)} %`,
+            formattedAvailability,
+        );
+        this.updateAnimatedText(
+            this.elements.availabilitySummaryValue,
+            formattedAvailability,
         );
 
         if (
@@ -469,24 +507,54 @@ export class DashboardController {
         );
     }
 
-    renderCapabilityCount() {
-        const capabilities =
-            uniqueValues(
-                (
-                    this.state.observations
-                    ?? []
-                ).map((observation) => {
-                    return (
-                        observation
-                            .capability_id
-                    );
-                }),
-            ).size;
+    renderIncidents(statistics) {
+        const incidents =
+            statistics.degraded
+            + statistics.unhealthy;
 
         this.updateAnimatedText(
-            this.elements.capabilitiesCount,
-            capabilities,
+            this.elements.incidentsCount,
+            incidents,
         );
+        this.setText(
+            this.elements.incidentsStatus,
+            incidents === 0
+                ? "Aucun"
+                : `${incidents} détecté${incidents > 1 ? "s" : ""}`,
+        );
+    }
+
+    renderCapabilityDistribution() {
+        const latestByCapability = new Map();
+
+        for (const observation of (this.state.observations ?? [])) {
+            latestByCapability.set(
+                observation.capability_id,
+                observation.status ?? "unknown",
+            );
+        }
+
+        const statuses = [...latestByCapability.values()];
+        const total = statuses.length;
+        const healthy = statuses.filter((status) => status === "healthy").length;
+        const degraded = statuses.filter((status) => status === "degraded").length;
+        const unhealthy = statuses.filter((status) => status === "unhealthy").length;
+
+        this.setText(this.elements.capabilityDistributionTotal, total);
+        this.setText(
+            this.elements.capabilityDistributionSummary,
+            total === 0
+                ? "Aucune donnée"
+                : `${healthy} saine${healthy > 1 ? "s" : ""} · ${degraded} dégradée${degraded > 1 ? "s" : ""} · ${unhealthy} critique${unhealthy > 1 ? "s" : ""}`,
+        );
+
+        if (this.elements.capabilityDistributionRing) {
+            const percentage = total === 0 ? 0 : healthy / total * 100;
+            this.elements.capabilityDistributionRing.style.setProperty(
+                "--healthy-percentage",
+                `${percentage}%`,
+            );
+        }
     }
 
     renderAlertsKpi(statistics) {
@@ -552,22 +620,6 @@ export class DashboardController {
         this.setText(
             this.elements.alertsKpiStatus,
             "Aucun incident",
-        );
-    }
-
-    renderActivityCount() {
-        const value =
-            this.state.runtime
-                ?.statistics
-                ?.observations_received
-            ?? (
-                this.state.observations
-                ?? []
-            ).length;
-
-        this.updateAnimatedText(
-            this.elements.activityCount,
-            value,
         );
     }
 

@@ -147,196 +147,74 @@
       <div class="dashboard-layout dashboard-layout--overview">
        <section aria-label="Indicateurs principaux" class="dashboard-kpis">
         <article class="dashboard-kpi dashboard-kpi--availability">
-         <div class="dashboard-kpi__header">
-          <span
-    aria-hidden="true"
-    class="dashboard-kpi__icon dashboard-kpi__icon--availability"
-></span>
-          <span class="dashboard-kpi__trend" id="availability-trend">
-           Temps réel
-          </span>
+         <span aria-hidden="true" class="dashboard-kpi__icon dashboard-kpi__icon--availability"></span>
+         <div class="dashboard-kpi__content">
+          <span class="dashboard-kpi__label">Infrastructure</span>
+          <strong class="dashboard-kpi__value" id="availability-value">—</strong>
+          <span class="dashboard-kpi__hint" id="availability-trend">Temps réel</span>
          </div>
-         <strong class="dashboard-kpi__value" id="availability-value">
-          —
-         </strong>
-         <span class="dashboard-kpi__label">
-          Disponibilité
-         </span>
-         <div aria-hidden="true" class="dashboard-kpi__progress">
-          <span id="availability-progress">
-          </span>
+         <div aria-hidden="true" class="dashboard-kpi__progress"><span id="availability-progress"></span></div>
+        </article>
+        <article class="dashboard-kpi">
+         <span aria-hidden="true" class="dashboard-kpi__icon dashboard-kpi__icon--devices"></span>
+         <div class="dashboard-kpi__content">
+          <span class="dashboard-kpi__label">Équipements</span>
+          <strong class="dashboard-kpi__value" id="devices-count">—</strong>
+          <span class="dashboard-kpi__hint" id="healthy-devices-count">— sain</span>
          </div>
         </article>
         <article class="dashboard-kpi">
-         <div class="dashboard-kpi__header">
-          <span
-    aria-hidden="true"
-    class="dashboard-kpi__icon dashboard-kpi__icon--devices"
-></span>
-          <span class="dashboard-kpi__hint" id="healthy-devices-count">
-           — sain
-          </span>
+         <span aria-hidden="true" class="dashboard-kpi__icon dashboard-kpi__icon--services"></span>
+         <div class="dashboard-kpi__content">
+          <span class="dashboard-kpi__label">Services</span>
+          <strong class="dashboard-kpi__value" id="services-count">—</strong>
+          <span class="dashboard-kpi__hint">Actifs</span>
          </div>
-         <strong class="dashboard-kpi__value" id="devices-count">
-          —
-         </strong>
-         <span class="dashboard-kpi__label">
-          Équipements
-         </span>
-        </article>
-        <article class="dashboard-kpi">
-         <div class="dashboard-kpi__header">
-          <span
-    aria-hidden="true"
-    class="dashboard-kpi__icon dashboard-kpi__icon--services"
-></span>
-          <span class="dashboard-kpi__hint">
-           Déclarés
-          </span>
-         </div>
-         <strong class="dashboard-kpi__value" id="services-count">
-          —
-         </strong>
-         <span class="dashboard-kpi__label">
-          Services
-         </span>
-        </article>
-        <article class="dashboard-kpi">
-         <div class="dashboard-kpi__header">
-          <span
-    aria-hidden="true"
-    class="dashboard-kpi__icon dashboard-kpi__icon--capabilities"
-></span>
-          <span class="dashboard-kpi__hint">
-           Observées
-          </span>
-         </div>
-         <strong class="dashboard-kpi__value" id="capabilities-count">
-          —
-         </strong>
-         <span class="dashboard-kpi__label">
-          Capacités
-         </span>
         </article>
         <article class="dashboard-kpi dashboard-kpi--alerts" id="alerts-kpi">
-         <div class="dashboard-kpi__header">
-          <span
-    aria-hidden="true"
-    class="dashboard-kpi__icon dashboard-kpi__icon--alerts"
-></span>
-          <span class="dashboard-kpi__hint" id="alerts-kpi-status">
-           Aucun incident
-          </span>
+         <span aria-hidden="true" class="dashboard-kpi__icon dashboard-kpi__icon--alerts"></span>
+         <div class="dashboard-kpi__content">
+          <span class="dashboard-kpi__label">Alertes actives</span>
+          <strong class="dashboard-kpi__value" id="alerts-count">—</strong>
+          <span class="dashboard-kpi__hint" id="alerts-kpi-status">Aucune</span>
          </div>
-         <strong class="dashboard-kpi__value" id="alerts-count">
-          —
-         </strong>
-         <span class="dashboard-kpi__label">
-          Alertes actives
-         </span>
         </article>
         <article class="dashboard-kpi">
-         <div class="dashboard-kpi__header">
-          <span
-    aria-hidden="true"
-    class="dashboard-kpi__icon dashboard-kpi__icon--observations"
-></span>
-          <span class="dashboard-kpi__hint">
-           Depuis le démarrage
-          </span>
+         <span aria-hidden="true" class="dashboard-kpi__icon dashboard-kpi__icon--observations"></span>
+         <div class="dashboard-kpi__content">
+          <span class="dashboard-kpi__label">Incidents (24 h)</span>
+          <strong class="dashboard-kpi__value" id="incidents-count">—</strong>
+          <span class="dashboard-kpi__hint" id="incidents-status">Aucun</span>
          </div>
-         <strong class="dashboard-kpi__value" id="activity-count">
-          —
-         </strong>
-         <span class="dashboard-kpi__label">
-          Observations reçues
-         </span>
+        </article>
+        <article class="dashboard-kpi">
+         <span aria-hidden="true" class="dashboard-kpi__icon dashboard-kpi__icon--availability"></span>
+         <div class="dashboard-kpi__content">
+          <span class="dashboard-kpi__label">Disponibilité</span>
+          <strong class="dashboard-kpi__value" id="availability-summary-value">—</strong>
+          <span class="dashboard-kpi__hint">Temps réel</span>
+         </div>
+        </article>
+        <article class="dashboard-kpi dashboard-kpi--health">
+         <span aria-hidden="true" class="dashboard-kpi__icon dashboard-kpi__icon--availability"></span>
+         <div class="dashboard-kpi__content">
+          <span class="dashboard-kpi__label">Santé globale</span>
+          <strong class="dashboard-kpi__health-label" id="global-health-label">État inconnu</strong>
+         </div>
+        </article>
+        <article class="dashboard-kpi dashboard-kpi--distribution">
+         <div class="capability-distribution" aria-hidden="true">
+          <span class="capability-distribution__ring" id="capability-distribution-ring"></span>
+          <strong id="capability-distribution-total">0</strong>
+         </div>
+         <div class="dashboard-kpi__content">
+          <span class="dashboard-kpi__label">Répartition des capacités</span>
+          <span class="dashboard-kpi__hint" id="capability-distribution-summary">Aucune donnée</span>
+         </div>
         </article>
        </section>
        <div class="alert alert--error hidden" id="runtime-error" role="alert">
        </div>
-       <aside aria-label="Informations temps réel" class="dashboard-right-panel">
-        <section aria-labelledby="active-alerts-heading" class="side-panel-card side-panel-card--alerts" id="alerts">
-         <div class="side-panel-card__heading">
-          <div>
-           <p class="side-panel-card__kicker">
-            Santé
-           </p>
-           <h2 id="active-alerts-heading">
-            Alertes actives
-           </h2>
-          </div>
-          <span class="side-panel-card__count" id="active-alerts-count">
-           0
-          </span>
-         </div>
-         <div aria-live="polite" class="active-alerts" id="active-alerts-list">
-          <p class="side-panel-placeholder">
-           Aucune alerte active.
-          </p>
-         </div>
-        </section>
-        <section aria-labelledby="processing-indicators-heading" class="side-panel-card side-panel-card--indicators">
-         <div class="side-panel-card__heading">
-          <div>
-           <p class="side-panel-card__kicker">
-            Runtime
-           </p>
-           <h2 id="processing-indicators-heading">
-            Indicateurs
-           </h2>
-          </div>
-         </div>
-         <div class="processing-indicators">
-          <article class="processing-indicator">
-           <span>
-            Reçues
-           </span>
-           <strong id="observations-received">
-            —
-           </strong>
-          </article>
-          <article class="processing-indicator">
-           <span>
-            Acceptées
-           </span>
-           <strong id="observations-accepted">
-            —
-           </strong>
-          </article>
-          <article class="processing-indicator">
-           <span>
-            Rejetées
-           </span>
-           <strong id="observations-rejected">
-            —
-           </strong>
-          </article>
-          <article class="processing-indicator processing-indicator--error">
-           <span>
-            Erreurs
-           </span>
-           <strong id="runtime-errors">
-            —
-           </strong>
-          </article>
-         </div>
-         <div class="processing-ratio">
-          <div class="processing-ratio__heading">
-           <span>
-            Taux d’acceptation
-           </span>
-           <strong id="acceptance-rate">
-            —
-           </strong>
-          </div>
-          <div aria-hidden="true" class="processing-ratio__track">
-           <span id="acceptance-rate-progress">
-           </span>
-          </div>
-         </div>
-        </section>
-       </aside>
       </div>
      </section>
      <section aria-labelledby="topology-heading" class="application-view" data-view="infrastructure" hidden="">

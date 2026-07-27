@@ -143,7 +143,7 @@ def test_static_ui_contains_dashboard_grid() -> None:
     assert 'class="dashboard-kpis"' in response.text
     assert "dashboard-primary" in response.text
     assert "dashboard-primary--topology" in response.text
-    assert 'class="dashboard-right-panel"' in response.text
+    assert 'class="dashboard-right-panel"' not in response.text
     assert 'class="dashboard-timeline"' in response.text
 
 
@@ -171,9 +171,13 @@ def test_static_ui_contains_dashboard_kpis() -> None:
     assert 'id="availability-value"' in response.text
     assert 'id="devices-count"' in response.text
     assert 'id="services-count"' in response.text
-    assert 'id="capabilities-count"' in response.text
     assert 'id="alerts-count"' in response.text
-    assert 'id="activity-count"' in response.text
+    assert 'id="incidents-count"' in response.text
+    assert 'id="availability-summary-value"' in response.text
+    assert 'id="global-health-label"' in response.text
+    assert 'id="capability-distribution-total"' in response.text
+    assert 'id="capabilities-count"' not in response.text
+    assert 'id="activity-count"' not in response.text
 
 
 def test_static_ui_marks_topology_as_primary_content() -> None:
@@ -196,11 +200,9 @@ def test_static_ui_contains_realtime_side_panel() -> None:
     response = client.get("/ui/")
 
     assert response.status_code == 200
-    assert 'id="active-alerts-count"' in response.text
-    assert 'id="active-alerts-list"' in response.text
-    assert 'id="recent-observations-list"' in response.text
-    assert 'id="acceptance-rate"' in response.text
-    assert 'id="acceptance-rate-progress"' in response.text
+    assert 'id="global-health-label"' in response.text
+    assert 'id="capability-distribution-ring"' in response.text
+    assert 'id="capability-distribution-summary"' in response.text
 
 
 def test_static_styles_support_responsive_dashboard() -> None:
@@ -1728,7 +1730,6 @@ def test_dashboard_kpis_use_official_icons() -> None:
         "dashboard-kpi__icon--availability",
         "dashboard-kpi__icon--devices",
         "dashboard-kpi__icon--services",
-        "dashboard-kpi__icon--capabilities",
         "dashboard-kpi__icon--alerts",
         "dashboard-kpi__icon--observations",
     ]
@@ -1740,7 +1741,6 @@ def test_dashboard_kpis_use_official_icons() -> None:
         "../assets/icons/observability/gauge.svg",
         "../assets/icons/infrastructure/network.svg",
         "../assets/icons/infrastructure/boxes.svg",
-        "../assets/icons/infrastructure/layers-3.svg",
         "../assets/icons/observability/bell-ring.svg",
         "../assets/icons/observability/activity.svg",
     ]

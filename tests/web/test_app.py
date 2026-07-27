@@ -237,7 +237,8 @@ def test_dashboard_calculates_kpis() -> None:
     assert "availabilityPercentage(" in response.text
     assert "deviceHealthStatistics()" in response.text
     assert "renderServiceCount()" in response.text
-    assert "renderCapabilityCount()" in response.text
+    assert "renderCapabilityDistribution()" in response.text
+    assert "renderIncidents(" in response.text
 
 
 def test_dashboard_renders_global_topology_health() -> None:
