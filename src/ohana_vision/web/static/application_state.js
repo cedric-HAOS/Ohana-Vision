@@ -6,6 +6,7 @@ const state = {
     topology: null,
     timeline: null,
     deviceHealth: {},
+    devicePresence: {},
     selectedDeviceId: null,
     timelineRangeHours: 6,
 };
@@ -22,6 +23,7 @@ const state = {
  *     topology: object | null,
  *     timeline: object | null,
  *     deviceHealth: Record<string, string>,
+ *     devicePresence: Record<string, object>,
  *     selectedDeviceId: string | null,
  *     timelineRangeHours: number,
  * }}
@@ -52,6 +54,7 @@ export function resetApplicationState() {
     state.topology = null;
     state.timeline = null;
     state.deviceHealth = {};
+    state.devicePresence = {};
     state.selectedDeviceId = null;
     state.timelineRangeHours = 6;
 }

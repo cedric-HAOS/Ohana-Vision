@@ -6,6 +6,36 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# v1.4.0 — Présence réseau des équipements — 2026-07-27
+
+## Ajouté
+
+- Interprétation des observations `network.reachable` produites par
+  Ohana-Agent.
+- Rattachement de la dernière observation à l’équipement grâce à
+  `metadata.device_id`.
+- Indicateur de présence discret sur les cartes des équipements adressables.
+- États **Présent**, **Absent** et **Inconnu**, indépendants de la santé des
+  services.
+- Détails de la dernière vérification dans l’inspecteur : date, méthode,
+  latence et échecs consécutifs.
+- État inconnu explicite pour les équipements ayant une adresse IP mais encore
+  aucune observation de présence.
+
+## Modifié
+
+- Les observations ciblant un équipement (`target_type: device`) sont
+  conservées dans l’historique mais exclues de la timeline et du calcul de
+  santé globale.
+- Le chargement de la topologie réutilise désormais la timeline et les
+  observations déjà présentes dans l’état frontend.
+
+## Qualité
+
+- 764 tests réussis.
+- Syntaxe des modules JavaScript validée avec Node.js.
+- Construction validée des artefacts wheel et sdist 1.4.0.
+
 # v1.3.0 — Administration des plugins — 2026-07-27
 
 ## Ajouté

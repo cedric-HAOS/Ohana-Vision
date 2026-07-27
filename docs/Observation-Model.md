@@ -96,6 +96,28 @@ Il permet de reconstruire l'évolution de l'infrastructure.
 
 ---
 
+# Observations de service et d’équipement
+
+La majorité des observations décrivent une capacité fournie par un service.
+Elles alimentent l’état courant, la timeline et la santé globale.
+
+Certaines observations décrivent uniquement un équipement de topologie. Elles
+sont identifiées par la métadonnée suivante :
+
+```yaml
+target_type: device
+```
+
+C’est notamment le cas de `network.reachable`. Ces observations restent des
+faits immuables, conservés et affichables, mais elles ne représentent pas la
+santé fonctionnelle d’un service. Vision les exclut donc volontairement de
+l’agrégation de santé.
+
+La métadonnée `device_id` permet de rattacher le fait à l’équipement déclaré
+dans le snapshot d’infrastructure.
+
+---
+
 # Observation et capacité
 
 Une capacité peut produire de nombreuses observations.

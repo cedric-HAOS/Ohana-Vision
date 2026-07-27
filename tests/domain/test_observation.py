@@ -74,3 +74,33 @@ def test_observation_rejects_negative_latency() -> None:
             observed_at=observed_at,
             latency_ms=-1.0,
         )
+
+
+def test_service_observation_contributes_to_health() -> None:
+    """Service observations must keep contributing to health."""
+    observation = Observation(
+        capability_id="dns.resolve",
+        service_id="dns-primary",
+        node_id="infra-01",
+        status=HealthStatus.HEALTHY,
+        observed_at=datetime(2026, 7, 27, 14, 0, tzinfo=UTC),
+    )
+
+    assert observation.contributes_to_health is True
+
+
+def test_device_observation_does_not_contribute_to_health() -> None:
+    """Device presence observations must stay outside service health."""
+    observation = Observation(
+        capability_id="network.reachable",
+        service_id="ha-green",
+        node_id="ha-green",
+        status=HealthStatus.UNAVAILABLE,
+        observed_at=datetime(2026, 7, 27, 14, 0, tzinfo=UTC),
+        metadata={
+            "target_type": "device",
+            "device_id": "ha-green",
+        },
+    )
+
+    assert observation.contributes_to_health is False

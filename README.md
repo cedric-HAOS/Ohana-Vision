@@ -267,10 +267,10 @@ python -m pytest
 python -m ruff check .
 ```
 
-État validé pour la v1.2.0 :
+État validé pour la v1.4.0 :
 
 ```text
-754 tests passent
+764 tests passent
 ```
 
 Les scénarios d'intégration réels ont également été validés :
@@ -284,16 +284,24 @@ Les scénarios d'intégration réels ont également été validés :
 
 ## État actuel
 
-La version **1.3.0** complète l'administration graphique portée par
-Ohana-Agent avec la gestion des plugins DNS, NTP et MQTT.
+La version **1.4.0** affiche la présence réseau des équipements déclarés dans
+l’infrastructure et disposant d’une adresse IP. Elle interprète les observations
+`network.reachable` produites par Ohana-Agent sans transformer Vision en outil
+de supervision réseau généraliste.
 
-Vision permet de consulter et modifier la configuration DHCP, les réservations,
-les équipements, les liaisons, les services associés et les paramètres des
-plugins. Les modifications sont envoyées à l'API d'administration de l'Agent,
-qui reste propriétaire de la configuration et de son application.
+La topologie conserve ses badges de santé fonctionnelle et ajoute un indicateur
+plus discret pour la présence : **Présent**, **Absent** ou **Inconnu**.
+L’inspecteur d’un équipement affiche la dernière vérification, la méthode, la
+latence et le nombre d’échecs consécutifs.
 
-Le jeton d'administration de l'Agent reste exclusivement utilisé par le
-backend de Vision et n'est jamais exposé au navigateur.
+Les observations ciblant directement un équipement restent consultables dans
+l’historique, mais elles n’entrent pas dans la timeline des services ni dans le
+calcul de santé globale.
+
+Vision continue également d’assurer l’administration graphique du DHCP, de
+l’architecture, des services et des plugins DNS, NTP et MQTT à travers l’API
+d’Ohana-Agent. Le jeton d’administration reste exclusivement utilisé par le
+backend de Vision.
 
 Les prochaines évolutions concerneront principalement l'historique avancé,
 l'amélioration des capacités administrables et la supervision multi-agents.

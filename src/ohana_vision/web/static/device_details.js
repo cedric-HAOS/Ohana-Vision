@@ -2,6 +2,8 @@
 
 import {
     escapeHtml,
+    formatDate,
+    formatLatency,
     healthStatusLabel,
 } from "./utils.js";
 
@@ -74,6 +76,27 @@ export class DeviceDetailsController {
             ),
             supervision: document.querySelector(
                 "#device-details-supervision",
+            ),
+            presenceSection: document.querySelector(
+                "#device-presence-section",
+            ),
+            presenceStatus: document.querySelector(
+                "#device-presence-status",
+            ),
+            presenceMessage: document.querySelector(
+                "#device-presence-message",
+            ),
+            presenceObservedAt: document.querySelector(
+                "#device-presence-observed-at",
+            ),
+            presenceMethod: document.querySelector(
+                "#device-presence-method",
+            ),
+            presenceLatency: document.querySelector(
+                "#device-presence-latency",
+            ),
+            presenceFailures: document.querySelector(
+                "#device-presence-failures",
             ),
         };
 
@@ -249,6 +272,7 @@ export class DeviceDetailsController {
             healthStatusLabel(health),
         );
 
+        this.renderPresence(device);
         this.renderServices(device);
         this.renderLinks(device);
 
@@ -260,6 +284,149 @@ export class DeviceDetailsController {
             "aria-hidden",
             "false",
         );
+    }
+
+    renderPresence(device) {
+        const presence =
+            this.state.devicePresence[
+                device.device_id
+            ];
+        const isAddressable = Boolean(
+            device.address
+            || presence?.address,
+        );
+
+        this.elements.presenceSection
+            ?.classList.toggle(
+                "hidden",
+                !isAddressable,
+            );
+
+        if (!isAddressable) {
+            return;
+        }
+
+        const status =
+            this.normalizePresenceStatus(
+                presence?.status,
+            );
+
+        if (this.elements.presenceStatus) {
+            this.elements.presenceStatus.className =
+                "device-details__presence-status "
+                + `device-details__presence-status--${status}`;
+        }
+
+        this.setText(
+            this.elements.presenceStatus,
+            this.presenceStatusLabel(status),
+        );
+        this.setText(
+            this.elements.presenceMessage,
+            presence?.message
+                ?? this.presenceFallbackMessage(
+                    status,
+                ),
+        );
+        this.setText(
+            this.elements.presenceObservedAt,
+            formatDate(
+                presence?.observed_at,
+            ),
+        );
+        this.setText(
+            this.elements.presenceMethod,
+            this.presenceMethodLabel(
+                presence?.method,
+            ),
+        );
+        this.setText(
+            this.elements.presenceLatency,
+            formatLatency(
+                presence?.latency_ms,
+            ),
+        );
+        this.setText(
+            this.elements.presenceFailures,
+            this.presenceFailureLabel(
+                presence,
+            ),
+        );
+    }
+
+    normalizePresenceStatus(status) {
+        const normalized = String(
+            status ?? "unknown",
+        ).toLowerCase();
+
+        return [
+            "present",
+            "absent",
+            "unknown",
+        ].includes(normalized)
+            ? normalized
+            : "unknown";
+    }
+
+    presenceStatusLabel(status) {
+        const labels = {
+            present: "Présent",
+            absent: "Absent",
+            unknown: "Inconnu",
+        };
+
+        return labels[
+            this.normalizePresenceStatus(status)
+        ];
+    }
+
+    presenceFallbackMessage(status) {
+        const messages = {
+            present: "L’équipement répond sur le réseau.",
+            absent: "L’équipement ne répond plus après confirmation.",
+            unknown: "Aucune présence fiable n’est encore confirmée.",
+        };
+
+        return messages[
+            this.normalizePresenceStatus(status)
+        ];
+    }
+
+    presenceMethodLabel(method) {
+        if (!method) {
+            return "—";
+        }
+
+        const labels = {
+            icmp: "ICMP",
+            arp: "ARP",
+            "icmp+arp": "ICMP + ARP",
+        };
+        const normalized = String(
+            method,
+        ).toLowerCase();
+
+        return labels[normalized]
+            ?? String(method).toUpperCase();
+    }
+
+    presenceFailureLabel(presence) {
+        const failures = Number(
+            presence?.consecutive_failures,
+        );
+        const threshold = Number(
+            presence?.failure_threshold,
+        );
+
+        if (!Number.isFinite(failures)) {
+            return "—";
+        }
+
+        if (!Number.isFinite(threshold)) {
+            return String(failures);
+        }
+
+        return `${failures} / ${threshold}`;
     }
 
     renderServices(device) {

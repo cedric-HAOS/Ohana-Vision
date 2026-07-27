@@ -189,6 +189,7 @@
     --device-health-background:
         rgb(141 153 174 / 12%);
     --device-halo: rgb(141 153 174 / 18%);
+    --device-presence: var(--unknown);
     cursor: pointer;
     opacity: 0;
     outline: none;
@@ -325,6 +326,18 @@
     --device-halo: rgb(141 153 174 / 18%);
 }
 
+.topology-device--presence-present {
+    --device-presence: var(--healthy);
+}
+
+.topology-device--presence-absent {
+    --device-presence: var(--unhealthy);
+}
+
+.topology-device--presence-unknown {
+    --device-presence: var(--unknown);
+}
+
 .topology-device--health-healthy .topology-device__halo {
     animation:
         topology-halo-breathe 5s ease-in-out infinite;
@@ -373,6 +386,36 @@
     font-size: 10px;
     font-weight: 850;
     letter-spacing: 0.055em;
+}
+
+.topology-device__presence {
+    pointer-events: none;
+}
+
+.topology-device__presence-ring {
+    fill: rgb(11 19 34 / 92%);
+    stroke: color-mix(
+        in srgb,
+        var(--device-presence) 54%,
+        transparent
+    );
+    stroke-width: 1.5;
+}
+
+.topology-device__presence-indicator {
+    fill: var(--device-presence);
+}
+
+.topology-device--presence-absent
+.topology-device__presence-indicator {
+    filter: drop-shadow(
+        0 0 4px
+        color-mix(
+            in srgb,
+            var(--device-presence) 70%,
+            transparent
+        )
+    );
 }
 
 .topology-workspace {
@@ -796,7 +839,8 @@
 .topology-device__kind,
 .topology-device__label,
 .topology-device__detail,
-.topology-device__health {
+.topology-device__health,
+.topology-device__presence {
     pointer-events: none;
 }
 
@@ -1006,6 +1050,11 @@
     font-size: 0.62rem;
 }
 
+.topology-tools-panel__heading--secondary {
+    display: block;
+    margin-top: 0.75rem;
+}
+
 .topology-tools-panel__list {
     display: grid;
     gap: 0.38rem;
@@ -1095,6 +1144,29 @@
 }
 
 .topology-tools-panel__state--unknown {
+    color: var(--status-unknown, #7f93a8);
+}
+
+.topology-tools-panel__presence {
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 0.58rem;
+    height: 0.58rem;
+    border: 2px solid rgb(11 19 34 / 92%);
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 1px currentColor;
+}
+
+.topology-tools-panel__presence--present {
+    color: var(--status-healthy, #2dd4bf);
+}
+
+.topology-tools-panel__presence--absent {
+    color: var(--status-unhealthy, #ff5e66);
+}
+
+.topology-tools-panel__presence--unknown {
     color: var(--status-unknown, #7f93a8);
 }
 

@@ -250,6 +250,53 @@ de l'Agent.
 
 ---
 
+# Version 1.4.0 — Présence réseau des équipements
+
+## 1.4.1 — Contrat de présence
+
+- prise en charge de la capacité `network.reachable`
+- rattachement par `metadata.device_id`
+- conservation des informations ICMP et ARP
+
+**Statut :** ✅ Terminé
+
+## 1.4.2 — Présence distincte de la santé
+
+- observations d’équipements conservées dans l’historique
+- exclusion de la timeline des services
+- aucune incidence sur la santé globale
+
+**Statut :** ✅ Terminé
+
+## 1.4.3 — Topologie
+
+- indicateur discret sur les équipements adressables
+- états présent, absent et inconnu
+- absence d’indicateur pour les équipements sans adresse IP
+- légende intégrée à l’aide à la lecture
+
+**Statut :** ✅ Terminé
+
+## 1.4.4 — Inspecteur
+
+- dernière vérification
+- méthode de détection
+- latence
+- compteur d’échecs consécutifs
+
+**Statut :** ✅ Terminé
+
+## 1.4.5 — Tests et documentation
+
+- tests du pipeline backend
+- tests du rendu statique
+- documentation du contrat et du modèle de santé
+- 764 tests réussis
+
+**Statut :** ✅ Terminé
+
+---
+
 # Prochaines évolutions
 
 - historique avancé

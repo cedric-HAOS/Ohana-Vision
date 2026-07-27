@@ -95,27 +95,31 @@ export class TopologyController {
      */
     async load() {
         try {
-            const [
-                topology,
-                timeline,
-            ] = await Promise.all([
-                fetchJson(API.topology),
-                fetchJson(API.timeline),
-            ]);
+            const topology = await fetchJson(
+                API.topology,
+            );
 
             const deviceHealth =
                 this.buildDeviceHealth(
                     topology,
-                    timeline,
+                    this.state.timeline,
+                );
+            const devicePresence =
+                this.buildDevicePresence(
+                    topology,
+                    this.state.observations,
                 );
 
             this.state.topology = topology;
             this.state.deviceHealth =
                 deviceHealth;
+            this.state.devicePresence =
+                devicePresence;
 
             this.canvas.render(
                 topology,
                 deviceHealth,
+                devicePresence,
             );
 
             if (this.state.selectedDeviceId) {
@@ -129,6 +133,7 @@ export class TopologyController {
             this.onTopologyChanged({
                 topology,
                 deviceHealth,
+                devicePresence,
             });
         } catch (error) {
             const message =
@@ -317,4 +322,109 @@ export class TopologyController {
             }),
         );
     }
+
+    buildDevicePresence(
+        topology,
+        observations,
+    ) {
+        const devices =
+            topology?.devices ?? [];
+        const deviceIds = new Set(
+            devices.map(
+                (device) => device.device_id,
+            ),
+        );
+        const presence = {};
+
+        for (const observation of (
+            observations ?? []
+        )) {
+            if (
+                observation.capability_id
+                !== "network.reachable"
+            ) {
+                continue;
+            }
+
+            const metadata =
+                observation.metadata ?? {};
+            const deviceId =
+                metadata.device_id
+                ?? observation.service_id;
+
+            if (!deviceIds.has(deviceId)) {
+                continue;
+            }
+
+            const observedAt = new Date(
+                observation.observed_at,
+            ).getTime();
+            const currentAt = new Date(
+                presence[deviceId]
+                    ?.observed_at
+                    ?? 0,
+            ).getTime();
+
+            if (
+                Number.isFinite(currentAt)
+                && Number.isFinite(observedAt)
+                && observedAt < currentAt
+            ) {
+                continue;
+            }
+
+            presence[deviceId] = {
+                status: this.presenceStatus(
+                    observation.status,
+                ),
+                observed_at:
+                    observation.observed_at,
+                address: metadata.address,
+                method: metadata.method,
+                latency_ms:
+                    observation.latency_ms,
+                consecutive_failures:
+                    metadata.consecutive_failures,
+                failure_threshold:
+                    metadata.failure_threshold,
+                message:
+                    metadata.agent_observation
+                        ?.message,
+            };
+        }
+
+        for (const device of devices) {
+            if (
+                device.address
+                && !presence[device.device_id]
+            ) {
+                presence[device.device_id] = {
+                    status: "unknown",
+                    address: device.address,
+                };
+            }
+        }
+
+        return presence;
+    }
+
+    presenceStatus(status) {
+        const normalized = String(
+            status ?? "unknown",
+        ).toLowerCase();
+
+        if (normalized === "healthy") {
+            return "present";
+        }
+
+        if (
+            normalized === "unavailable"
+            || normalized === "unhealthy"
+        ) {
+            return "absent";
+        }
+
+        return "unknown";
+    }
+
 }

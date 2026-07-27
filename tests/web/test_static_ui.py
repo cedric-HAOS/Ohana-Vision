@@ -355,7 +355,7 @@ def test_infrastructure_view_disables_desktop_vertical_scrolling() -> None:
     assert response.status_code == 200
     assert 'data-active-view="infrastructure"' in response.text
     assert "overflow: hidden;" in response.text
-    assert '.topology-container' in response.text
+    assert ".topology-container" in response.text
     assert "height: 100%;" in response.text
 
 
@@ -432,6 +432,7 @@ def test_static_ui_exposes_shared_application_state() -> None:
     assert response.status_code == 200
     assert "export function applicationState" in response.text
     assert "export function resetApplicationState" in response.text
+    assert "devicePresence" in response.text
 
 
 def test_application_uses_frontend_foundation_modules() -> None:
@@ -516,16 +517,19 @@ def test_static_ui_exposes_topology_module() -> None:
 
 
 def test_topology_module_loads_backend_resources() -> None:
-    """The topology controller must load topology and timeline data."""
+    """The topology controller must combine topology and shared state."""
     response = make_client().get(
         "/ui/topology.js",
     )
 
     assert response.status_code == 200
     assert 'from "./api.js"' in response.text
-    assert "fetchJson(API.topology)" in response.text
-    assert "fetchJson(API.timeline)" in response.text
-    assert "Promise.all" in response.text
+    assert "fetchJson(" in response.text
+    assert "API.topology" in response.text
+    assert "this.state.timeline" in response.text
+    assert "this.state.observations" in response.text
+    assert "buildDevicePresence" in response.text
+    assert '"network.reachable"' in response.text
 
 
 def test_topology_module_controls_canvas() -> None:
@@ -577,7 +581,24 @@ def test_device_details_module_uses_shared_state() -> None:
     assert response.status_code == 200
     assert "this.state.topology" in response.text
     assert "this.state.deviceHealth" in response.text
+    assert "this.state.devicePresence" in response.text
     assert "this.state.selectedDeviceId" in response.text
+
+
+def test_device_details_module_renders_network_presence() -> None:
+    """Device details must expose the latest network presence check."""
+    response = make_client().get(
+        "/ui/device_details.js",
+    )
+
+    assert response.status_code == 200
+    assert "renderPresence(device)" in response.text
+    assert "this.state.devicePresence" in response.text
+    assert "presenceStatusLabel" in response.text
+    assert "presenceMethodLabel" in response.text
+    assert "presenceFailureLabel" in response.text
+    assert "formatDate" in response.text
+    assert "formatLatency" in response.text
 
 
 def test_device_details_module_renders_connections() -> None:
@@ -1102,6 +1123,8 @@ def test_device_details_stylesheet_contains_health_and_links() -> None:
     assert ".device-details__health {" in response.text
     assert ".device-details__health--healthy {" in response.text
     assert ".device-details__properties {" in response.text
+    assert ".device-details__presence-status {" in response.text
+    assert ".device-details__presence-properties {" in response.text
     assert ".device-details__links {" in response.text
     assert ".device-details__link {" in response.text
     assert "@keyframes device-details-enter" in response.text

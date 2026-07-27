@@ -40,3 +40,8 @@ class Observation:
 
         if self.latency_ms is not None and self.latency_ms < 0:
             raise ValueError("latency_ms must not be negative.")
+
+    @property
+    def contributes_to_health(self) -> bool:
+        """Return whether this observation belongs to service health."""
+        return self.metadata.get("target_type") != "device"

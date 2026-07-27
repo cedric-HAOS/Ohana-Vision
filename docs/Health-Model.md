@@ -89,6 +89,24 @@ La dernière observation est trop ancienne pour être considérée comme représ
 
 ---
 
+# Présence réseau et santé
+
+La présence réseau répond à la question :
+
+> L’équipement est-il actuellement visible sur le réseau ?
+
+La santé répond à une autre question :
+
+> Les capacités attendues sont-elles effectivement fournies ?
+
+Un équipement peut répondre au réseau alors que ses services sont en panne. À
+l’inverse, une absence temporaire peut être normale pour un équipement mobile
+ou en veille. Les observations `network.reachable` ciblant un équipement sont
+donc affichées séparément et ne participent pas à la santé des services, des
+nœuds ou de l’infrastructure.
+
+---
+
 # Santé d'une capacité
 
 Chaque capacité possède son propre état de santé.

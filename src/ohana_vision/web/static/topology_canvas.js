@@ -56,6 +56,7 @@ class TopologyCanvas {
         this.layout = null;
         this.deviceIndex = new Map();
         this.deviceHealth = {};
+        this.devicePresence = {};
         this.toolsPanelCollapsed = Boolean(
             window.matchMedia?.("(max-width: 1199px)").matches,
         );
@@ -68,9 +69,14 @@ class TopologyCanvas {
         });
     }
 
-    render(topology, deviceHealth = {}) {
+    render(
+        topology,
+        deviceHealth = {},
+        devicePresence = {},
+    ) {
         this.topology = topology;
         this.deviceHealth = deviceHealth;
+        this.devicePresence = devicePresence;
         this.deviceIndex = this.createDeviceIndex(
             topology.devices ?? [],
         );
@@ -224,6 +230,14 @@ class TopologyCanvas {
                         <li><span class="topology-tools-panel__state topology-tools-panel__state--degraded"></span>Dégradé</li>
                         <li><span class="topology-tools-panel__state topology-tools-panel__state--unhealthy"></span>Critique</li>
                         <li><span class="topology-tools-panel__state topology-tools-panel__state--unknown"></span>Inconnu</li>
+                    </ul>
+                    <span class="topology-tools-panel__heading topology-tools-panel__heading--secondary">
+                        Présence réseau
+                    </span>
+                    <ul class="topology-tools-panel__list">
+                        <li><span class="topology-tools-panel__presence topology-tools-panel__presence--present"></span>Présent</li>
+                        <li><span class="topology-tools-panel__presence topology-tools-panel__presence--absent"></span>Absent</li>
+                        <li><span class="topology-tools-panel__presence topology-tools-panel__presence--unknown"></span>Inconnu</li>
                     </ul>
                 </section>
             </div>
@@ -2016,6 +2030,8 @@ class TopologyCanvas {
             device.kind,
         );
         const health = this.deviceStatus(device);
+        const presence =
+            this.devicePresenceStatus(device);
 
         const group = this.createSvgElement("g");
 
@@ -2025,6 +2041,15 @@ class TopologyCanvas {
             `topology-device--health-${health}`,
         );
         group.dataset.deviceId = device.device_id;
+
+        if (presence) {
+            group.classList.add(
+                `topology-device--presence-${presence}`,
+            );
+            group.dataset.presenceStatus =
+                presence;
+        }
+
         group.style.setProperty(
             "--topology-order",
             order,
@@ -2055,12 +2080,18 @@ class TopologyCanvas {
                 device.label,
                 this.formatKind(device.kind),
                 this.formatHealthStatus(health),
-            ].join(", "),
+                presence
+                    ? this.formatPresenceStatus(
+                        presence,
+                    )
+                    : null,
+            ].filter(Boolean).join(", "),
         );
 
         const title = this.createDeviceTitle(
             device,
             health,
+            presence,
         );
         const halo = this.createDeviceHalo(
             width,
@@ -2082,6 +2113,10 @@ class TopologyCanvas {
         const detail = this.createDeviceDetail(device);
         const healthIndicator =
             this.createHealthIndicator(health);
+        const presenceIndicator =
+            this.createPresenceIndicator(
+                presence,
+            );
 
         group.append(
             title,
@@ -2093,6 +2128,9 @@ class TopologyCanvas {
             label,
             detail,
             healthIndicator,
+            ...(presenceIndicator
+                ? [presenceIndicator]
+                : []),
         );
         group.addEventListener("click", (event) => {
             event.stopPropagation();
@@ -2131,7 +2169,11 @@ class TopologyCanvas {
     }
 
 
-    createDeviceTitle(device, health) {
+    createDeviceTitle(
+        device,
+        health,
+        presence,
+    ) {
         const title = this.createSvgElement("title");
         const details = [
             device.label,
@@ -2139,11 +2181,110 @@ class TopologyCanvas {
             this.deviceRole(device),
             this.deviceTechnicalDetail(device),
             this.formatHealthStatus(health),
+            presence
+                ? this.formatPresenceStatus(
+                    presence,
+                )
+                : null,
         ].filter(Boolean);
 
         title.textContent = details.join(" — ");
 
         return title;
+    }
+
+    devicePresenceStatus(device) {
+        const presence =
+            this.devicePresence[device.device_id];
+
+        if (!device.address && !presence) {
+            return null;
+        }
+
+        return this.normalizePresenceStatus(
+            presence?.status,
+        );
+    }
+
+    normalizePresenceStatus(status) {
+        const normalized = String(
+            status ?? "unknown",
+        ).toLowerCase();
+        const supported = new Set([
+            "present",
+            "absent",
+            "unknown",
+        ]);
+
+        return supported.has(normalized)
+            ? normalized
+            : "unknown";
+    }
+
+    formatPresenceStatus(status) {
+        const labels = {
+            present: "Présence réseau : présent",
+            absent: "Présence réseau : absent",
+            unknown: "Présence réseau : inconnue",
+        };
+
+        return labels[
+            this.normalizePresenceStatus(status)
+        ];
+    }
+
+    createPresenceIndicator(status) {
+        if (!status) {
+            return null;
+        }
+
+        const normalized =
+            this.normalizePresenceStatus(status);
+        const group = this.createSvgElement("g");
+
+        group.classList.add(
+            "topology-device__presence",
+            `topology-device__presence--${normalized}`,
+        );
+        group.setAttribute(
+            "transform",
+            "translate(198 25)",
+        );
+        group.setAttribute("role", "img");
+        group.setAttribute(
+            "aria-label",
+            this.formatPresenceStatus(normalized),
+        );
+
+        const title = this.createSvgElement(
+            "title",
+        );
+        title.textContent =
+            this.formatPresenceStatus(normalized);
+
+        const ring = this.createSvgElement(
+            "circle",
+        );
+        ring.classList.add(
+            "topology-device__presence-ring",
+        );
+        ring.setAttribute("r", 8);
+
+        const indicator = this.createSvgElement(
+            "circle",
+        );
+        indicator.classList.add(
+            "topology-device__presence-indicator",
+        );
+        indicator.setAttribute("r", 4);
+
+        group.append(
+            title,
+            ring,
+            indicator,
+        );
+
+        return group;
     }
 
     createDeviceHalo(width, height) {

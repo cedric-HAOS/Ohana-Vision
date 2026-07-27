@@ -396,3 +396,40 @@ class FakeTimelineRuntime:
     ) -> None:
         self.retained.append(timeline)
         self.timeline = timeline
+
+
+def test_processor_stores_device_presence_without_updating_health() -> None:
+    """Device presence must be stored without creating service timelines."""
+    runtime = make_running_runtime()
+    store = FakeObservationStore()
+    timeline_engine = FakeTimelineEngine()
+    observation = Observation(
+        observation_id=UUID("00000000-0000-0000-0000-000000000014"),
+        capability_id="network.reachable",
+        service_id="ha-green",
+        node_id="ha-green",
+        status=HealthStatus.UNAVAILABLE,
+        observed_at=OBSERVED_AT,
+        metadata={
+            "target_type": "device",
+            "device_id": "ha-green",
+            "address": "192.168.1.247",
+        },
+    )
+    processor = ObservationProcessor(
+        runtime=runtime,
+        observation_store=store,
+        timeline_engine=timeline_engine,
+        timer=make_timer(),
+    )
+
+    result = processor.process(observation)
+
+    assert result.accepted is True
+    assert result.timeline_updated is False
+    assert store.observations == (observation,)
+    assert timeline_engine.processed == [()]
+    assert result.snapshot.observations_stored == 1
+    assert result.snapshot.service_timelines == 0
+    assert result.snapshot.node_timelines == 0
+    assert result.snapshot.infrastructure_timelines == 0

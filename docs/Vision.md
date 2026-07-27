@@ -130,6 +130,19 @@ Avant la première synchronisation, Vision présente un état vide. Les observat
 
 En cas de redémarrage de Vision, l'Agent retransmet périodiquement la configuration et suspend temporairement ses observations jusqu'à la resynchronisation.
 
+# La présence réseau des équipements
+
+Ohana-Agent peut produire une observation légère `network.reachable` pour les
+équipements possédant une adresse IP. Vision rattache cette observation à la
+topologie et affiche un indicateur discret ainsi que les détails de la dernière
+vérification.
+
+Cette présence ne remplace pas la santé. Elle complète la lecture de la
+topologie sans créer de service artificiel et sans modifier la santé globale.
+Vision ne réalise toujours aucun ping ni aucune interrogation réseau directe.
+
+---
+
 # Ce qu'Ohana-Vision n'est pas
 
 Ohana-Vision n'est pas un logiciel de supervision classique.

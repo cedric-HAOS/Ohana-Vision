@@ -153,6 +153,25 @@ def test_topology_canvas_applies_device_health() -> None:
     assert "topology-device--health-" in response.text
 
 
+def test_topology_canvas_renders_network_presence() -> None:
+    """Addressable devices must expose a discrete presence indicator."""
+    client = make_client()
+
+    response = client.get("/ui/topology_canvas.js")
+    stylesheet = client.get("/ui/styles/topology.css")
+
+    assert response.status_code == 200
+    assert "devicePresenceStatus(" in response.text
+    assert "createPresenceIndicator(" in response.text
+    assert "topology-device--presence-" in response.text
+    assert "topology-device__presence-indicator" in response.text
+    assert "Présence réseau" in response.text
+    assert stylesheet.status_code == 200
+    assert ".topology-device__presence {" in stylesheet.text
+    assert ".topology-device--presence-present {" in stylesheet.text
+    assert ".topology-device--presence-absent {" in stylesheet.text
+
+
 def test_topology_canvas_applies_link_health() -> None:
     """The topology canvas must derive health for links."""
     client = make_client()

@@ -70,10 +70,15 @@ class ObservationProcessor:
         self.runtime.record_received(observation.observed_at)
 
         try:
+            candidate_observations = (
+                *self.observation_store.observations,
+                observation,
+            )
             candidate_timeline = self.timeline_engine.build_infrastructure(
-                (
-                    *self.observation_store.observations,
-                    observation,
+                tuple(
+                    candidate
+                    for candidate in candidate_observations
+                    if candidate.contributes_to_health
                 )
             )
 

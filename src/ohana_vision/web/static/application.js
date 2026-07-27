@@ -250,11 +250,10 @@ export class ApplicationController {
         this.setRefreshing(true);
 
         try {
-            const refreshOperations = [
+            const dataOperations = [
                 this.loadRuntime(),
                 this.loadObservations(),
                 this.loadTimeline(),
-                this.topology.load(),
             ];
 
             if (
@@ -262,14 +261,15 @@ export class ApplicationController {
                     === "configuration"
                 && this.configuration.loaded
             ) {
-                refreshOperations.push(
+                dataOperations.push(
                     this.configuration.reload(),
                 );
             }
 
             await Promise.allSettled(
-                refreshOperations,
+                dataOperations,
             );
+            await this.topology.load();
 
             this.renderLastRefresh();
         } finally {
