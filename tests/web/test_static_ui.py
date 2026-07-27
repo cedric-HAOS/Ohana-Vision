@@ -772,7 +772,48 @@ def test_application_uses_websocket_controller() -> None:
     assert "WebSocketController" in response.text
     assert 'from "./websocket.js"' in response.text
     assert "this.websocket.initialize()" in response.text
-    assert "void this.refresh()" in response.text
+    assert "this.handleRealtimeMessage" in response.text
+
+
+def test_application_refreshes_observations_without_reloading_editor() -> None:
+    """Frequent observations must not reload topology configuration."""
+    response = make_client().get("/ui/application.js")
+
+    assert response.status_code == 200
+    assert '=== "observation.accepted"' in response.text
+    assert "void this.refreshObservationState()" in response.text
+    assert "this.topology.refreshStatus()" in response.text
+
+    observation_refresh = response.text.split(
+        "async refreshObservationState()",
+        maxsplit=1,
+    )[1].split(
+        "async refreshInfrastructure()",
+        maxsplit=1,
+    )[0]
+
+    assert "this.configuration.reload()" not in observation_refresh
+    assert "this.topology.load()" not in observation_refresh
+
+
+def test_application_reloads_topology_only_for_infrastructure_event() -> None:
+    """An infrastructure snapshot may rebuild the topology canvas."""
+    response = make_client().get("/ui/application.js")
+
+    assert response.status_code == 200
+    assert '=== "infrastructure.updated"' in response.text
+    assert "void this.refreshInfrastructure()" in response.text
+
+    infrastructure_refresh = response.text.split(
+        "async refreshInfrastructure()",
+        maxsplit=1,
+    )[1].split(
+        "async refresh()",
+        maxsplit=1,
+    )[0]
+
+    assert "this.topology.load()" in infrastructure_refresh
+    assert "this.configuration.reload()" not in infrastructure_refresh
 
 
 def test_static_ui_exposes_application_module() -> None:
@@ -817,6 +858,26 @@ def test_application_module_refreshes_backend_resources() -> None:
     assert "this.loadObservations()" in response.text
     assert "this.topology.load()" in response.text
     assert "Promise.allSettled" in response.text
+
+
+def test_topology_refreshes_status_without_reloading_definition() -> None:
+    """Stable realtime statuses must not rebuild the topology canvas."""
+    response = make_client().get("/ui/topology.js")
+
+    assert response.status_code == 200
+    assert "async refreshStatus()" in response.text
+    assert "hasVisualStatusChanged(" in response.text
+    assert "if (visualStatusChanged)" in response.text
+
+    status_refresh = response.text.split(
+        "async refreshStatus()",
+        maxsplit=1,
+    )[1].split(
+        "hasVisualStatusChanged(",
+        maxsplit=1,
+    )[0]
+
+    assert "API.topology" not in status_refresh
 
 
 def test_application_entry_point_is_minimal() -> None:

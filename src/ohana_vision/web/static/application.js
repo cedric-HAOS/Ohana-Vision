@@ -77,6 +77,10 @@ export class ApplicationController {
             this.handleNavigationChanged.bind(
                 this,
             );
+        this.handleRealtimeMessage =
+            this.handleRealtimeMessage.bind(
+                this,
+            );
     }
 
     /**
@@ -174,9 +178,8 @@ export class ApplicationController {
 
         this.websocket =
             new WebSocketController({
-                onMessage: () => {
-                    void this.refresh();
-                },
+                onMessage:
+                    this.handleRealtimeMessage,
             });
     }
 
@@ -240,6 +243,66 @@ export class ApplicationController {
 
         if (viewName === "configuration") {
             void this.configuration.load();
+        }
+    }
+
+    /**
+     * Refresh only the resources affected by one realtime event.
+     *
+     * Observation events are frequent. They must not reload the
+     * topology definition or the administration editor because that
+     * would rebuild the canvas and overwrite an in-progress draft.
+     *
+     * @param {object} message
+     */
+    handleRealtimeMessage(message) {
+        if (
+            message.type
+                === "observation.accepted"
+        ) {
+            void this.refreshObservationState();
+            return;
+        }
+
+        if (
+            message.type
+                === "infrastructure.updated"
+        ) {
+            void this.refreshInfrastructure();
+        }
+    }
+
+    /**
+     * Refresh runtime data produced by a new observation.
+     */
+    async refreshObservationState() {
+        this.setRefreshing(true);
+
+        try {
+            await Promise.allSettled([
+                this.loadRuntime(),
+                this.loadObservations(),
+                this.loadTimeline(),
+            ]);
+
+            await this.topology.refreshStatus();
+            this.renderLastRefresh();
+        } finally {
+            this.setRefreshing(false);
+        }
+    }
+
+    /**
+     * Reload the topology only when Agent announces a new snapshot.
+     */
+    async refreshInfrastructure() {
+        this.setRefreshing(true);
+
+        try {
+            await this.topology.load();
+            this.renderLastRefresh();
+        } finally {
+            this.setRefreshing(false);
         }
     }
 

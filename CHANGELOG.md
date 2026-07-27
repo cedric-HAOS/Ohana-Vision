@@ -29,10 +29,20 @@ Le projet suit les principes de Semantic Versioning.
   santé globale.
 - Le chargement de la topologie réutilise désormais la timeline et les
   observations déjà présentes dans l’état frontend.
+- Les événements WebSocket actualisent uniquement les ressources concernées :
+  les observations ne rechargent plus la définition de la topologie ni
+  l’éditeur d’architecture.
+
+## Corrigé
+
+- Suppression du clignotement périodique de la carte lorsque les observations
+  conservent le même état visuel.
+- Protection des formulaires d’administration en cours de saisie contre les
+  rafraîchissements automatiques provoqués par les observations.
 
 ## Qualité
 
-- 764 tests réussis.
+- 767 tests réussis.
 - Syntaxe des modules JavaScript validée avec Node.js.
 - Construction validée des artefacts wheel et sdist 1.4.0.
 

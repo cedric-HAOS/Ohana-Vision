@@ -148,6 +148,103 @@ export class TopologyController {
     }
 
     /**
+     * Refresh health and network presence without reloading the
+     * topology definition.
+     *
+     * The canvas is rebuilt only when a visible status actually
+     * changes. Repeated observations with the same status therefore
+     * update the shared details without making the map blink.
+     */
+    async refreshStatus() {
+        const topology = this.state.topology;
+
+        if (!topology) {
+            await this.load();
+            return;
+        }
+
+        const deviceHealth =
+            this.buildDeviceHealth(
+                topology,
+                this.state.timeline,
+            );
+        const devicePresence =
+            this.buildDevicePresence(
+                topology,
+                this.state.observations,
+            );
+        const visualStatusChanged =
+            this.hasVisualStatusChanged(
+                topology,
+                deviceHealth,
+                devicePresence,
+            );
+
+        this.state.deviceHealth =
+            deviceHealth;
+        this.state.devicePresence =
+            devicePresence;
+
+        if (visualStatusChanged) {
+            this.canvas.render(
+                topology,
+                deviceHealth,
+                devicePresence,
+            );
+
+            if (this.state.selectedDeviceId) {
+                this.setSelectedDevice(
+                    this.state.selectedDeviceId,
+                );
+            }
+        }
+
+        hideError(this.elements.error);
+
+        this.onTopologyChanged({
+            topology,
+            deviceHealth,
+            devicePresence,
+        });
+    }
+
+    hasVisualStatusChanged(
+        topology,
+        deviceHealth,
+        devicePresence,
+    ) {
+        return (
+            topology?.devices
+            ?? []
+        ).some((device) => {
+            const deviceId = device.device_id;
+            const previousHealth =
+                this.state.deviceHealth[
+                    deviceId
+                ]
+                ?? "unknown";
+            const nextHealth =
+                deviceHealth[deviceId]
+                ?? "unknown";
+            const previousPresence =
+                this.state.devicePresence[
+                    deviceId
+                ]?.status
+                ?? null;
+            const nextPresence =
+                devicePresence[deviceId]
+                    ?.status
+                ?? null;
+
+            return (
+                previousHealth !== nextHealth
+                || previousPresence
+                    !== nextPresence
+            );
+        });
+    }
+
+    /**
      * Select one topology device.
      *
      * @param {string | null} deviceId
