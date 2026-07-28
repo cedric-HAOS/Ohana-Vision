@@ -195,6 +195,11 @@
     font-size: var(--ohana-font-size-xs);
 }
 
+.sidebar-versions {
+    display: grid;
+    gap: var(--ohana-space-1);
+}
+
 .sidebar-version {
     display: flex;
     min-width: 0;

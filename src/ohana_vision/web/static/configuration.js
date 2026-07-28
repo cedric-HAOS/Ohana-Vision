@@ -2879,8 +2879,11 @@ export class ConfigurationController {
                 ${common}
                 <label class="configuration-check configuration-span-2">
                     <input id="plugin-zwave-verify-tls" type="checkbox" ${configuration.verify_tls !== false ? "checked" : ""}>
-                    Vérifier le certificat TLS des contrôleurs HTTPS
+                    Vérifier le certificat TLS des connexions WSS
                 </label>
+                <small class="configuration-span-2">
+                    Les services Z-Wave utilisent par défaut le serveur WebSocket sur le port 3000.
+                </small>
             `;
         }
 
@@ -2897,7 +2900,7 @@ export class ConfigurationController {
                 </label>
                 <label>
                     Version de l’application
-                    <input id="plugin-wireguard-app-version" type="text" value="${escapeHtml(configuration.app_version ?? "1.7.0")}" required>
+                    <input id="plugin-wireguard-app-version" type="text" value="${escapeHtml(configuration.app_version ?? "1.7.2")}" required>
                 </label>
                 <label class="configuration-span-2">
                     Jeton d’autorisation Freebox

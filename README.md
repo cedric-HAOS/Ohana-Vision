@@ -36,10 +36,13 @@ La définition statique répond à la question **« qu'est-ce qui existe ? »**.
 La vue d'ensemble regroupe :
 
 - les indicateurs principaux ;
-- les alertes actives ;
+- les alertes actives, y compris celles issues d’une capacité critique ;
 - l'état global du runtime ;
 - la topologie de l'infrastructure ;
 - la timeline des périodes métier.
+
+La barre latérale affiche la version de Vision ainsi que la version réellement
+exposée par l’API d’administration d’Agent.
 
 ### Topologie dynamique
 

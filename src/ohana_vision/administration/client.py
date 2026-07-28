@@ -31,7 +31,7 @@ class AgentAdministrationClient:
         *,
         base_url: str,
         token_file: Path,
-        timeout_seconds: float = 5.0,
+        timeout_seconds: float = 10.0,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.token_file = token_file

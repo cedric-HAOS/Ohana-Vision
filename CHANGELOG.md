@@ -6,6 +6,37 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# v1.6.1 — Santé critique et versions — 2026-07-28
+
+## Corrigé
+
+- Le statut métier `unavailable` est maintenant normalisé en état critique dans
+  tous les KPI, comme il l’était déjà dans la topologie.
+- Les capacités rattachées à un service critique influencent désormais les KPI
+  de santé globale, de disponibilité, d’alertes et d’incidents.
+- Les observations sont regroupées par nœud, service et capacité afin d’éviter
+  les collisions entre capacités portant le même identifiant.
+- Le délai d’administration par défaut passe à 10 secondes pour permettre les
+  tests de plugins avec nouvelle tentative.
+
+## Ajouté
+
+- Version d’Ohana-Agent affichée sous la version d’Ohana-Vision dans la barre
+  latérale.
+- Prise en compte directe de la criticité des services déclarés dans
+  l’infrastructure pour les alertes du dashboard.
+- Indication du serveur WebSocket Z-Wave JS sur le port 3000 dans le formulaire
+  du plugin.
+
+## Qualité
+
+- Version du paquet alignée sur `1.6.1`.
+- Tests statiques ajoutés pour la version Agent et la propagation des capacités
+  critiques dans les KPI.
+- 779 tests réussis et syntaxe JavaScript validée.
+
+---
+
 # v1.6.0 — Freebox WireGuard et Shelly Telemetry — 2026-07-27
 
 ## Corrigé

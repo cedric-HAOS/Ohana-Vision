@@ -2365,3 +2365,48 @@ def test_plugin_ui_supports_zwave_wireguard_and_shelly_telemetry() -> None:
     assert 'plugin.id === "shelly_telemetry"' in js_response.text
     assert "plugin-shelly-home-assistant-url" in js_response.text
     assert "plugin-shelly-devices" in js_response.text
+
+
+def test_sidebar_exposes_agent_version_placeholder() -> None:
+    """Sidebar footer must reserve a line for the connected Agent version."""
+    response = make_client().get("/ui/")
+
+    assert response.status_code == 200
+    assert 'class="sidebar-versions"' in response.text
+    assert "Ohana-Agent" in response.text
+    assert 'id="agent-version"' in response.text
+
+
+def test_application_loads_agent_version_from_capabilities() -> None:
+    """Frontend must read the Agent version from its administration contract."""
+    response = make_client().get("/ui/application.js")
+
+    assert response.status_code == 200
+    assert "async loadAgentVersion()" in response.text
+    assert "API.administrationCapabilities" in response.text
+    assert "capabilities?.agent_version" in response.text
+    assert '"indisponible"' in response.text
+
+
+def test_dashboard_applies_critical_capability_health_to_kpis() -> None:
+    """Critical service observations must participate in dashboard health."""
+    response = make_client().get("/ui/dashboard.js")
+
+    assert response.status_code == 200
+    assert "criticalServicePolicies()" in response.text
+    assert "criticalCapabilityHealthByDevice()" in response.text
+    assert "effectiveDeviceHealth()" in response.text
+    assert "normalizeHealthStatus(status)" in response.text
+    assert "service.critical !== true" in response.text
+    assert "observation.node_id" in response.text
+    assert "observation.service_id" in response.text
+    assert "observation.capability_id" in response.text
+
+
+def test_zwave_form_documents_home_assistant_websocket_port() -> None:
+    """Z-Wave plugin form must describe the Home Assistant server endpoint."""
+    response = make_client().get("/ui/configuration.js")
+
+    assert response.status_code == 200
+    assert "serveur WebSocket sur le port 3000" in response.text
+    assert "connexions WSS" in response.text

@@ -3,6 +3,7 @@
 import {
     escapeHtml,
     hideError,
+    normalizeHealthStatus,
     showError,
     uniqueValues,
 } from "./utils.js";
@@ -284,12 +285,15 @@ export class DashboardController {
             this.state.topology?.devices
             ?? [];
 
+        const effectiveHealth =
+            this.effectiveDeviceHealth();
+
         const alerts = devices
             .map((device) => {
                 return {
                     device,
                     status:
-                        this.state.deviceHealth[
+                        effectiveHealth[
                             device.device_id
                         ]
                         ?? "unknown",
@@ -533,35 +537,61 @@ export class DashboardController {
     }
 
     renderCapabilityDistribution() {
-        const latestByCapability = new Map();
-
-        for (const observation of (this.state.observations ?? [])) {
-            latestByCapability.set(
-                observation.capability_id,
-                observation.status ?? "unknown",
+        const statuses = [
+            ...this.latestCapabilityObservations()
+                .values(),
+        ].map((observation) => {
+            return normalizeHealthStatus(
+                observation.status,
             );
-        }
-
-        const statuses = [...latestByCapability.values()];
+        });
         const total = statuses.length;
-        const healthy = statuses.filter((status) => status === "healthy").length;
-        const degraded = statuses.filter((status) => status === "degraded").length;
-        const unhealthy = statuses.filter((status) => status === "unhealthy").length;
+        const healthy = statuses.filter(
+            (status) => status === "healthy",
+        ).length;
+        const degraded = statuses.filter(
+            (status) => status === "degraded",
+        ).length;
+        const unhealthy = statuses.filter(
+            (status) => status === "unhealthy",
+        ).length;
+        const unknown = statuses.filter(
+            (status) => status === "unknown",
+        ).length;
 
-        this.setText(this.elements.capabilityDistributionTotal, total);
+        this.setText(
+            this.elements.capabilityDistributionTotal,
+            total,
+        );
+
+        const summary = total === 0
+            ? "Aucune donnée"
+            : (
+                `${healthy} saine${healthy > 1 ? "s" : ""}`
+                + ` · ${degraded} dégradée${degraded > 1 ? "s" : ""}`
+                + ` · ${unhealthy} critique${unhealthy > 1 ? "s" : ""}`
+                + (
+                    unknown > 0
+                        ? ` · ${unknown} inconnue${unknown > 1 ? "s" : ""}`
+                        : ""
+                )
+            );
+
         this.setText(
             this.elements.capabilityDistributionSummary,
-            total === 0
-                ? "Aucune donnée"
-                : `${healthy} saine${healthy > 1 ? "s" : ""} · ${degraded} dégradée${degraded > 1 ? "s" : ""} · ${unhealthy} critique${unhealthy > 1 ? "s" : ""}`,
+            summary,
         );
 
         if (this.elements.capabilityDistributionRing) {
-            const percentage = total === 0 ? 0 : healthy / total * 100;
-            this.elements.capabilityDistributionRing.style.setProperty(
-                "--healthy-percentage",
-                `${percentage}%`,
-            );
+            const percentage = total === 0
+                ? 0
+                : healthy / total * 100;
+
+            this.elements.capabilityDistributionRing
+                .style.setProperty(
+                    "--healthy-percentage",
+                    `${percentage}%`,
+                );
         }
     }
 
@@ -759,6 +789,211 @@ export class DashboardController {
         }
     }
 
+    observationKey(observation) {
+        return [
+            observation.node_id,
+            observation.service_id,
+            observation.capability_id,
+        ].join("/");
+    }
+
+    observationTimestamp(observation) {
+        const timestamp = new Date(
+            observation.observed_at,
+        ).getTime();
+
+        return Number.isFinite(timestamp)
+            ? timestamp
+            : 0;
+    }
+
+    latestCapabilityObservations() {
+        const latest = new Map();
+
+        for (const observation of (
+            this.state.observations
+            ?? []
+        )) {
+            const key =
+                this.observationKey(
+                    observation,
+                );
+            const current = latest.get(key);
+
+            if (
+                current
+                && this.observationTimestamp(
+                    observation,
+                )
+                    < this.observationTimestamp(
+                        current,
+                    )
+            ) {
+                continue;
+            }
+
+            latest.set(key, observation);
+        }
+
+        return latest;
+    }
+
+    criticalServicePolicies() {
+        const policies = new Map();
+
+        for (const device of (
+            this.state.topology?.devices
+            ?? []
+        )) {
+            if (!device.node_id) {
+                continue;
+            }
+
+            const services = Array.isArray(
+                device.metadata?.services,
+            )
+                ? device.metadata.services
+                : [];
+
+            for (const service of services) {
+                if (
+                    !service?.service_id
+                    || service.enabled === false
+                    || service.critical !== true
+                ) {
+                    continue;
+                }
+
+                policies.set(
+                    [
+                        device.node_id,
+                        service.service_id,
+                    ].join("/"),
+                    device.device_id,
+                );
+            }
+        }
+
+        return policies;
+    }
+
+    criticalCapabilityImpact(status) {
+        const normalized = String(
+            status ?? "unknown",
+        ).toLowerCase();
+
+        if (
+            normalized === "unavailable"
+            || normalized === "unhealthy"
+        ) {
+            return "unhealthy";
+        }
+
+        if (
+            normalized === "degraded"
+            || normalized === "stale"
+            || normalized === "unknown"
+        ) {
+            return "degraded";
+        }
+
+        return normalized === "healthy"
+            ? "healthy"
+            : "degraded";
+    }
+
+    healthSeverity(status) {
+        const priorities = {
+            healthy: 0,
+            unknown: 1,
+            degraded: 2,
+            unhealthy: 3,
+        };
+
+        return priorities[status] ?? priorities.unknown;
+    }
+
+    mostSevereHealth(first, second) {
+        const normalizedFirst =
+            normalizeHealthStatus(first);
+        const normalizedSecond =
+            normalizeHealthStatus(second);
+
+        return this.healthSeverity(
+            normalizedSecond,
+        ) > this.healthSeverity(
+            normalizedFirst,
+        )
+            ? normalizedSecond
+            : normalizedFirst;
+    }
+
+    criticalCapabilityHealthByDevice() {
+        const policies =
+            this.criticalServicePolicies();
+        const health = {};
+
+        for (const observation of (
+            this.latestCapabilityObservations()
+                .values()
+        )) {
+            const serviceKey = [
+                observation.node_id,
+                observation.service_id,
+            ].join("/");
+            const deviceId =
+                policies.get(serviceKey);
+
+            if (!deviceId) {
+                continue;
+            }
+
+            const impact =
+                this.criticalCapabilityImpact(
+                    observation.status,
+                );
+
+            health[deviceId] =
+                this.mostSevereHealth(
+                    health[deviceId]
+                    ?? "healthy",
+                    impact,
+                );
+        }
+
+        return health;
+    }
+
+    effectiveDeviceHealth() {
+        const health = Object.fromEntries(
+            Object.entries(
+                this.state.deviceHealth
+                ?? {},
+            ).map(([deviceId, status]) => {
+                return [
+                    deviceId,
+                    normalizeHealthStatus(status),
+                ];
+            }),
+        );
+        const criticalHealth =
+            this.criticalCapabilityHealthByDevice();
+
+        for (const [
+            deviceId,
+            status,
+        ] of Object.entries(criticalHealth)) {
+            health[deviceId] =
+                this.mostSevereHealth(
+                    health[deviceId]
+                    ?? "unknown",
+                    status,
+                );
+        }
+
+        return health;
+    }
+
     deviceHealthStatistics() {
         const devices =
             this.state.topology?.devices
@@ -771,14 +1006,15 @@ export class DashboardController {
                 );
             });
 
+        const effectiveHealth =
+            this.effectiveDeviceHealth();
         const statuses =
             supervisedDevices.map(
                 (device) => {
                     return (
-                        this.state
-                            .deviceHealth[
-                                device.device_id
-                            ]
+                        effectiveHealth[
+                            device.device_id
+                        ]
                         ?? "unknown"
                     );
                 },

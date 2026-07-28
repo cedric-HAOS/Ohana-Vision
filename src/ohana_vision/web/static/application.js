@@ -71,6 +71,10 @@ export class ApplicationController {
                 document.querySelector(
                     "#last-refresh",
                 ),
+            agentVersion:
+                document.querySelector(
+                    "#agent-version",
+                ),
         };
 
         this.handleNavigationChanged =
@@ -327,6 +331,7 @@ export class ApplicationController {
                 this.loadRuntime(),
                 this.loadObservations(),
                 this.loadTimeline(),
+                this.loadAgentVersion(),
             ];
 
             if (
@@ -347,6 +352,33 @@ export class ApplicationController {
             this.renderLastRefresh();
         } finally {
             this.setRefreshing(false);
+        }
+    }
+
+    /**
+     * Load the version exposed by Ohana-Agent administration.
+     */
+    async loadAgentVersion() {
+        if (!this.elements.agentVersion) {
+            return;
+        }
+
+        try {
+            const capabilities = await fetchJson(
+                API.administrationCapabilities,
+            );
+            const version = String(
+                capabilities?.agent_version
+                ?? "",
+            ).trim();
+
+            this.elements.agentVersion.textContent =
+                version && version !== "unknown"
+                    ? `v${version}`
+                    : "inconnue";
+        } catch {
+            this.elements.agentVersion.textContent =
+                "indisponible";
         }
     }
 
