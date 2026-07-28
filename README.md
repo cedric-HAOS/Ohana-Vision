@@ -86,7 +86,8 @@ ni modifier de fichier YAML :
   association des services aux équipements et création des liaisons en
   sélectionnant leur source puis leur destination ;
 - **Plugins** : état, activation, configuration et test immédiat des plugins
-  DNS, NTP et MQTT réellement enregistrés dans Ohana-Agent.
+  DHCP, DNS, NTP, MQTT, présence réseau, Z-Wave, WireGuard Freebox et
+  Shelly Telemetry réellement enregistrés dans Ohana-Agent.
 
 Vision présente et valide les formulaires, puis transmet la demande à l'API
 locale authentifiée d'Ohana-Agent. L'Agent reste seul propriétaire des fichiers

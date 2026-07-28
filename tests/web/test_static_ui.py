@@ -285,7 +285,7 @@ def test_static_ui_exposes_graphical_configuration_views() -> None:
     assert 'data-navigation-target="configuration-architecture"' in response.text
     assert 'data-navigation-target="configuration-plugins"' in response.text
     assert 'data-view="configuration"' in response.text
-    assert 'data-configuration-tab=' not in response.text
+    assert "data-configuration-tab=" not in response.text
     assert 'id="dhcp-settings-form"' in response.text
     assert 'id="dhcp-reservations-table"' in response.text
     assert 'id="architecture-board"' in response.text
@@ -442,7 +442,10 @@ def test_observations_and_configuration_use_full_height_layouts() -> None:
     assert "overflow-y: auto" in observations.text
     assert ".configuration-card--architecture-workspace" in configuration.text
     assert ".plugin-browser" in configuration.text
-    assert "grid-template-columns: minmax(20rem, 25rem) minmax(0, 1fr)" in configuration.text
+    assert (
+        "grid-template-columns: minmax(20rem, 25rem) minmax(0, 1fr)"
+        in configuration.text
+    )
 
 
 def test_static_ui_loads_navigation_as_javascript_module() -> None:
@@ -2334,3 +2337,31 @@ def test_responsive_stylesheet_adapts_timeline_and_observations() -> None:
     assert ".timeline-range__button" in response.text
     assert ".recent-observation__meta" in response.text
     assert "grid-column: 2;" in response.text
+
+
+def test_observations_list_is_not_limited_to_six_items() -> None:
+    """Render every observation and let the list container handle scrolling."""
+    response = make_client().get("/ui/observations.js")
+
+    assert response.status_code == 200
+    assert ".slice(0, 6)" not in response.text
+    assert "this.elements.recentList.innerHTML = recent" in response.text
+
+
+def test_plugin_ui_supports_zwave_wireguard_and_shelly_telemetry() -> None:
+    """Expose dedicated controls for both new Agent plugins."""
+    client = make_client()
+    html_response = client.get("/ui/")
+    js_response = client.get("/ui/configuration.js")
+
+    assert html_response.status_code == 200
+    assert js_response.status_code == 200
+    assert '<option value="wireguard">WireGuard</option>' in html_response.text
+    assert 'plugin.id === "zwave"' in js_response.text
+    assert 'plugin.id === "wireguard"' in js_response.text
+    assert "plugin-zwave-verify-tls" in js_response.text
+    assert "plugin-wireguard-app-token" in js_response.text
+    assert "plugin-wireguard-verify-tls" in js_response.text
+    assert 'plugin.id === "shelly_telemetry"' in js_response.text
+    assert "plugin-shelly-home-assistant-url" in js_response.text
+    assert "plugin-shelly-devices" in js_response.text

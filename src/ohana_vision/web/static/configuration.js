@@ -37,6 +37,9 @@ const PLUGIN_ICONS = Object.freeze({
     ntp: "/ui/assets/icons/network/clock-3.svg",
     mqtt: "/ui/assets/icons/services/radio.svg",
     network: "/ui/assets/icons/infrastructure/network.svg",
+    zwave: "/ui/assets/icons/protocols/radio-tower.svg",
+    wireguard: "/ui/assets/icons/network/shield-check.svg",
+    shelly_telemetry: "/ui/assets/icons/hardware/plug-zap.svg",
 });
 
 /**
@@ -2717,6 +2720,18 @@ export class ConfigurationController {
             return "Cette observation surveille le service et l’occupation du pool. Les baux et réservations restent gérés dans la page DHCP.";
         }
 
+        if (plugin.id === "zwave") {
+            return "Les contrôleurs Z-Wave JS UI ciblés proviennent des services Z-Wave déclarés dans l’onglet Architecture.";
+        }
+
+        if (plugin.id === "wireguard") {
+            return "Le serveur WireGuard est contrôlé directement dans Freebox OS. Le service WireGuard doit être déclaré sur la Freebox dans l’onglet Architecture et Ohana-Agent doit être autorisé par la Freebox.";
+        }
+
+        if (plugin.id === "shelly_telemetry") {
+            return "Chaque ligne associe un équipement Shelly à son capteur de puissance Home Assistant et, éventuellement, à son compteur d’énergie. Une puissance à 0 W reste saine tant que la télémétrie est récente.";
+        }
+
         return "Les serveurs et courtiers ciblés proviennent des services déclarés dans l’onglet Architecture.";
     }
 
@@ -2859,6 +2874,88 @@ export class ConfigurationController {
             `;
         }
 
+        if (plugin.id === "zwave") {
+            return `
+                ${common}
+                <label class="configuration-check configuration-span-2">
+                    <input id="plugin-zwave-verify-tls" type="checkbox" ${configuration.verify_tls !== false ? "checked" : ""}>
+                    Vérifier le certificat TLS des contrôleurs HTTPS
+                </label>
+            `;
+        }
+
+        if (plugin.id === "wireguard") {
+            const tokenHint = configuration.app_token_configured
+                ? "Un jeton Freebox est déjà configuré. Laissez vide pour le conserver."
+                : "Autorisez Ohana-Agent sur la Freebox, puis renseignez le jeton obtenu.";
+
+            return `
+                ${common}
+                <label>
+                    Identifiant de l’application
+                    <input id="plugin-wireguard-app-id" type="text" value="${escapeHtml(configuration.app_id ?? "fr.ohana.agent")}" required>
+                </label>
+                <label>
+                    Version de l’application
+                    <input id="plugin-wireguard-app-version" type="text" value="${escapeHtml(configuration.app_version ?? "1.7.0")}" required>
+                </label>
+                <label class="configuration-span-2">
+                    Jeton d’autorisation Freebox
+                    <input id="plugin-wireguard-app-token" type="password" value="" autocomplete="new-password">
+                    <small>${escapeHtml(tokenHint)}</small>
+                </label>
+                <label class="configuration-check configuration-span-2">
+                    <input id="plugin-wireguard-verify-tls" type="checkbox" ${configuration.verify_tls ? "checked" : ""}>
+                    Vérifier le certificat TLS de Freebox OS
+                </label>
+            `;
+        }
+
+        if (plugin.id === "shelly_telemetry") {
+            const tokenHint = configuration.access_token_configured
+                ? "Un jeton Home Assistant est déjà configuré. Laissez vide pour le conserver."
+                : "Renseignez un jeton d’accès longue durée Home Assistant ou une variable d’environnement.";
+            const devices = (configuration.devices ?? []).map(
+                (device) => [
+                    device.name ?? "",
+                    device.power_entity_id ?? "",
+                    device.energy_entity_id ?? "",
+                ].join(" | "),
+            ).join("\n");
+
+            return `
+                ${common}
+                ${numberField(
+                    "plugin-shelly-maximum-age",
+                    "Âge maximal d’une télémétrie (secondes)",
+                    configuration.maximum_age_seconds ?? 900,
+                    'min="1" step="1" required',
+                )}
+                <label>
+                    URL Home Assistant
+                    <input id="plugin-shelly-home-assistant-url" type="url" value="${escapeHtml(configuration.home_assistant_url ?? "http://ha-green.ohana.lan:8123")}" required>
+                </label>
+                <label class="configuration-span-2">
+                    Jeton Home Assistant
+                    <input id="plugin-shelly-access-token" type="password" value="" autocomplete="new-password">
+                    <small>${escapeHtml(tokenHint)}</small>
+                </label>
+                <label class="configuration-span-2">
+                    Variable d’environnement du jeton
+                    <input id="plugin-shelly-token-environment" type="text" value="${escapeHtml(configuration.access_token_environment_variable ?? "OHANA_HOME_ASSISTANT_TOKEN")}" placeholder="OHANA_HOME_ASSISTANT_TOKEN">
+                </label>
+                <label class="configuration-check configuration-span-2">
+                    <input id="plugin-shelly-verify-tls" type="checkbox" ${configuration.verify_tls !== false ? "checked" : ""}>
+                    Vérifier le certificat TLS de Home Assistant
+                </label>
+                <label class="configuration-span-2">
+                    Équipements Shelly
+                    <textarea id="plugin-shelly-devices" rows="7" placeholder="Cuisine | sensor.shelly_cuisine_power | sensor.shelly_cuisine_energy" required>${escapeHtml(devices)}</textarea>
+                    <small>Une ligne par équipement : Nom | capteur de puissance | compteur d’énergie facultatif.</small>
+                </label>
+            `;
+        }
+
         if (plugin.id === "mqtt") {
             const authentication =
                 configuration.authentication ?? {};
@@ -2983,6 +3080,57 @@ export class ConfigurationController {
                     ),
                 ),
             };
+        } else if (plugin.id === "zwave") {
+            configuration.verify_tls = this.checked(
+                "plugin-zwave-verify-tls",
+            );
+        } else if (plugin.id === "wireguard") {
+            configuration.app_id = this.value(
+                "plugin-wireguard-app-id",
+            );
+            configuration.app_version = this.value(
+                "plugin-wireguard-app-version",
+            );
+            configuration.app_token =
+                this.value("plugin-wireguard-app-token")
+                || null;
+            configuration.verify_tls = this.checked(
+                "plugin-wireguard-verify-tls",
+            );
+            delete configuration.app_token_configured;
+        } else if (plugin.id === "shelly_telemetry") {
+            configuration.maximum_age_seconds = Number(
+                this.value("plugin-shelly-maximum-age"),
+            );
+            configuration.home_assistant_url = this.value(
+                "plugin-shelly-home-assistant-url",
+            );
+            configuration.access_token =
+                this.value("plugin-shelly-access-token")
+                || null;
+            configuration.access_token_environment_variable =
+                this.value("plugin-shelly-token-environment")
+                || null;
+            configuration.verify_tls = this.checked(
+                "plugin-shelly-verify-tls",
+            );
+            configuration.devices = this.value(
+                "plugin-shelly-devices",
+            )
+                .split(/\r?\n/)
+                .map((line) => line.trim())
+                .filter(Boolean)
+                .map((line) => {
+                    const [name, powerEntityId, energyEntityId] =
+                        line.split("|").map((value) => value.trim());
+                    return {
+                        name,
+                        power_entity_id: powerEntityId,
+                        energy_entity_id: energyEntityId || null,
+                        enabled: true,
+                    };
+                });
+            delete configuration.access_token_configured;
         } else if (plugin.id === "mqtt") {
             configuration.keepalive_seconds = Number(
                 this.value("plugin-mqtt-keepalive"),

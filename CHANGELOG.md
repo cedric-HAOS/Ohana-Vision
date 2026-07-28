@@ -6,6 +6,46 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# v1.6.0 — Freebox WireGuard et Shelly Telemetry — 2026-07-27
+
+## Corrigé
+
+- Le formulaire WireGuard ne propose plus le contrôle d’une interface locale ni l’âge d’un échange.
+- La configuration correspond maintenant au serveur WireGuard réellement fourni par la Freebox.
+
+## Ajouté
+
+- Configuration de l’identifiant d’application, de la version, du jeton Freebox et de la vérification TLS.
+- Carte et formulaire **Shelly Telemetry**.
+- Configuration de l’URL Home Assistant, du jeton, de l’âge maximal et de la liste des équipements Shelly.
+- Saisie d’une ligne par équipement sous la forme `Nom | capteur de puissance | compteur d’énergie facultatif`.
+
+## Qualité
+
+- 775 tests unitaires, API et statiques réussis.
+- Vérification syntaxique du JavaScript de configuration.
+
+---
+
+# v1.5.0 — Plugins Z-Wave et WireGuard — 2026-07-27
+
+## Corrigé
+
+- La page **Observations** affiche désormais toute la liste disponible dans sa zone défilante au lieu de la limiter aux six derniers éléments.
+
+## Ajouté
+
+- Prise en charge des plugins **Z-Wave** et **WireGuard** dans la page Plugins.
+- Formulaire Z-Wave avec activation de la vérification TLS.
+- Formulaire WireGuard avec contrôle optionnel de l’âge du dernier échange.
+- Type de service **WireGuard** dans l’éditeur d’architecture.
+- Icônes officielles pour les deux nouveaux plugins.
+
+## Qualité
+
+- 775 tests unitaires, API et statiques réussis.
+- Tests statiques ajoutés pour la liste complète des observations et les nouveaux formulaires de plugins.
+
 # v1.4.4 — Configuration par équipement et finitions UI — 2026-07-27
 
 ## Corrigé

@@ -83,8 +83,7 @@ export class ObservationsController {
                         first.observed_at,
                     ).getTime()
                 );
-            })
-            .slice(0, 6);
+            });
 
         if (recent.length === 0) {
             this.elements.recentList.innerHTML = `
