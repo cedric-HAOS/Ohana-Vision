@@ -60,6 +60,23 @@ Au démarrage, Vision expose un état vide jusqu'à la réception du snapshot Ag
 
 Les positions sont transmises sous forme de cellules logiques `column` / `row`. Vision reste seul responsable de leur conversion en coordonnées graphiques, des espacements et des dimensions du canvas.
 
+### Carte des services
+
+La page **Services**, située sous Infrastructure, fournit une projection logique
+complémentaire à la topologie physique. Elle regroupe les services par
+équipement hôte et affiche directement :
+
+- leur état courant calculé depuis les dernières observations de chaque
+  capacité ;
+- leur type, leur port et leur implémentation ;
+- leur criticité ;
+- le nombre de capacités observées et celles en anomalie ;
+- la date de la dernière observation.
+
+La page propose une recherche et des filtres par état, type et criticité. Un
+inspecteur détaille le service sélectionné et permet de retrouver son
+équipement dans la carte Infrastructure.
+
 ### Timeline
 
 La timeline repose sur les périodes métier calculées par le backend.
@@ -170,6 +187,7 @@ ApplicationController
         ├── DashboardController
         ├── NavigationController
         ├── TopologyController
+        ├── ServicesController
         ├── TimelineController
         ├── ObservationsController
         ├── ConfigurationController

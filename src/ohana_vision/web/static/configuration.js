@@ -301,6 +301,14 @@ export class ConfigurationController {
                 this.updateNetworkPresenceControl();
             },
         );
+        document.getElementById(
+            "architecture-service-type",
+        )?.addEventListener(
+            "change",
+            () => {
+                this.updateShellyServiceFields();
+            },
+        );
         this.elements.architectureDeviceServices
             ?.addEventListener(
                 "click",
@@ -1601,6 +1609,26 @@ export class ConfigurationController {
         );
     }
 
+    updateShellyServiceFields() {
+        const isShelly = this.value(
+            "architecture-service-type",
+        ) === "shelly_telemetry";
+        const fields = document.getElementById(
+            "architecture-service-shelly-fields",
+        );
+        const powerEntity = document.getElementById(
+            "architecture-service-shelly-power-entity",
+        );
+
+        if (fields) {
+            fields.hidden = !isShelly;
+        }
+
+        if (powerEntity) {
+            powerEntity.required = isShelly;
+        }
+    }
+
     editService(serviceId) {
         const service =
             this.infrastructure.services.find(
@@ -1645,6 +1673,19 @@ export class ConfigurationController {
             "architecture-service-critical",
             service.critical ?? false,
         );
+        this.setValue(
+            "architecture-service-shelly-power-entity",
+            service.metadata?.power_entity_id ?? "",
+        );
+        this.setValue(
+            "architecture-service-shelly-energy-entity",
+            service.metadata?.energy_entity_id ?? "",
+        );
+        this.setValue(
+            "architecture-service-shelly-maximum-age",
+            service.metadata?.maximum_age_seconds ?? 900,
+        );
+        this.updateShellyServiceFields();
     }
 
     editNewService(nodeId = null) {
@@ -1691,6 +1732,19 @@ export class ConfigurationController {
             "architecture-service-critical",
             false,
         );
+        this.setValue(
+            "architecture-service-shelly-power-entity",
+            "",
+        );
+        this.setValue(
+            "architecture-service-shelly-energy-entity",
+            "",
+        );
+        this.setValue(
+            "architecture-service-shelly-maximum-age",
+            900,
+        );
+        this.updateShellyServiceFields();
     }
 
     editNewServiceForSelection() {
@@ -2021,12 +2075,41 @@ export class ConfigurationController {
         const port = this.value(
             "architecture-service-port",
         );
+        const type = this.value(
+            "architecture-service-type",
+        );
+        const metadata = {
+            ...(service?.metadata ?? {}),
+        };
+
+        if (type === "shelly_telemetry") {
+            metadata.power_entity_id = this.value(
+                "architecture-service-shelly-power-entity",
+            );
+            const energyEntityId = this.value(
+                "architecture-service-shelly-energy-entity",
+            );
+            const maximumAge = Number(this.value(
+                "architecture-service-shelly-maximum-age",
+            ) || 900);
+
+            if (energyEntityId) {
+                metadata.energy_entity_id = energyEntityId;
+            } else {
+                delete metadata.energy_entity_id;
+            }
+
+            metadata.maximum_age_seconds = maximumAge;
+        } else {
+            delete metadata.power_entity_id;
+            delete metadata.energy_entity_id;
+            delete metadata.maximum_age_seconds;
+        }
+
         const values = {
             id,
             name,
-            type: this.value(
-                "architecture-service-type",
-            ),
+            type,
             node: this.value(
                 "architecture-service-node",
             ),
@@ -2040,7 +2123,7 @@ export class ConfigurationController {
             critical: this.checked(
                 "architecture-service-critical",
             ),
-            metadata: service?.metadata ?? {},
+            metadata,
         };
 
         if (service) {
@@ -2683,13 +2766,20 @@ export class ConfigurationController {
     }
 
     pluginActivationField(plugin) {
-        if (plugin.id === "network") {
+        if (
+            plugin.id === "network"
+            || plugin.id === "shelly_telemetry"
+        ) {
+            const scope = plugin.id === "network"
+                ? "Choisissez les équipements surveillés dans Configuration → Architecture."
+                : "Ajoutez un service Shelly Telemetry à chaque équipement concerné dans Configuration → Architecture.";
+
             return `
                 <div class="plugin-scope configuration-span-2">
                     <span class="plugin-scope__icon" aria-hidden="true"></span>
                     <span>
-                        <strong>Activation par équipement</strong>
-                        <small>Choisissez les équipements surveillés dans Configuration → Architecture.</small>
+                        <strong>${plugin.id === "shelly_telemetry" ? "Activation par service" : "Activation par équipement"}</strong>
+                        <small>${escapeHtml(scope)}</small>
                     </span>
                 </div>
             `;
@@ -2729,7 +2819,7 @@ export class ConfigurationController {
         }
 
         if (plugin.id === "shelly_telemetry") {
-            return "Chaque ligne associe un équipement Shelly à son capteur de puissance Home Assistant et, éventuellement, à son compteur d’énergie. Une puissance à 0 W reste saine tant que la télémétrie est récente.";
+            return "Cette page configure la connexion Home Assistant. Les entités et l’âge maximal sont définis dans chaque service Shelly Telemetry de l’architecture.";
         }
 
         return "Les serveurs et courtiers ciblés proviennent des services déclarés dans l’onglet Architecture.";
@@ -2739,7 +2829,10 @@ export class ConfigurationController {
         const plugin = this.selectedPlugin();
         const activationControl =
             document.getElementById("plugin-enabled");
-        const enabled = plugin?.id === "network"
+        const enabled = (
+            plugin?.id === "network"
+            || plugin?.id === "shelly_telemetry"
+        )
             ? true
             : (
                 activationControl
@@ -2900,7 +2993,7 @@ export class ConfigurationController {
                 </label>
                 <label>
                     Version de l’application
-                    <input id="plugin-wireguard-app-version" type="text" value="${escapeHtml(configuration.app_version ?? "1.7.2")}" required>
+                    <input id="plugin-wireguard-app-version" type="text" value="${escapeHtml(configuration.app_version ?? "1.7.3")}" required>
                 </label>
                 <label class="configuration-span-2">
                     Jeton d’autorisation Freebox
@@ -2918,22 +3011,8 @@ export class ConfigurationController {
             const tokenHint = configuration.access_token_configured
                 ? "Un jeton Home Assistant est déjà configuré. Laissez vide pour le conserver."
                 : "Renseignez un jeton d’accès longue durée Home Assistant ou une variable d’environnement.";
-            const devices = (configuration.devices ?? []).map(
-                (device) => [
-                    device.name ?? "",
-                    device.power_entity_id ?? "",
-                    device.energy_entity_id ?? "",
-                ].join(" | "),
-            ).join("\n");
-
             return `
                 ${common}
-                ${numberField(
-                    "plugin-shelly-maximum-age",
-                    "Âge maximal d’une télémétrie (secondes)",
-                    configuration.maximum_age_seconds ?? 900,
-                    'min="1" step="1" required',
-                )}
                 <label>
                     URL Home Assistant
                     <input id="plugin-shelly-home-assistant-url" type="url" value="${escapeHtml(configuration.home_assistant_url ?? "http://ha-green.ohana.lan:8123")}" required>
@@ -2951,11 +3030,6 @@ export class ConfigurationController {
                     <input id="plugin-shelly-verify-tls" type="checkbox" ${configuration.verify_tls !== false ? "checked" : ""}>
                     Vérifier le certificat TLS de Home Assistant
                 </label>
-                <label class="configuration-span-2">
-                    Équipements Shelly
-                    <textarea id="plugin-shelly-devices" rows="7" placeholder="Cuisine | sensor.shelly_cuisine_power | sensor.shelly_cuisine_energy" required>${escapeHtml(devices)}</textarea>
-                    <small>Une ligne par équipement : Nom | capteur de puissance | compteur d’énergie facultatif.</small>
-                </label>
             `;
         }
 
@@ -2963,6 +3037,8 @@ export class ConfigurationController {
             const authentication =
                 configuration.authentication ?? {};
             const tls = configuration.tls ?? {};
+            const homeAssistant =
+                configuration.home_assistant ?? {};
             const passwordHint =
                 authentication.password_configured
                     ? "Un mot de passe est déjà configuré. Laissez vide pour le conserver."
@@ -2996,6 +3072,31 @@ export class ConfigurationController {
                     Préfixe du sujet
                     <input id="plugin-mqtt-topic-prefix" type="text" value="${escapeHtml(configuration.topic_prefix ?? "ohana/agent/check")}" required>
                 </label>
+                <label class="configuration-check configuration-span-2">
+                    <input id="plugin-mqtt-ha-enabled" type="checkbox" ${homeAssistant.enabled !== false ? "checked" : ""}>
+                    Publier la santé Ohana dans Home Assistant
+                </label>
+                <label class="configuration-check configuration-span-2">
+                    <input id="plugin-mqtt-ha-discovery-enabled" type="checkbox" ${homeAssistant.discovery_enabled !== false ? "checked" : ""}>
+                    Activer MQTT Discovery
+                </label>
+                <label>
+                    Préfixe Discovery
+                    <input id="plugin-mqtt-ha-discovery-prefix" type="text" value="${escapeHtml(homeAssistant.discovery_prefix ?? "homeassistant")}" required>
+                </label>
+                <label>
+                    Topic racine Ohana
+                    <input id="plugin-mqtt-ha-topic-prefix" type="text" value="${escapeHtml(homeAssistant.topic_prefix ?? "ohana")}" required>
+                </label>
+                ${numberField(
+                    "plugin-mqtt-ha-heartbeat",
+                    "Battement Home Assistant (secondes)",
+                    homeAssistant.heartbeat_seconds ?? 60,
+                    'min="1" step="1" required',
+                )}
+                <small class="configuration-span-2">
+                    Publie le score global, l’état, les incidents critiques, les alertes et la fraîcheur des capacités.
+                </small>
                 <label>
                     Utilisateur
                     <input id="plugin-mqtt-username" type="text" value="${escapeHtml(authentication.username ?? "")}">
@@ -3102,9 +3203,6 @@ export class ConfigurationController {
             );
             delete configuration.app_token_configured;
         } else if (plugin.id === "shelly_telemetry") {
-            configuration.maximum_age_seconds = Number(
-                this.value("plugin-shelly-maximum-age"),
-            );
             configuration.home_assistant_url = this.value(
                 "plugin-shelly-home-assistant-url",
             );
@@ -3117,22 +3215,7 @@ export class ConfigurationController {
             configuration.verify_tls = this.checked(
                 "plugin-shelly-verify-tls",
             );
-            configuration.devices = this.value(
-                "plugin-shelly-devices",
-            )
-                .split(/\r?\n/)
-                .map((line) => line.trim())
-                .filter(Boolean)
-                .map((line) => {
-                    const [name, powerEntityId, energyEntityId] =
-                        line.split("|").map((value) => value.trim());
-                    return {
-                        name,
-                        power_entity_id: powerEntityId,
-                        energy_entity_id: energyEntityId || null,
-                        enabled: true,
-                    };
-                });
+            delete configuration.devices;
             delete configuration.access_token_configured;
         } else if (plugin.id === "mqtt") {
             configuration.keepalive_seconds = Number(
@@ -3145,6 +3228,25 @@ export class ConfigurationController {
                 this.value("plugin-mqtt-client-prefix");
             configuration.topic_prefix =
                 this.value("plugin-mqtt-topic-prefix");
+            configuration.home_assistant = {
+                enabled: this.checked(
+                    "plugin-mqtt-ha-enabled",
+                ),
+                discovery_enabled: this.checked(
+                    "plugin-mqtt-ha-discovery-enabled",
+                ),
+                discovery_prefix: this.value(
+                    "plugin-mqtt-ha-discovery-prefix",
+                ),
+                topic_prefix: this.value(
+                    "plugin-mqtt-ha-topic-prefix",
+                ),
+                heartbeat_seconds: Number(
+                    this.value(
+                        "plugin-mqtt-ha-heartbeat",
+                    ),
+                ),
+            };
             configuration.authentication = {
                 username:
                     this.value("plugin-mqtt-username")
@@ -3167,7 +3269,10 @@ export class ConfigurationController {
         }
 
         return {
-            enabled: plugin.id === "network"
+            enabled: (
+                plugin.id === "network"
+                || plugin.id === "shelly_telemetry"
+            )
                 ? true
                 : this.checked("plugin-enabled"),
             configuration,

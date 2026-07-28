@@ -6,6 +6,37 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# v1.6.2 — Services et Shelly Telemetry — 2026-07-28
+
+## Ajouté
+
+- Nouvelle page **Services** dans la section Supervision, placée sous
+  Infrastructure.
+- Carte logique regroupant les services par équipement hôte, avec leur état,
+  leur type, leur criticité et le nombre de capacités observées.
+- Filtres par texte, état, type et criticité.
+- Inspecteur de service avec l’équipement hôte, l’adresse, l’implémentation, la
+  dernière observation et le détail des capacités.
+- Accès direct depuis la carte des services vers l’équipement correspondant
+  dans la topologie physique.
+- Paramètres d'export Home Assistant dans le formulaire du plugin MQTT :
+  activation, MQTT Discovery, préfixe Discovery, topic racine et battement.
+
+## Corrigé
+
+- Le paramétrage Shelly Telemetry a été retiré des propriétés générales des
+  équipements.
+- Le type de service `Shelly Telemetry` est disponible dans l’éditeur de
+  l’architecture.
+- Chaque service permet de saisir l’entité de puissance, l’entité d’énergie
+  facultative, l’âge maximal, l’activation et la criticité.
+- La page globale du plugin conserve uniquement la connexion à Home Assistant.
+
+## Qualité
+
+- Version du paquet alignée sur `1.6.2`.
+- 784 tests réussis et syntaxe JavaScript validée.
+
 # v1.6.1 — Santé critique et versions — 2026-07-28
 
 ## Corrigé
@@ -18,6 +49,9 @@ Le projet suit les principes de Semantic Versioning.
   les collisions entre capacités portant le même identifiant.
 - Le délai d’administration par défaut passe à 10 secondes pour permettre les
   tests de plugins avec nouvelle tentative.
+- La liste globale des équipements Shelly est supprimée de la page Plugins.
+  Shelly Telemetry se configure désormais directement dans la fiche de chaque
+  équipement de l’architecture.
 
 ## Ajouté
 
@@ -27,6 +61,8 @@ Le projet suit les principes de Semantic Versioning.
   l’infrastructure pour les alertes du dashboard.
 - Indication du serveur WebSocket Z-Wave JS sur le port 3000 dans le formulaire
   du plugin.
+- Champs par équipement pour activer Shelly Telemetry et renseigner les entités
+  Home Assistant de puissance et d’énergie.
 
 ## Qualité
 

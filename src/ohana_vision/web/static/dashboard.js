@@ -17,6 +17,10 @@ const VIEW_HEADERS = Object.freeze({
         kicker: "Infrastructure",
         title: "Carte de l’infrastructure",
     },
+    services: {
+        kicker: "Infrastructure logique",
+        title: "Carte des services",
+    },
     timeline: {
         kicker: "Historique",
         title: "Timeline de l’infrastructure",

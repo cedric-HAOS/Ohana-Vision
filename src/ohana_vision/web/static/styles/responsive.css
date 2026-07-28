@@ -68,6 +68,9 @@
         data-active-view="observations"
     ],
     .application-views[
+        data-active-view="services"
+    ],
+    .application-views[
         data-active-view="configuration-architecture"
     ],
     .application-views[
@@ -105,8 +108,30 @@
         data-active-view="observations"
     ] .application-view.is-active,
     .application-views[
+        data-active-view="services"
+    ] .application-view.is-active,
+    .application-views[
         data-active-view^="configuration-"
     ] .application-view.is-active {
+        height: 100%;
+        min-height: 0;
+    }
+
+    .application-views[
+        data-active-view="services"
+    ] .services-view,
+    .application-views[
+        data-active-view="services"
+    ] .services-panel,
+    .application-views[
+        data-active-view="services"
+    ] .services-workspace,
+    .application-views[
+        data-active-view="services"
+    ] .services-map,
+    .application-views[
+        data-active-view="services"
+    ] .service-inspector {
         height: 100%;
         min-height: 0;
     }

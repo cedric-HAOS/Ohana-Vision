@@ -31,6 +31,10 @@ import {
 } from "./observations.js";
 
 import {
+    ServicesController,
+} from "./services.js";
+
+import {
     TimelineController,
 } from "./timeline.js";
 
@@ -58,6 +62,7 @@ export class ApplicationController {
         this.deviceDetails = null;
         this.navigation = null;
         this.observations = null;
+        this.services = null;
         this.timeline = null;
         this.topology = null;
         this.websocket = null;
@@ -166,9 +171,38 @@ export class ApplicationController {
                 },
             });
 
+        this.services =
+            new ServicesController({
+                state: this.state,
+                onHostSelected: ({
+                    deviceId,
+                    nodeId,
+                }) => {
+                    this.navigation?.activate(
+                        "infrastructure",
+                    );
+
+                    if (deviceId) {
+                        this.deviceDetails.select(
+                            deviceId,
+                        );
+                        return;
+                    }
+
+                    if (nodeId) {
+                        this.topology.selectDeviceByNode(
+                            nodeId,
+                        );
+                    }
+                },
+            });
+
         this.observations =
             new ObservationsController({
                 state: this.state,
+                onObservationsChanged: () => {
+                    this.services.render();
+                },
                 onDashboardRefresh: () => {
                     this.dashboard
                         .renderKpis();
@@ -211,6 +245,7 @@ export class ApplicationController {
     initializeControllers() {
         this.deviceDetails.initialize();
         this.configuration.initialize();
+        this.services.initialize();
         this.topology.initialize();
         this.timeline.initialize();
 
@@ -247,6 +282,10 @@ export class ApplicationController {
             || viewName === "infrastructure"
         ) {
             this.topology.reflow();
+        }
+
+        if (viewName === "services") {
+            void this.services.load();
         }
 
         if (viewName.startsWith("configuration-")) {
@@ -300,6 +339,7 @@ export class ApplicationController {
             ]);
 
             await this.topology.refreshStatus();
+            this.services.render();
             this.renderLastRefresh();
         } finally {
             this.setRefreshing(false);
@@ -313,7 +353,12 @@ export class ApplicationController {
         this.setRefreshing(true);
 
         try {
-            await this.topology.load();
+            await Promise.allSettled([
+                this.topology.load(),
+                this.services.load({
+                    force: true,
+                }),
+            ]);
             this.renderLastRefresh();
         } finally {
             this.setRefreshing(false);
@@ -332,6 +377,9 @@ export class ApplicationController {
                 this.loadObservations(),
                 this.loadTimeline(),
                 this.loadAgentVersion(),
+                this.services.load({
+                    force: true,
+                }),
             ];
 
             if (
@@ -348,6 +396,7 @@ export class ApplicationController {
                 dataOperations,
             );
             await this.topology.load();
+            this.services.render();
 
             this.renderLastRefresh();
         } finally {

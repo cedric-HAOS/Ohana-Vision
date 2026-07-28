@@ -366,3 +366,10 @@
     -webkit-mask-image:
         url("../assets/icons/plugins/puzzle.svg");
 }
+
+.sidebar-navigation__icon--services {
+    mask-image:
+        url("../assets/icons/services/braces.svg");
+    -webkit-mask-image:
+        url("../assets/icons/services/braces.svg");
+}

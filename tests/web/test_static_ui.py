@@ -243,6 +243,7 @@ def test_static_ui_exposes_only_functional_navigation_entries() -> None:
 
     assert 'data-navigation-target="overview"' in content
     assert 'data-navigation-target="infrastructure"' in content
+    assert 'data-navigation-target="services"' in content
     assert 'data-navigation-target="timeline"' in content
     assert 'data-navigation-target="observations"' in content
 
@@ -255,7 +256,6 @@ def test_static_ui_does_not_expose_unimplemented_navigation_entries() -> None:
 
     content = response.text
 
-    assert 'data-navigation-target="services"' not in content
     assert 'data-navigation-target="alerts"' not in content
     assert 'data-navigation-target="reports"' not in content
     assert 'data-navigation-target="system"' not in content
@@ -272,6 +272,7 @@ def test_static_ui_declares_all_navigation_views() -> None:
 
     assert 'data-view="overview"' in content
     assert 'data-view="infrastructure"' in content
+    assert 'data-view="services"' in content
     assert 'data-view="timeline"' in content
     assert 'data-view="observations"' in content
 
@@ -1389,6 +1390,7 @@ def test_stylesheet_entrypoint_imports_all_responsibility_modules() -> None:
         '@import url("./styles/dashboard.css");',
         '@import url("./styles/observations.css");',
         '@import url("./styles/topology.css");',
+        '@import url("./styles/services.css");',
         '@import url("./styles/device-details.css");',
         '@import url("./styles/timeline.css");',
         '@import url("./styles/configuration.css");',
@@ -1652,7 +1654,10 @@ def test_timeline_rendering_is_triggered_by_timeline_loading() -> None:
     assert response.status_code == 200
     assert "setTimeline(" in response.text
     assert "this.timeline.render();" in response.text
-    assert "onObservationsChanged:" not in response.text
+    assert (
+        "onObservationsChanged: () => {\n                    this.timeline"
+        not in response.text
+    )
 
 
 def test_static_ui_exposes_timeline_period_count() -> None:
@@ -2364,7 +2369,16 @@ def test_plugin_ui_supports_zwave_wireguard_and_shelly_telemetry() -> None:
     assert "plugin-wireguard-verify-tls" in js_response.text
     assert 'plugin.id === "shelly_telemetry"' in js_response.text
     assert "plugin-shelly-home-assistant-url" in js_response.text
-    assert "plugin-shelly-devices" in js_response.text
+    assert "plugin-shelly-devices" not in js_response.text
+    assert (
+        '<option value="shelly_telemetry">Shelly Telemetry</option>'
+        in html_response.text
+    )
+    assert "architecture-service-shelly-power-entity" in html_response.text
+    assert "architecture-service-shelly-energy-entity" in html_response.text
+    assert "architecture-service-shelly-maximum-age" in html_response.text
+    assert "shelly_telemetry_enabled" not in js_response.text
+    assert 'type === "shelly_telemetry"' in js_response.text
 
 
 def test_sidebar_exposes_agent_version_placeholder() -> None:
@@ -2410,3 +2424,66 @@ def test_zwave_form_documents_home_assistant_websocket_port() -> None:
     assert response.status_code == 200
     assert "serveur WebSocket sur le port 3000" in response.text
     assert "connexions WSS" in response.text
+
+
+def test_static_ui_exposes_services_map_page() -> None:
+    """The supervision sidebar must expose the dedicated services page."""
+    response = make_client().get("/ui/")
+
+    assert response.status_code == 200
+    assert 'data-navigation-target="services"' in response.text
+    assert 'data-view="services"' in response.text
+    assert 'id="services-map"' in response.text
+    assert 'id="service-inspector"' in response.text
+    assert 'id="services-critical-count"' in response.text
+
+
+def test_services_map_javascript_is_available() -> None:
+    """The logical services controller must be packaged and served."""
+    response = make_client().get("/ui/services.js")
+
+    assert response.status_code == 200
+    assert "javascript" in response.headers["content-type"]
+    assert "class ServicesController" in response.text
+    assert "API.administrationInfrastructure" in response.text
+    assert "latestCapabilityStates(" in response.text
+    assert "groupByHost(" in response.text
+    assert "service.critical" in response.text
+
+
+def test_services_map_stylesheet_is_available() -> None:
+    """The services map must use its own modular stylesheet."""
+    response = make_client().get("/ui/styles/services.css")
+
+    assert response.status_code == 200
+    assert "text/css" in response.headers["content-type"]
+    assert ".services-workspace" in response.text
+    assert ".services-host" in response.text
+    assert ".service-map-item" in response.text
+    assert ".service-inspector" in response.text
+
+
+def test_application_wires_services_controller() -> None:
+    """The frontend application must refresh services with live observations."""
+    response = make_client().get("/ui/application.js")
+
+    assert response.status_code == 200
+    assert 'from "./services.js"' in response.text
+    assert "new ServicesController" in response.text
+    assert 'viewName === "services"' in response.text
+    assert "this.services.load({" in response.text
+    assert "this.services.render();" in response.text
+
+
+def test_mqtt_plugin_form_configures_home_assistant_health_export() -> None:
+    """MQTT settings must expose the approved Home Assistant export options."""
+    response = make_client().get("/ui/configuration.js")
+
+    assert response.status_code == 200
+    assert "plugin-mqtt-ha-enabled" in response.text
+    assert "plugin-mqtt-ha-discovery-enabled" in response.text
+    assert "plugin-mqtt-ha-discovery-prefix" in response.text
+    assert "plugin-mqtt-ha-topic-prefix" in response.text
+    assert "plugin-mqtt-ha-heartbeat" in response.text
+    assert "configuration.home_assistant =" in response.text
+    assert "Publier la santé Ohana dans Home Assistant" in response.text

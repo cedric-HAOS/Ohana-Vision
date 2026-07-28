@@ -53,6 +53,15 @@
        Infrastructure
       </span>
      </button>
+     <button class="sidebar-navigation__item" data-navigation-target="services" type="button">
+      <span
+    aria-hidden="true"
+    class="sidebar-navigation__icon sidebar-navigation__icon--services"
+></span>
+      <span>
+       Services
+      </span>
+     </button>
      <button class="sidebar-navigation__item" data-navigation-target="timeline" type="button">
       <span
     aria-hidden="true"
@@ -124,7 +133,7 @@
         Ohana-Vision
        </span>
        <span class="sidebar-version__number">
-        v1.6.1
+        v1.6.2
        </span>
       </div>
       <div class="sidebar-version">
@@ -444,6 +453,132 @@
         </aside>
        </div>
       </section>
+     </section>
+     <section aria-labelledby="services-map-heading" class="application-view" data-view="services" hidden="">
+      <div class="services-view" id="services">
+       <section aria-labelledby="services-map-heading" class="services-panel">
+        <div class="panel-heading">
+         <div>
+          <p class="panel-heading__kicker">
+           Infrastructure logique
+          </p>
+          <h2 id="services-map-heading">
+           Carte des services
+          </h2>
+          <p class="panel-heading__description">
+           Vue des services déclarés, de leur équipement hôte,
+           de leur criticité et de leur état courant.
+          </p>
+         </div>
+         <span class="services-panel__count" id="services-visible-count">
+          —
+         </span>
+        </div>
+
+        <div class="services-summary" aria-label="État des services">
+         <article class="services-summary-card services-summary-card--healthy">
+          <span aria-hidden="true" class="services-summary-card__indicator"></span>
+          <div class="services-summary-card__content">
+           <span>Services sains</span>
+           <strong id="services-healthy-count">—</strong>
+          </div>
+         </article>
+         <article class="services-summary-card services-summary-card--degraded">
+          <span aria-hidden="true" class="services-summary-card__indicator"></span>
+          <div class="services-summary-card__content">
+           <span>Services dégradés</span>
+           <strong id="services-degraded-count">—</strong>
+          </div>
+         </article>
+         <article class="services-summary-card services-summary-card--unavailable">
+          <span aria-hidden="true" class="services-summary-card__indicator"></span>
+          <div class="services-summary-card__content">
+           <span>Services indisponibles</span>
+           <strong id="services-unavailable-count">—</strong>
+          </div>
+         </article>
+         <article class="services-summary-card services-summary-card--critical">
+          <span aria-hidden="true" class="services-summary-card__indicator"></span>
+          <div class="services-summary-card__content">
+           <span>Incidents critiques</span>
+           <strong id="services-critical-count">—</strong>
+          </div>
+         </article>
+        </div>
+
+        <div class="services-toolbar" aria-label="Filtres de la carte des services">
+         <label>
+          Rechercher
+          <input
+           autocomplete="off"
+           id="services-search"
+           placeholder="Service, équipement, adresse…"
+           type="search"
+          >
+         </label>
+         <label>
+          État
+          <select id="services-status-filter">
+           <option value="all">Tous les états</option>
+           <option value="healthy">Sains</option>
+           <option value="degraded">Dégradés</option>
+           <option value="unhealthy">Indisponibles</option>
+           <option value="unknown">Inconnus</option>
+           <option value="disabled">Désactivés</option>
+          </select>
+         </label>
+         <label>
+          Type
+          <select id="services-type-filter">
+           <option value="all">Tous les types</option>
+          </select>
+         </label>
+         <label>
+          Criticité
+          <select id="services-critical-filter">
+           <option value="all">Toutes les criticités</option>
+           <option value="critical">Services critiques</option>
+           <option value="standard">Services standards</option>
+          </select>
+         </label>
+        </div>
+
+        <div class="alert alert--error hidden" id="services-error" role="alert"></div>
+
+        <div class="services-workspace">
+         <div aria-live="polite" class="services-map" id="services-map">
+          <div class="services-empty-state">
+           <span aria-hidden="true" class="services-loading-indicator"></span>
+           <h3>Chargement des services…</h3>
+           <p>Lecture de l’architecture détenue par Ohana-Agent.</p>
+          </div>
+         </div>
+
+         <aside aria-labelledby="service-inspector-title" class="service-inspector" id="service-inspector">
+          <header class="service-inspector__header">
+           <h2 id="service-inspector-title">Détails du service</h2>
+           <button
+            aria-label="Fermer les détails du service"
+            class="service-inspector__close"
+            id="service-inspector-close"
+            type="button"
+           >
+            ×
+           </button>
+          </header>
+          <div class="service-inspector__empty" id="service-inspector-empty">
+           <img alt="" src="/ui/assets/icons/empty-states/puzzle.svg">
+           <h3>Sélectionnez un service</h3>
+           <p>
+            Ses capacités, son état et son équipement hôte
+            apparaîtront ici.
+           </p>
+          </div>
+          <div class="service-inspector__content" id="service-inspector-content" hidden></div>
+         </aside>
+        </div>
+       </section>
+      </div>
      </section>
      <section aria-labelledby="timeline-heading" class="application-view" data-view="timeline" hidden="">
       <section aria-labelledby="timeline-heading" class="dashboard-timeline" id="timeline">
@@ -789,6 +924,7 @@
               <option value="home_assistant">Home Assistant</option>
               <option value="zwave">Z-Wave</option>
               <option value="wireguard">WireGuard</option>
+              <option value="shelly_telemetry">Shelly Telemetry</option>
               <option value="teleinformation">Téléinformation</option>
               <option value="other">Autre</option>
              </select>
@@ -805,6 +941,20 @@
              Implémentation
              <input id="architecture-service-implementation" placeholder="dnsmasq, AdGuard Home, Mosquitto…" type="text">
             </label>
+            <div class="configuration-form-grid configuration-span-2" id="architecture-service-shelly-fields" hidden>
+             <label>
+              Entité de puissance
+              <input id="architecture-service-shelly-power-entity" placeholder="sensor.shelly_power" type="text">
+             </label>
+             <label>
+              Entité d’énergie (facultatif)
+              <input id="architecture-service-shelly-energy-entity" placeholder="sensor.shelly_energy" type="text">
+             </label>
+             <label class="configuration-span-2">
+              Âge maximal de la dernière mesure (secondes)
+              <input id="architecture-service-shelly-maximum-age" min="1" type="number" value="900">
+             </label>
+            </div>
             <label class="configuration-check">
              <input id="architecture-service-enabled" type="checkbox">
              Service activé
