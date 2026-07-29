@@ -261,3 +261,47 @@ def test_timeline_router_exposes_period_metadata() -> None:
         "duration_seconds": 3600.0,
         "is_open": False,
     }
+
+
+def test_timeline_router_accepts_a_bounded_history_window() -> None:
+    """A visible window keeps the state active before its beginning."""
+    store = make_store(
+        make_observation(
+            status=HealthStatus.HEALTHY,
+            observed_at=datetime(2026, 7, 11, 8, 0, tzinfo=UTC),
+        ),
+        make_observation(
+            status=HealthStatus.DEGRADED,
+            observed_at=datetime(2026, 7, 11, 11, 0, tzinfo=UTC),
+        ),
+    )
+    client = make_client(store)
+
+    response = client.get(
+        "/timeline",
+        params={
+            "since": "2026-07-11T10:00:00Z",
+            "until": "2026-07-11T12:00:00Z",
+        },
+    )
+
+    assert response.status_code == 200
+    assert [period["status"] for period in response.json()["periods"]] == [
+        "healthy",
+        "degraded",
+    ]
+
+
+def test_timeline_router_rejects_naive_since() -> None:
+    """A timezone-naive lower bound must produce HTTP 422."""
+    client = make_client(make_store(make_observation()))
+
+    response = client.get(
+        "/timeline",
+        params={"since": "2026-07-11T10:00:00"},
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": "since must be timezone-aware.",
+    }

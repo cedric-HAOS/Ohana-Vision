@@ -575,9 +575,18 @@
 }
 
 .architecture-map-device__icon {
-    color: var(--ohana-brand-primary);
-    font-size: var(--ohana-font-size-xl);
-    line-height: 1;
+    display: block;
+    width: 1.75rem;
+    height: 1.75rem;
+    background-color: var(--ohana-brand-primary);
+    mask-image: var(--architecture-device-icon);
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-image: var(--architecture-device-icon);
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
 }
 
 .architecture-map-device strong {

@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter
 
+from ohana_vision import __version__
 from ohana_vision.web.routers.administration import (
     router as administration_router,
 )
@@ -33,6 +34,18 @@ def api_status() -> dict[str, str]:
     return {
         "name": "Ohana Vision API",
         "status": "running",
+    }
+
+
+@router.get(
+    "/version",
+    summary="Application version",
+)
+def application_version() -> dict[str, str]:
+    """Return the running Ohana-Vision version."""
+    return {
+        "name": "Ohana-Vision",
+        "version": __version__,
     }
 
 

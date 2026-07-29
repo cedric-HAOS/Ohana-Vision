@@ -67,6 +67,15 @@ export class ApplicationController {
         this.topology = null;
         this.websocket = null;
 
+        this.observationRefreshTimer = null;
+        this.observationRefreshInFlight = false;
+        this.observationRefreshPending = false;
+        this.timelineLoadInFlight = null;
+        this.timelineLastLoadedAt = 0;
+        this.timelineRefreshIntervalMs = 5000;
+        this.timelineHistoryHours = 24;
+        this.initialDataLoaded = false;
+
         this.elements = {
             refreshButton:
                 document.querySelector(
@@ -75,6 +84,10 @@ export class ApplicationController {
             lastRefresh:
                 document.querySelector(
                     "#last-refresh",
+                ),
+            visionVersion:
+                document.querySelector(
+                    "#vision-version",
                 ),
             agentVersion:
                 document.querySelector(
@@ -100,6 +113,7 @@ export class ApplicationController {
         this.bindApplicationEvents();
         this.initializeControllers();
 
+        void this.loadVisionVersion();
         void this.refresh();
         this.websocket.initialize();
     }
@@ -201,7 +215,12 @@ export class ApplicationController {
             new ObservationsController({
                 state: this.state,
                 onObservationsChanged: () => {
-                    this.services.render();
+                    if (
+                        this.navigation?.activeView
+                            === "services"
+                    ) {
+                        this.services.render();
+                    }
                 },
                 onDashboardRefresh: () => {
                     this.dashboard
@@ -288,6 +307,19 @@ export class ApplicationController {
             void this.services.load();
         }
 
+        if (
+            this.initialDataLoaded
+            && new Set([
+                "overview",
+                "infrastructure",
+                "services",
+                "timeline",
+                "observations",
+            ]).has(viewName)
+        ) {
+            this.scheduleObservationRefresh();
+        }
+
         if (viewName.startsWith("configuration-")) {
             this.configuration.activateSection(
                 viewName.replace(
@@ -313,7 +345,7 @@ export class ApplicationController {
             message.type
                 === "observation.accepted"
         ) {
-            void this.refreshObservationState();
+            this.scheduleObservationRefresh();
             return;
         }
 
@@ -325,24 +357,89 @@ export class ApplicationController {
         }
     }
 
+    scheduleObservationRefresh() {
+        if (this.observationRefreshInFlight) {
+            this.observationRefreshPending = true;
+            return;
+        }
+
+        if (this.observationRefreshTimer) {
+            return;
+        }
+
+        this.observationRefreshTimer = window.setTimeout(
+            () => {
+                this.observationRefreshTimer = null;
+                void this.refreshObservationState();
+            },
+            750,
+        );
+    }
+
     /**
      * Refresh runtime data produced by a new observation.
      */
     async refreshObservationState() {
+        if (this.observationRefreshInFlight) {
+            this.observationRefreshPending = true;
+            return;
+        }
+
+        this.observationRefreshInFlight = true;
         this.setRefreshing(true);
 
         try {
-            await Promise.allSettled([
-                this.loadRuntime(),
-                this.loadObservations(),
-                this.loadTimeline(),
-            ]);
+            const activeView =
+                this.navigation?.activeView
+                ?? "overview";
+            const operations = [];
 
-            await this.topology.refreshStatus();
-            this.services.render();
-            this.renderLastRefresh();
+            if (activeView === "overview") {
+                operations.push(
+                    this.loadRuntime(),
+                    this.loadObservations(),
+                    this.loadTimeline(),
+                );
+            } else if (activeView === "infrastructure") {
+                operations.push(
+                    this.loadObservations(),
+                    this.loadTimeline(),
+                );
+            } else if (
+                activeView === "services"
+                || activeView === "observations"
+            ) {
+                operations.push(
+                    this.loadObservations(),
+                );
+            } else if (activeView === "timeline") {
+                operations.push(
+                    this.loadTimeline(),
+                );
+            }
+
+            if (operations.length > 0) {
+                await Promise.allSettled(operations);
+            }
+
+            if (
+                activeView === "overview"
+                || activeView === "infrastructure"
+            ) {
+                await this.topology.refreshStatus();
+            }
+
+            if (operations.length > 0) {
+                this.renderLastRefresh();
+            }
         } finally {
             this.setRefreshing(false);
+            this.observationRefreshInFlight = false;
+
+            if (this.observationRefreshPending) {
+                this.observationRefreshPending = false;
+                this.scheduleObservationRefresh();
+            }
         }
     }
 
@@ -353,12 +450,24 @@ export class ApplicationController {
         this.setRefreshing(true);
 
         try {
-            await Promise.allSettled([
+            this.services.invalidate();
+
+            const operations = [
                 this.topology.load(),
-                this.services.load({
-                    force: true,
-                }),
-            ]);
+            ];
+
+            if (
+                this.navigation?.activeView
+                    === "services"
+            ) {
+                operations.push(
+                    this.services.load({
+                        force: true,
+                    }),
+                );
+            }
+
+            await Promise.allSettled(operations);
             this.renderLastRefresh();
         } finally {
             this.setRefreshing(false);
@@ -375,16 +484,28 @@ export class ApplicationController {
             const dataOperations = [
                 this.loadRuntime(),
                 this.loadObservations(),
-                this.loadTimeline(),
-                this.loadAgentVersion(),
-                this.services.load({
+                this.loadTimeline({
                     force: true,
                 }),
+                this.loadAgentVersion(),
             ];
 
             if (
                 this.navigation.activeView
-                    === "configuration"
+                    === "services"
+            ) {
+                dataOperations.push(
+                    this.services.load({
+                        force: true,
+                    }),
+                );
+            }
+
+            if (
+                this.navigation.activeView
+                    ?.startsWith(
+                        "configuration-",
+                    )
                 && this.configuration.loaded
             ) {
                 dataOperations.push(
@@ -396,11 +517,45 @@ export class ApplicationController {
                 dataOperations,
             );
             await this.topology.load();
-            this.services.render();
+
+            if (
+                this.navigation.activeView
+                    === "services"
+            ) {
+                this.services.render();
+            }
 
             this.renderLastRefresh();
+            this.initialDataLoaded = true;
         } finally {
             this.setRefreshing(false);
+        }
+    }
+
+    /**
+     * Load the version exposed by the running Vision backend.
+     */
+    async loadVisionVersion() {
+        if (!this.elements.visionVersion) {
+            return;
+        }
+
+        try {
+            const payload = await fetchJson(
+                API.version,
+            );
+            const version = String(
+                payload?.version
+                ?? "",
+            ).trim();
+
+            this.elements.visionVersion.textContent =
+                version && version !== "unknown"
+                    ? `v${version}`
+                    : "inconnue";
+        } catch {
+            this.elements.visionVersion.textContent =
+                "indisponible";
         }
     }
 
@@ -458,7 +613,7 @@ export class ApplicationController {
         try {
             const observations =
                 await fetchJson(
-                    API.observations,
+                    `${API.observations}?limit=100`,
                 );
 
             this.observations.render(
@@ -475,27 +630,62 @@ export class ApplicationController {
     /**
      * Load infrastructure timeline.
      */
-    async loadTimeline() {
-        try {
-            const timeline =
-                await fetchJson(
-                    API.timeline,
+    async loadTimeline({force = false} = {}) {
+        const now = Date.now();
+
+        if (
+            !force
+            && this.timelineLastLoadedAt > 0
+            && now - this.timelineLastLoadedAt
+                < this.timelineRefreshIntervalMs
+        ) {
+            return;
+        }
+
+        if (this.timelineLoadInFlight) {
+            await this.timelineLoadInFlight;
+            return;
+        }
+
+        this.timelineLoadInFlight = (async () => {
+            try {
+                const since = new Date(
+                    Date.now()
+                    - this.timelineHistoryHours
+                    * 60
+                    * 60
+                    * 1000,
+                ).toISOString();
+                const timeline =
+                    await fetchJson(
+                        `${API.timeline}?since=${encodeURIComponent(
+                            since,
+                        )}`,
+                    );
+
+                setTimeline(
+                    timeline,
+                );
+                this.timelineLastLoadedAt = Date.now();
+                this.timeline.render();
+                this.deviceDetails.refresh();
+            } catch (error) {
+                setTimeline(
+                    null,
                 );
 
-            setTimeline(
-                timeline,
-            );
-            this.timeline.render();
-            this.deviceDetails.refresh();
-        } catch (error) {
-            setTimeline(
-                null,
-            );
+                this.timeline.renderError(
+                    "Timeline indisponible : "
+                    + this.errorMessage(error),
+                );
+                this.timelineLastLoadedAt = Date.now();
+            }
+        })();
 
-            this.timeline.renderError(
-                "Timeline indisponible : "
-                + this.errorMessage(error),
-            );
+        try {
+            await this.timelineLoadInFlight;
+        } finally {
+            this.timelineLoadInFlight = null;
         }
     }
 

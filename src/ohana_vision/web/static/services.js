@@ -6,6 +6,7 @@ import {
 } from "./api.js";
 
 import {
+    deviceIconPath,
     escapeHtml,
     formatDate,
     healthStatusLabel,
@@ -224,6 +225,11 @@ export class ServicesController {
         } finally {
             this.loading = false;
         }
+    }
+
+    /** Mark the cached infrastructure as stale without rendering. */
+    invalidate() {
+        this.loaded = false;
     }
 
     /** Render the complete logical services map. */
@@ -641,9 +647,8 @@ export class ServicesController {
                 <header class="services-host__header">
                     <div
                         aria-hidden="true"
-                        class="services-host__icon services-host__icon--${escapeHtml(
-                            this.cssToken(host.kind),
-                        )}"
+                        class="services-host__icon"
+                        style="--services-host-icon:url('${deviceIconPath(host.kind)}')"
                     ></div>
                     <div class="services-host__identity">
                         <button

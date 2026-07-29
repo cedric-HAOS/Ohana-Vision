@@ -33,11 +33,19 @@ def build_infrastructure_timeline(
     observation_store: ObservationStoreDependency,
     timeline_engine: TimelineEngineDependency,
     *,
+    since: datetime | None,
     until: datetime | None,
 ) -> InfrastructureTimeline:
     """Build the infrastructure timeline from stored observations."""
     try:
-        observations = observation_store.history(until=until)
+        observations = (
+            observation_store.history_window(
+                since=since,
+                until=until,
+            )
+            if since is not None
+            else observation_store.history(until=until)
+        )
 
         return timeline_engine.build_infrastructure(
             observations,
@@ -58,12 +66,14 @@ def build_infrastructure_timeline(
 def get_infrastructure_timeline(
     observation_store: ObservationStoreDependency,
     timeline_engine: TimelineEngineDependency,
+    since: OptionalDatetimeQuery = None,
     until: OptionalDatetimeQuery = None,
 ) -> InfrastructureTimelineResponse:
     """Return the complete infrastructure timeline hierarchy."""
     timeline = build_infrastructure_timeline(
         observation_store,
         timeline_engine,
+        since=since,
         until=until,
     )
 
@@ -79,12 +89,14 @@ def get_node_timeline(
     node_id: str,
     observation_store: ObservationStoreDependency,
     timeline_engine: TimelineEngineDependency,
+    since: OptionalDatetimeQuery = None,
     until: OptionalDatetimeQuery = None,
 ) -> NodeTimelineResponse:
     """Return the timeline of one node."""
     infrastructure = build_infrastructure_timeline(
         observation_store,
         timeline_engine,
+        since=since,
         until=until,
     )
 
@@ -109,12 +121,14 @@ def get_service_timeline(
     service_id: str,
     observation_store: ObservationStoreDependency,
     timeline_engine: TimelineEngineDependency,
+    since: OptionalDatetimeQuery = None,
     until: OptionalDatetimeQuery = None,
 ) -> ServiceTimelineResponse:
     """Return the timeline of one service on one node."""
     infrastructure = build_infrastructure_timeline(
         observation_store,
         timeline_engine,
+        since=since,
         until=until,
     )
 

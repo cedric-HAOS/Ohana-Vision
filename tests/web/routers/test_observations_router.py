@@ -43,6 +43,7 @@ class FakeObservationStore:
         capability_id: str | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
+        limit: int | None = None,
     ) -> tuple[Observation, ...]:
         """Return the configured observations."""
         self.history_calls.append(
@@ -52,6 +53,7 @@ class FakeObservationStore:
                 "capability_id": capability_id,
                 "since": since,
                 "until": until,
+                "limit": limit,
             }
         )
 
@@ -161,8 +163,29 @@ def test_observations_router_passes_filters_to_store() -> None:
                 0,
                 tzinfo=UTC,
             ),
+            "limit": 100,
         }
     ]
+
+
+def test_observations_router_accepts_a_smaller_limit() -> None:
+    """Callers may request fewer than the 100 latest observations."""
+    store = FakeObservationStore()
+    client = make_client(store)
+
+    response = client.get("/observations", params={"limit": 25})
+
+    assert response.status_code == 200
+    assert store.history_calls[-1]["limit"] == 25
+
+
+def test_observations_router_rejects_a_limit_above_100() -> None:
+    """The public endpoint must never expose more than 100 observations."""
+    client = make_client(FakeObservationStore())
+
+    response = client.get("/observations", params={"limit": 101})
+
+    assert response.status_code == 422
 
 
 class InvalidHistoryObservationStore(FakeObservationStore):
@@ -176,6 +199,7 @@ class InvalidHistoryObservationStore(FakeObservationStore):
         capability_id: str | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
+        limit: int | None = None,
     ) -> tuple[Observation, ...]:
         """Reject invalid date ordering."""
         raise ValueError("since must not be after until.")

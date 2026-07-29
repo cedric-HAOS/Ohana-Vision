@@ -1,5 +1,36 @@
 "use strict";
 
+const DEVICE_ICON_PATHS = Object.freeze({
+    internet: "/ui/assets/icons/network/globe-2.svg",
+    router: "/ui/assets/icons/network/router.svg",
+    switch: "/ui/assets/icons/infrastructure/network.svg",
+    access_point: "/ui/assets/icons/network/wifi.svg",
+    server: "/ui/assets/icons/infrastructure/server.svg",
+    raspberry_pi: "/ui/assets/icons/hardware/cpu.svg",
+    home_assistant: "/ui/assets/icons/hardware/house.svg",
+    camera: "/ui/assets/icons/hardware/camera.svg",
+    smart_device: "/ui/assets/icons/hardware/plug-zap.svg",
+    solar: "/ui/assets/icons/hardware/battery-charging.svg",
+    computer: "/ui/assets/icons/containers-cloud/monitor-cog.svg",
+    storage: "/ui/assets/icons/hardware/hard-drive.svg",
+    other: "/ui/assets/icons/infrastructure/boxes.svg",
+});
+
+/**
+ * Return the official icon path used by every equipment view.
+ *
+ * @param {unknown} kind
+ * @returns {string}
+ */
+export function deviceIconPath(kind) {
+    const normalizedKind = String(
+        kind ?? "other",
+    ).toLowerCase();
+
+    return DEVICE_ICON_PATHS[normalizedKind]
+        ?? DEVICE_ICON_PATHS.other;
+}
+
 /**
  * Escape a value before inserting it into generated HTML.
  *

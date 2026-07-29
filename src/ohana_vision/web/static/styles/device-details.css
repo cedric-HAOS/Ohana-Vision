@@ -69,6 +69,21 @@
         );
 }
 
+.device-details__official-icon {
+    display: block;
+    width: 2.4rem;
+    height: 2.4rem;
+    background-color: currentcolor;
+    mask-image: var(--device-details-icon);
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-image: var(--device-details-icon);
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+}
+
 .device-details__icon svg {
     width: 2.4rem;
     height: 2.4rem;

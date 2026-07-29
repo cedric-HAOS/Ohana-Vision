@@ -349,46 +349,15 @@
     color: var(--services-host-color);
     background-color: currentColor;
 
-    mask-image:
-        url("../assets/icons/services/monitor.svg");
+    mask-image: var(--services-host-icon);
     mask-repeat: no-repeat;
     mask-position: center;
     mask-size: 1.25rem 1.25rem;
 
-    -webkit-mask-image:
-        url("../assets/icons/services/monitor.svg");
+    -webkit-mask-image: var(--services-host-icon);
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-position: center;
     -webkit-mask-size: 1.25rem 1.25rem;
-}
-
-.services-host__icon--router {
-    mask-image:
-        url("../assets/icons/network/router.svg");
-    -webkit-mask-image:
-        url("../assets/icons/network/router.svg");
-}
-
-.services-host__icon--switch,
-.services-host__icon--access-point {
-    mask-image:
-        url("../assets/icons/network/network.svg");
-    -webkit-mask-image:
-        url("../assets/icons/network/network.svg");
-}
-
-.services-host__icon--raspberry-pi {
-    mask-image:
-        url("../assets/icons/hardware/cpu.svg");
-    -webkit-mask-image:
-        url("../assets/icons/hardware/cpu.svg");
-}
-
-.services-host__icon--home-assistant {
-    mask-image:
-        url("../assets/icons/hardware/house.svg");
-    -webkit-mask-image:
-        url("../assets/icons/hardware/house.svg");
 }
 
 .services-host__identity {

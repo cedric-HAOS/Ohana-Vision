@@ -7,6 +7,7 @@ import {
 } from "./api.js";
 
 import {
+    deviceIconPath,
     escapeHtml,
     hideError,
     showError,
@@ -20,8 +21,8 @@ const DHCP_CATEGORY_LABELS = Object.freeze({
     critical: "Critique",
 });
 
-const ARCHITECTURE_MINIMUM_COLUMNS = 10;
-const ARCHITECTURE_MINIMUM_ROWS = 8;
+const ARCHITECTURE_MINIMUM_COLUMNS = 15;
+const ARCHITECTURE_MINIMUM_ROWS = 10;
 
 const PLUGIN_STATUS_LABELS = Object.freeze({
     active: "Actif",
@@ -504,6 +505,14 @@ export class ConfigurationController {
                 panel.dataset.configurationPanel
                 !== sectionName;
         });
+
+        if (
+            sectionName === "plugins"
+            && this.loaded
+            && this.pluginsAvailable
+        ) {
+            void this.refreshPlugins();
+        }
 
         return true;
     }
@@ -1117,7 +1126,7 @@ export class ConfigurationController {
                         style="grid-column:${position.column + 1};grid-row:${position.row + 1}"
                         type="button"
                     >
-                        <span class="architecture-map-device__icon" aria-hidden="true">${this.deviceGlyph(device.kind)}</span>
+                        <span class="architecture-map-device__icon" aria-hidden="true" style="--architecture-device-icon:url('${deviceIconPath(device.kind)}')"></span>
                         <strong>${escapeHtml(device.label)}</strong>
                         <small>${escapeHtml(node?.endpoint?.address ?? device.address ?? device.kind)}</small>
                         <span class="architecture-map-device__services">${escapeHtml(serviceSummary)}</span>
@@ -1499,23 +1508,6 @@ export class ConfigurationController {
             "Position modifiée. Appliquez "
             + "l’architecture pour la conserver.",
         );
-    }
-
-    deviceGlyph(kind) {
-        return {
-            internet: "◎",
-            router: "⇄",
-            switch: "⌘",
-            access_point: "⌁",
-            raspberry_pi: "π",
-            server: "▤",
-            home_assistant: "⌂",
-            smart_device: "◇",
-            camera: "◉",
-            computer: "▣",
-            storage: "▥",
-            solar: "☀",
-        }[kind] ?? "◆";
     }
 
     editDevice(deviceId) {
@@ -2401,9 +2393,23 @@ export class ConfigurationController {
                     },
                 );
             this.renderArchitecture();
+
+            if (
+                this.pluginsAvailable
+                && !await this.refreshPlugins()
+            ) {
+                this.showNotice(
+                    "Architecture appliquée et plugins "
+                    + "replanifiés. Le compteur des tâches "
+                    + "sera actualisé à la prochaine ouverture "
+                    + "de la page Plugins.",
+                );
+                return;
+            }
+
             this.showNotice(
-                "Architecture validée et "
-                + "appliquée par Agent.",
+                "Architecture validée, appliquée "
+                + "et plugins replanifiés par Agent.",
             );
         } catch (error) {
             showError(
@@ -2506,15 +2512,19 @@ export class ConfigurationController {
                 }
 
                 let slot = index;
-                let column = slot % 5;
-                let row = Math.floor(slot / 5);
+                let column = slot % ARCHITECTURE_MINIMUM_COLUMNS;
+                let row = Math.floor(
+                    slot / ARCHITECTURE_MINIMUM_COLUMNS,
+                );
 
                 while (
                     occupied.has(`${column}:${row}`)
                 ) {
                     slot += 1;
-                    column = slot % 5;
-                    row = Math.floor(slot / 5);
+                    column = slot % ARCHITECTURE_MINIMUM_COLUMNS;
+                    row = Math.floor(
+                        slot / ARCHITECTURE_MINIMUM_COLUMNS,
+                    );
                 }
 
                 layout.positions[device.id] = {
@@ -2542,6 +2552,38 @@ export class ConfigurationController {
         this.infrastructure.topology.devices ??= [];
         this.infrastructure.topology.links ??= [];
         this.infrastructure.topology.layouts ??= [];
+    }
+
+    async refreshPlugins() {
+        if (!this.pluginsAvailable) {
+            return false;
+        }
+
+        try {
+            const pluginsPayload = await fetchJson(
+                API.administrationPlugins,
+            );
+            this.plugins = pluginsPayload.plugins ?? [];
+            this.pluginsLoadError = null;
+
+            if (
+                this.selectedPluginId
+                && !this.plugins.some(
+                    (plugin) =>
+                        plugin.id === this.selectedPluginId,
+                )
+            ) {
+                this.selectedPluginId = null;
+            }
+
+            this.renderPlugins();
+            return true;
+        } catch (error) {
+            this.pluginsLoadError =
+                this.errorMessage(error);
+            this.renderPlugins();
+            return false;
+        }
     }
 
     renderPlugins() {
@@ -2993,7 +3035,7 @@ export class ConfigurationController {
                 </label>
                 <label>
                     Version de l’application
-                    <input id="plugin-wireguard-app-version" type="text" value="${escapeHtml(configuration.app_version ?? "1.7.3")}" required>
+                    <input id="plugin-wireguard-app-version" type="text" value="${escapeHtml(configuration.app_version ?? "1.7.4")}" required>
                 </label>
                 <label class="configuration-span-2">
                     Jeton d’autorisation Freebox

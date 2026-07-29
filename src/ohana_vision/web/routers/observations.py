@@ -23,6 +23,7 @@ router = APIRouter(
 
 OptionalStringQuery = Annotated[str | None, Query()]
 OptionalDatetimeQuery = Annotated[datetime | None, Query()]
+ObservationLimitQuery = Annotated[int, Query(ge=1, le=100)]
 
 
 @router.get(
@@ -36,6 +37,7 @@ def get_observations(
     capability_id: OptionalStringQuery = None,
     since: OptionalDatetimeQuery = None,
     until: OptionalDatetimeQuery = None,
+    limit: ObservationLimitQuery = 100,
 ) -> list[Observation]:
     """Return stored observations matching the requested filters."""
     try:
@@ -45,6 +47,7 @@ def get_observations(
             capability_id=capability_id,
             since=since,
             until=until,
+            limit=limit,
         )
     except ValueError as error:
         raise HTTPException(

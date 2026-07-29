@@ -686,3 +686,21 @@ def test_topology_tools_panel_is_fixed_and_responsive() -> None:
     assert ".topology-tools-panel__line--wan" not in response.text
     assert ".topology-tools-panel--collapsed" in response.text
     assert "@media (max-width: 620px)" in response.text
+
+
+def test_topology_focus_animates_solid_and_dashed_links() -> None:
+    """Selected equipment must expose visible motion on every link type."""
+    client = make_client()
+
+    canvas = client.get("/ui/topology_canvas.js")
+    stylesheet = client.get("/ui/styles/topology.css")
+
+    assert canvas.status_code == 200
+    assert stylesheet.status_code == 200
+    assert '"topology-link--flow-overlay"' in canvas.text
+    assert '"topology-link--flow-dashed"' in canvas.text
+    assert 'flow.classList.add("topology-link__flow")' in canvas.text
+    assert ".topology-link__flow" in stylesheet.text
+    assert ".topology-link--focused.topology-link--flow-overlay" in stylesheet.text
+    assert ".topology-link--focused.topology-link--flow-dashed" in stylesheet.text
+    assert "@keyframes topology-link-flow" in stylesheet.text

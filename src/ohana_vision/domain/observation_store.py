@@ -2,6 +2,7 @@
 
 from collections.abc import Iterable
 from datetime import datetime
+from heapq import nlargest
 from uuid import UUID
 
 from ohana_vision.domain.observation import Observation
@@ -61,10 +62,12 @@ class ObservationStore:
         capability_id: str | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
+        limit: int | None = None,
     ) -> tuple[Observation, ...]:
         """Return chronologically ordered observations matching filters."""
 
         self._validate_dates(since=since, until=until)
+        self._validate_limit(limit)
 
         observations = (
             observation
@@ -92,9 +95,72 @@ class ObservationStore:
             if until is None or observation.observed_at <= until
         )
 
+        if limit is None:
+            return tuple(
+                sorted(
+                    observations,
+                    key=lambda observation: observation.observed_at,
+                )
+            )
+
+        latest = nlargest(
+            limit,
+            observations,
+            key=lambda observation: observation.observed_at,
+        )
+
         return tuple(
             sorted(
-                observations,
+                latest,
+                key=lambda observation: observation.observed_at,
+            )
+        )
+
+    def history_window(
+        self,
+        *,
+        since: datetime,
+        until: datetime | None = None,
+    ) -> tuple[Observation, ...]:
+        """Return one bounded timeline window with carry-forward states.
+
+        The latest observation before ``since`` is retained for every
+        capability so the timeline can reconstruct the state already active
+        at the beginning of the visible window without processing the full
+        history.
+        """
+        self._validate_dates(since=since, until=until)
+
+        previous_by_capability: dict[
+            tuple[str, str, str],
+            Observation,
+        ] = {}
+        visible: list[Observation] = []
+
+        for observation in self._observations:
+            if until is not None and observation.observed_at > until:
+                continue
+
+            if observation.observed_at >= since:
+                visible.append(observation)
+                continue
+
+            key = (
+                observation.node_id,
+                observation.service_id,
+                observation.capability_id,
+            )
+            previous = previous_by_capability.get(key)
+
+            if previous is None or observation.observed_at > previous.observed_at:
+                previous_by_capability[key] = observation
+
+        return tuple(
+            sorted(
+                [
+                    *previous_by_capability.values(),
+                    *visible,
+                ],
                 key=lambda observation: observation.observed_at,
             )
         )
@@ -104,6 +170,12 @@ class ObservationStore:
 
         self._observations.clear()
         self._observation_ids.clear()
+
+    @staticmethod
+    def _validate_limit(limit: int | None) -> None:
+        """Validate the optional maximum history length."""
+        if limit is not None and limit <= 0:
+            raise ValueError("limit must be greater than zero.")
 
     @staticmethod
     def _validate_dates(

@@ -93,3 +93,71 @@ def test_clear_removes_all_observations() -> None:
 
     assert store.observation_count == 0
     assert store.observations == ()
+
+
+def test_history_limit_returns_the_latest_observations_chronologically() -> None:
+    store = ObservationStore()
+    start = datetime(2026, 7, 10, 14, 0, tzinfo=UTC)
+    observations = [
+        make_observation(
+            observed_at=start + timedelta(minutes=index),
+            capability_id=f"dns.resolve.{index}",
+        )
+        for index in range(5)
+    ]
+    store.add_many(reversed(observations))
+
+    assert store.history(limit=3) == tuple(observations[-3:])
+
+
+def test_history_rejects_a_non_positive_limit() -> None:
+    store = ObservationStore()
+
+    with pytest.raises(ValueError, match="limit must be greater than zero"):
+        store.history(limit=0)
+
+
+def test_history_window_keeps_only_latest_state_before_since() -> None:
+    """Timeline windows retain one carry-forward state per capability."""
+    store = ObservationStore()
+    start = datetime(2026, 7, 10, 8, 0, tzinfo=UTC)
+    old_resolve = make_observation(
+        observed_at=start,
+        capability_id="dns.resolve",
+    )
+    latest_resolve_before = make_observation(
+        observed_at=start + timedelta(hours=1),
+        capability_id="dns.resolve",
+    )
+    latency_before = make_observation(
+        observed_at=start + timedelta(hours=1, minutes=30),
+        capability_id="dns.latency",
+    )
+    resolve_in_window = make_observation(
+        observed_at=start + timedelta(hours=3),
+        capability_id="dns.resolve",
+    )
+    after_until = make_observation(
+        observed_at=start + timedelta(hours=5),
+        capability_id="dns.latency",
+    )
+    store.add_many(
+        [
+            old_resolve,
+            latest_resolve_before,
+            latency_before,
+            resolve_in_window,
+            after_until,
+        ]
+    )
+
+    result = store.history_window(
+        since=start + timedelta(hours=2),
+        until=start + timedelta(hours=4),
+    )
+
+    assert result == (
+        latest_resolve_before,
+        latency_before,
+        resolve_in_window,
+    )

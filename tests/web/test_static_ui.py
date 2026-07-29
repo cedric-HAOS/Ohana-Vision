@@ -3,7 +3,6 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from ohana_vision import __version__
 from ohana_vision.web import create_app
 
 
@@ -324,12 +323,14 @@ def test_static_ui_exposes_configuration_controller() -> None:
     assert "testSelectedPlugin" in response.text
     assert "pluginConfigurationPayload" in response.text
     assert "async reload()" in response.text
+    assert "async refreshPlugins()" in response.text
+    assert "await this.refreshPlugins()" in response.text
     assert "structuredClone(this.dhcp)" in response.text
     assert "handleArchitectureDrop" in response.text
     assert "selectLinkEndpoint" in response.text
     assert "layout.positions[deviceId]" in response.text
-    assert "ARCHITECTURE_MINIMUM_COLUMNS = 10" in response.text
-    assert "ARCHITECTURE_MINIMUM_ROWS = 8" in response.text
+    assert "ARCHITECTURE_MINIMUM_COLUMNS = 15" in response.text
+    assert "ARCHITECTURE_MINIMUM_ROWS = 10" in response.text
     assert "compareIPAddresses(" in response.text
     assert "nodeStillUsed" in response.text
     assert 'metadata.medium = "fiber"' in response.text
@@ -495,6 +496,7 @@ def test_static_ui_exposes_frontend_api_module() -> None:
     assert response.status_code == 200
     assert "javascript" in response.headers["content-type"]
     assert "export const API" in response.text
+    assert 'version: "/api/version"' in response.text
     assert 'runtime: "/api/runtime"' in response.text
     assert 'observations: "/api/observations"' in response.text
     assert 'timeline: "/api/timeline"' in response.text
@@ -2014,7 +2016,8 @@ def test_sidebar_exposes_product_version() -> None:
     assert "sidebar-version__product" in response.text
     assert "sidebar-version__number" in response.text
     assert "Ohana-Vision" in response.text
-    assert f"v{__version__}" in response.text
+    assert 'id="vision-version"' in response.text
+    assert "v1.6.3" not in response.text
 
 
 def test_sidebar_version_uses_discrete_footer_styles() -> None:
@@ -2487,3 +2490,52 @@ def test_mqtt_plugin_form_configures_home_assistant_health_export() -> None:
     assert "plugin-mqtt-ha-heartbeat" in response.text
     assert "configuration.home_assistant =" in response.text
     assert "Publier la santé Ohana dans Home Assistant" in response.text
+
+
+def test_application_loads_vision_version_from_backend() -> None:
+    """Frontend must render the running backend version instead of a static value."""
+    response = make_client().get("/ui/application.js")
+
+    assert response.status_code == 200
+    assert "async loadVisionVersion()" in response.text
+    assert "API.version" in response.text
+    assert "payload?.version" in response.text
+
+
+def test_frontend_limits_observations_and_coalesces_realtime_refreshes() -> None:
+    """Frequent plugin observations must not saturate hidden views."""
+    response = make_client().get("/ui/application.js")
+
+    assert response.status_code == 200
+    assert "?limit=100" in response.text
+    assert "observationRefreshInFlight" in response.text
+    assert "observationRefreshPending" in response.text
+    assert "timelineRefreshIntervalMs = 5000" in response.text
+    assert "timelineHistoryHours = 24" in response.text
+    assert "?since=${encodeURIComponent(" in response.text
+    assert 'activeView === "observations"' in response.text
+    assert 'activeView === "timeline"' in response.text
+    assert "this.services.invalidate()" in response.text
+
+
+def test_equipment_views_share_the_official_icon_catalog() -> None:
+    """Topology, architecture and details must use the same icon source."""
+    client = make_client()
+
+    utilities = client.get("/ui/utils.js")
+    configuration = client.get("/ui/configuration.js")
+    details = client.get("/ui/device_details.js")
+    services = client.get("/ui/services.js")
+
+    assert utilities.status_code == 200
+    assert configuration.status_code == 200
+    assert details.status_code == 200
+    assert services.status_code == 200
+    assert "DEVICE_ICON_PATHS" in utilities.text
+    assert "export function deviceIconPath" in utilities.text
+    assert "deviceIconPath(device.kind)" in configuration.text
+    assert "deviceIconPath(kind)" in details.text
+    assert "deviceIconPath(host.kind)" in services.text
+    assert "architecture-map-device__icon" in configuration.text
+    assert "device-details__official-icon" in details.text
+    assert "--services-host-icon" in services.text

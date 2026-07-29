@@ -6,6 +6,32 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# v1.6.3 — Fluidité et cohérence visuelle — 2026-07-29
+
+## Corrigé
+
+- Le compteur de tâches des plugins est rechargé immédiatement après
+  l’application d’une architecture, notamment pour Shelly Telemetry.
+- Les vues Architecture, Infrastructure, Services et détails utilisent désormais
+  les mêmes icônes officielles pour tous les types d’équipements.
+- Les liaisons pleines affichent un flux lumineux animé lors de la sélection
+  d’un équipement, tandis que les liaisons pointillées conservent leur
+  animation existante.
+- La grille de configuration passe à 15 colonnes et 10 lignes.
+- L’API et la page Observations ne renvoient plus que les 100 observations les
+  plus récentes.
+- Les rafales d’observations WebSocket sont regroupées afin d’éviter les
+  rechargements concurrents et les rendus inutiles des vues masquées.
+- La timeline est actualisée au maximum toutes les cinq secondes et ne traite
+  plus que les dernières 24 heures, avec conservation de l’état antérieur
+  nécessaire au début de la plage.
+- La page Plugins recharge ses compteurs à chaque ouverture.
+
+## Qualité
+
+- 796 tests réussis et syntaxe JavaScript validée.
+- Version du paquet alignée sur `1.6.3`.
+
 # v1.6.2 — Services et Shelly Telemetry — 2026-07-28
 
 ## Ajouté

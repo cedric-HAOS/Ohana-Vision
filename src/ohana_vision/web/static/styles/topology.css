@@ -76,7 +76,8 @@
 }
 
 .topology-link__glow,
-.topology-link__path {
+.topology-link__path,
+.topology-link__flow {
     fill: none;
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -85,6 +86,14 @@
 .topology-link__glow {
     stroke: var(--link-glow);
     stroke-width: 14;
+}
+
+.topology-link__flow {
+    stroke: rgb(255 255 255 / 92%);
+    stroke-width: calc(var(--link-width) + 0.75);
+    stroke-dasharray: 2 22;
+    opacity: 0;
+    pointer-events: none;
 }
 
 .topology-link__path {
@@ -453,6 +462,20 @@
 
 .topology-link--focused .topology-link__path {
     stroke-width: calc(var(--link-width) + 1.5);
+}
+
+.topology-link--focused .topology-link__glow {
+    opacity: 0.9;
+}
+
+.topology-link--focused.topology-link--flow-overlay
+.topology-link__flow {
+    opacity: 0.95;
+    animation: topology-link-flow 1.4s linear infinite;
+}
+
+.topology-link--focused.topology-link--flow-dashed
+.topology-link__path {
     animation: topology-link-flow 2.4s linear infinite;
 }
 
@@ -871,7 +894,8 @@
     .topology-device,
     .topology-link,
     .topology-device__halo,
-    .topology-link__path {
+    .topology-link__path,
+    .topology-link__flow {
         animation: none !important;
         transition: none !important;
     }

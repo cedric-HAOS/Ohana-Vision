@@ -1584,6 +1584,9 @@ class TopologyCanvas {
             `topology-link--visual-${normalizedVisualKind}`,
             `topology-link--direction-${normalizedDirection}`,
             `topology-link--health-${normalizedHealth}`,
+            this.linkUsesFlowOverlay(normalizedVisualKind)
+                ? "topology-link--flow-overlay"
+                : "topology-link--flow-dashed",
         );
         group.dataset.linkId = link.link_id;
         group.dataset.sourceDeviceId =
@@ -1624,14 +1627,34 @@ class TopologyCanvas {
         path.setAttribute("d", coordinates.path);
         this.applyLinkDirection(path, link.direction);
 
+        const flow = this.createSvgElement("path");
+
+        flow.classList.add("topology-link__flow");
+        flow.setAttribute("d", coordinates.path);
+
         group.append(
             glow,
             path,
+            flow,
         );
 
         return group;
     }
 
+
+    linkUsesFlowOverlay(visualKind) {
+        return !new Set([
+            "wifi",
+            "wireguard",
+            "zigbee",
+            "zwave",
+            "mqtt",
+            "logical",
+            "usb",
+            "serial",
+            "other",
+        ]).has(visualKind);
+    }
 
     linkVisualKind(link) {
         if (

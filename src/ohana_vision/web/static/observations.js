@@ -207,8 +207,8 @@ export class ObservationsController {
         }
 
         this.elements.count.textContent =
-            `${count} observation`
-            + (count > 1 ? "s" : "");
+            `${count} dernière`
+            + (count > 1 ? "s observations" : " observation");
     }
 
     /**

@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from ohana_vision import __version__
 from ohana_vision.web.routers import api_router
 
 
@@ -34,3 +35,15 @@ def test_api_router_is_not_exposed_without_prefix() -> None:
     response = client.get("/")
 
     assert response.status_code == 404
+
+
+def test_version_endpoint_returns_running_version() -> None:
+    """The frontend version endpoint must reflect package metadata."""
+    client = make_client()
+    response = client.get("/api/version")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "name": "Ohana-Vision",
+        "version": __version__,
+    }

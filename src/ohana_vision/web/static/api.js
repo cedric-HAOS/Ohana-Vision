@@ -1,6 +1,7 @@
 "use strict";
 
 export const API = Object.freeze({
+    version: "/api/version",
     runtime: "/api/runtime",
     observations: "/api/observations",
     timeline: "/api/timeline",
