@@ -635,6 +635,13 @@
         url("../assets/icons/hardware/plug-zap.svg");
 }
 
+.service-map-item__icon--teleinformation {
+    mask-image:
+        url("../assets/icons/observability/gauge.svg");
+    -webkit-mask-image:
+        url("../assets/icons/observability/gauge.svg");
+}
+
 .service-map-item__content {
     display: grid;
     min-width: 0;

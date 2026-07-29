@@ -297,6 +297,17 @@ de l'Agent.
 
 ---
 
+## 4.10 — Téléinformation Linky
+
+- service Téléinformation rattaché au RPI-Linky ;
+- saisie des entités SINSTS, NTARF et EASF01 à EASF06 ;
+- administration du plugin et test immédiat ;
+- projection des observations dans Services et Infrastructure.
+
+**Statut :** ✅ Terminé
+
+---
+
 # Prochaines évolutions
 
 - historique avancé

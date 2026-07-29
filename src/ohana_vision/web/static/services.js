@@ -32,6 +32,7 @@ const SERVICE_TYPE_LABELS = Object.freeze({
     network: "Présence réseau",
     ntp: "NTP",
     shelly_telemetry: "Shelly Telemetry",
+    teleinformation: "Téléinformation",
     wireguard: "WireGuard",
     zwave: "Z-Wave",
 });

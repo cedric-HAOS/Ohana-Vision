@@ -41,6 +41,7 @@ const PLUGIN_ICONS = Object.freeze({
     zwave: "/ui/assets/icons/protocols/radio-tower.svg",
     wireguard: "/ui/assets/icons/network/shield-check.svg",
     shelly_telemetry: "/ui/assets/icons/hardware/plug-zap.svg",
+    teleinformation: "/ui/assets/icons/observability/gauge.svg",
 });
 
 /**
@@ -307,7 +308,7 @@ export class ConfigurationController {
         )?.addEventListener(
             "change",
             () => {
-                this.updateShellyServiceFields();
+                this.updateServiceSpecificFields();
             },
         );
         this.elements.architectureDeviceServices
@@ -1621,6 +1622,36 @@ export class ConfigurationController {
         }
     }
 
+    updateTeleinformationServiceFields() {
+        const isTeleinformation = this.value(
+            "architecture-service-type",
+        ) === "teleinformation";
+        const fields = document.getElementById(
+            "architecture-service-teleinformation-fields",
+        );
+        const requiredEntityIds = [
+            "architecture-service-teleinformation-power-entity",
+            "architecture-service-teleinformation-tariff-entity",
+        ];
+
+        if (fields) {
+            fields.hidden = !isTeleinformation;
+        }
+
+        for (const id of requiredEntityIds) {
+            const control = document.getElementById(id);
+
+            if (control) {
+                control.required = isTeleinformation;
+            }
+        }
+    }
+
+    updateServiceSpecificFields() {
+        this.updateShellyServiceFields();
+        this.updateTeleinformationServiceFields();
+    }
+
     editService(serviceId) {
         const service =
             this.infrastructure.services.find(
@@ -1677,7 +1708,43 @@ export class ConfigurationController {
             "architecture-service-shelly-maximum-age",
             service.metadata?.maximum_age_seconds ?? 900,
         );
-        this.updateShellyServiceFields();
+        this.setValue(
+            "architecture-service-teleinformation-power-entity",
+            service.metadata?.apparent_power_entity_id ?? "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-tariff-entity",
+            service.metadata?.tariff_entity_id ?? "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-blue-off-peak-entity",
+            service.metadata?.blue_off_peak_entity_id ?? "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-blue-peak-entity",
+            service.metadata?.blue_peak_entity_id ?? "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-white-off-peak-entity",
+            service.metadata?.white_off_peak_entity_id ?? "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-white-peak-entity",
+            service.metadata?.white_peak_entity_id ?? "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-red-off-peak-entity",
+            service.metadata?.red_off_peak_entity_id ?? "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-red-peak-entity",
+            service.metadata?.red_peak_entity_id ?? "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-maximum-age",
+            service.metadata?.maximum_age_seconds ?? 180,
+        );
+        this.updateServiceSpecificFields();
     }
 
     editNewService(nodeId = null) {
@@ -1736,7 +1803,43 @@ export class ConfigurationController {
             "architecture-service-shelly-maximum-age",
             900,
         );
-        this.updateShellyServiceFields();
+        this.setValue(
+            "architecture-service-teleinformation-power-entity",
+            "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-tariff-entity",
+            "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-blue-off-peak-entity",
+            "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-blue-peak-entity",
+            "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-white-off-peak-entity",
+            "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-white-peak-entity",
+            "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-red-off-peak-entity",
+            "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-red-peak-entity",
+            "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-maximum-age",
+            180,
+        );
+        this.updateServiceSpecificFields();
     }
 
     editNewServiceForSelection() {
@@ -2074,6 +2177,25 @@ export class ConfigurationController {
             ...(service?.metadata ?? {}),
         };
 
+        const teleinformationEntityFields = {
+            apparent_power_entity_id:
+                "architecture-service-teleinformation-power-entity",
+            tariff_entity_id:
+                "architecture-service-teleinformation-tariff-entity",
+            blue_off_peak_entity_id:
+                "architecture-service-teleinformation-blue-off-peak-entity",
+            blue_peak_entity_id:
+                "architecture-service-teleinformation-blue-peak-entity",
+            white_off_peak_entity_id:
+                "architecture-service-teleinformation-white-off-peak-entity",
+            white_peak_entity_id:
+                "architecture-service-teleinformation-white-peak-entity",
+            red_off_peak_entity_id:
+                "architecture-service-teleinformation-red-off-peak-entity",
+            red_peak_entity_id:
+                "architecture-service-teleinformation-red-peak-entity",
+        };
+
         if (type === "shelly_telemetry") {
             metadata.power_entity_id = this.value(
                 "architecture-service-shelly-power-entity",
@@ -2092,10 +2214,34 @@ export class ConfigurationController {
             }
 
             metadata.maximum_age_seconds = maximumAge;
+            for (const field of Object.keys(teleinformationEntityFields)) {
+                delete metadata[field];
+            }
+        } else if (type === "teleinformation") {
+            for (const [field, controlId] of Object.entries(
+                teleinformationEntityFields,
+            )) {
+                const entityId = this.value(controlId);
+
+                if (entityId) {
+                    metadata[field] = entityId;
+                } else {
+                    delete metadata[field];
+                }
+            }
+
+            metadata.maximum_age_seconds = Number(this.value(
+                "architecture-service-teleinformation-maximum-age",
+            ) || 180);
+            delete metadata.power_entity_id;
+            delete metadata.energy_entity_id;
         } else {
             delete metadata.power_entity_id;
             delete metadata.energy_entity_id;
             delete metadata.maximum_age_seconds;
+            for (const field of Object.keys(teleinformationEntityFields)) {
+                delete metadata[field];
+            }
         }
 
         const values = {
@@ -2811,16 +2957,19 @@ export class ConfigurationController {
         if (
             plugin.id === "network"
             || plugin.id === "shelly_telemetry"
+            || plugin.id === "teleinformation"
         ) {
             const scope = plugin.id === "network"
                 ? "Choisissez les équipements surveillés dans Configuration → Architecture."
-                : "Ajoutez un service Shelly Telemetry à chaque équipement concerné dans Configuration → Architecture.";
+                : plugin.id === "shelly_telemetry"
+                    ? "Ajoutez un service Shelly Telemetry à chaque équipement concerné dans Configuration → Architecture."
+                    : "Ajoutez le service Téléinformation au RPI-Linky dans Configuration → Architecture.";
 
             return `
                 <div class="plugin-scope configuration-span-2">
                     <span class="plugin-scope__icon" aria-hidden="true"></span>
                     <span>
-                        <strong>${plugin.id === "shelly_telemetry" ? "Activation par service" : "Activation par équipement"}</strong>
+                        <strong>${plugin.id === "network" ? "Activation par équipement" : "Activation par service"}</strong>
                         <small>${escapeHtml(scope)}</small>
                     </span>
                 </div>
@@ -2864,6 +3013,10 @@ export class ConfigurationController {
             return "Cette page configure la connexion Home Assistant. Les entités et l’âge maximal sont définis dans chaque service Shelly Telemetry de l’architecture.";
         }
 
+        if (plugin.id === "teleinformation") {
+            return "Cette page configure la connexion Home Assistant. Les entités SINSTS, NTARF et EASF01 à EASF06 sont définies dans le service Téléinformation du RPI-Linky.";
+        }
+
         return "Les serveurs et courtiers ciblés proviennent des services déclarés dans l’onglet Architecture.";
     }
 
@@ -2874,6 +3027,7 @@ export class ConfigurationController {
         const enabled = (
             plugin?.id === "network"
             || plugin?.id === "shelly_telemetry"
+            || plugin?.id === "teleinformation"
         )
             ? true
             : (
@@ -3035,7 +3189,7 @@ export class ConfigurationController {
                 </label>
                 <label>
                     Version de l’application
-                    <input id="plugin-wireguard-app-version" type="text" value="${escapeHtml(configuration.app_version ?? "1.7.4")}" required>
+                    <input id="plugin-wireguard-app-version" type="text" value="${escapeHtml(configuration.app_version ?? "1.8.0")}" required>
                 </label>
                 <label class="configuration-span-2">
                     Jeton d’autorisation Freebox
@@ -3070,6 +3224,32 @@ export class ConfigurationController {
                 </label>
                 <label class="configuration-check configuration-span-2">
                     <input id="plugin-shelly-verify-tls" type="checkbox" ${configuration.verify_tls !== false ? "checked" : ""}>
+                    Vérifier le certificat TLS de Home Assistant
+                </label>
+            `;
+        }
+
+        if (plugin.id === "teleinformation") {
+            const tokenHint = configuration.access_token_configured
+                ? "Un jeton Home Assistant est déjà configuré. Laissez vide pour le conserver."
+                : "Renseignez un jeton d’accès longue durée Home Assistant ou une variable d’environnement.";
+            return `
+                ${common}
+                <label>
+                    URL Home Assistant
+                    <input id="plugin-teleinformation-home-assistant-url" type="url" value="${escapeHtml(configuration.home_assistant_url ?? "http://ha-green.ohana.lan:8123")}" required>
+                </label>
+                <label class="configuration-span-2">
+                    Jeton Home Assistant
+                    <input id="plugin-teleinformation-access-token" type="password" value="" autocomplete="new-password">
+                    <small>${escapeHtml(tokenHint)}</small>
+                </label>
+                <label class="configuration-span-2">
+                    Variable d’environnement du jeton
+                    <input id="plugin-teleinformation-token-environment" type="text" value="${escapeHtml(configuration.access_token_environment_variable ?? "OHANA_HOME_ASSISTANT_TOKEN")}" placeholder="OHANA_HOME_ASSISTANT_TOKEN">
+                </label>
+                <label class="configuration-check configuration-span-2">
+                    <input id="plugin-teleinformation-verify-tls" type="checkbox" ${configuration.verify_tls !== false ? "checked" : ""}>
                     Vérifier le certificat TLS de Home Assistant
                 </label>
             `;
@@ -3259,6 +3439,20 @@ export class ConfigurationController {
             );
             delete configuration.devices;
             delete configuration.access_token_configured;
+        } else if (plugin.id === "teleinformation") {
+            configuration.home_assistant_url = this.value(
+                "plugin-teleinformation-home-assistant-url",
+            );
+            configuration.access_token =
+                this.value("plugin-teleinformation-access-token")
+                || null;
+            configuration.access_token_environment_variable =
+                this.value("plugin-teleinformation-token-environment")
+                || null;
+            configuration.verify_tls = this.checked(
+                "plugin-teleinformation-verify-tls",
+            );
+            delete configuration.access_token_configured;
         } else if (plugin.id === "mqtt") {
             configuration.keepalive_seconds = Number(
                 this.value("plugin-mqtt-keepalive"),
@@ -3314,6 +3508,7 @@ export class ConfigurationController {
             enabled: (
                 plugin.id === "network"
                 || plugin.id === "shelly_telemetry"
+                || plugin.id === "teleinformation"
             )
                 ? true
                 : this.checked("plugin-enabled"),

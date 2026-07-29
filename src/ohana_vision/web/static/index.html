@@ -955,6 +955,44 @@
               <input id="architecture-service-shelly-maximum-age" min="1" type="number" value="900">
              </label>
             </div>
+            <div class="configuration-form-grid configuration-span-2" id="architecture-service-teleinformation-fields" hidden>
+             <label>
+              Puissance apparente (SINSTS)
+              <input id="architecture-service-teleinformation-power-entity" placeholder="sensor.teleinfo_041964385922_sinsts" type="text">
+             </label>
+             <label>
+              Période tarifaire (NTARF)
+              <input id="architecture-service-teleinformation-tariff-entity" placeholder="sensor.teleinfo_041964385922_ntarf" type="text">
+             </label>
+             <label>
+              Index HC Bleue (EASF01) — facultatif
+              <input id="architecture-service-teleinformation-blue-off-peak-entity" placeholder="sensor.teleinfo_041964385922_easf01" type="text">
+             </label>
+             <label>
+              Index HP Bleue (EASF02) — facultatif
+              <input id="architecture-service-teleinformation-blue-peak-entity" placeholder="sensor.teleinfo_041964385922_easf02" type="text">
+             </label>
+             <label>
+              Index HC Blanc (EASF03) — facultatif
+              <input id="architecture-service-teleinformation-white-off-peak-entity" placeholder="sensor.teleinfo_041964385922_easf03" type="text">
+             </label>
+             <label>
+              Index HP Blanc (EASF04) — facultatif
+              <input id="architecture-service-teleinformation-white-peak-entity" placeholder="sensor.teleinfo_041964385922_easf04" type="text">
+             </label>
+             <label>
+              Index HC Rouge (EASF05) — facultatif
+              <input id="architecture-service-teleinformation-red-off-peak-entity" placeholder="sensor.teleinfo_041964385922_easf05" type="text">
+             </label>
+             <label>
+              Index HP Rouge (EASF06) — facultatif
+              <input id="architecture-service-teleinformation-red-peak-entity" placeholder="sensor.teleinfo_041964385922_easf06" type="text">
+             </label>
+             <label class="configuration-span-2">
+              Âge maximal de la dernière trame (secondes)
+              <input id="architecture-service-teleinformation-maximum-age" min="1" type="number" value="180">
+             </label>
+            </div>
             <label class="configuration-check">
              <input id="architecture-service-enabled" type="checkbox">
              Service activé

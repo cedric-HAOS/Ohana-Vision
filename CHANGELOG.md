@@ -6,6 +6,23 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# v1.7.0 — Téléinformation Linky — 2026-07-29
+
+## Ajouté
+
+- Support graphique du plugin Agent `teleinformation`.
+- Type de service **Téléinformation** dans l’éditeur d’architecture.
+- Champs dédiés à `SINSTS`, `NTARF` et aux index Tempo `EASF01` à `EASF06`.
+- Paramétrage de la connexion Home Assistant et test immédiat depuis la page
+  Plugins.
+- Icône officielle de compteur dans les cartes Plugins et Services.
+- Activation du plugin pilotée par la présence d’un service sur RPI-Linky.
+
+## Qualité
+
+- Tests statiques complétés pour les formulaires Architecture et Plugins.
+- Version du paquet alignée sur `1.7.0`.
+
 # v1.6.3 — Fluidité et cohérence visuelle — 2026-07-29
 
 ## Corrigé

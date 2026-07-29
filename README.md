@@ -107,7 +107,7 @@ ni modifier de fichier YAML :
   sélectionnant leur source puis leur destination ;
 - **Plugins** : état, activation, configuration et test immédiat des plugins
   DHCP, DNS, NTP, MQTT, présence réseau, Z-Wave, WireGuard Freebox et
-  Shelly Telemetry réellement enregistrés dans Ohana-Agent.
+  Shelly Telemetry et Téléinformation réellement enregistrés dans Ohana-Agent.
 
 Vision présente et valide les formulaires, puis transmet la demande à l'API
 locale authentifiée d'Ohana-Agent. L'Agent reste seul propriétaire des fichiers
@@ -327,3 +327,12 @@ backend de Vision.
 
 Les prochaines évolutions concerneront principalement l'historique avancé,
 l'amélioration des capacités administrables et la supervision multi-agents.
+### Téléinformation Linky
+
+L’éditeur d’architecture permet de rattacher un service `teleinformation` au
+RPI-Linky. Il expose les entités Home Assistant `SINSTS`, `NTARF` et les six
+index Tempo `EASF01` à `EASF06`. La page Plugins configure la connexion Home
+Assistant, affiche le nombre de tâches et permet un test immédiat. Les
+observations `teleinformation.freshness` alimentent ensuite les cartes de
+service, l’équipement hôte et la timeline.
+

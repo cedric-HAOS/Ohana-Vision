@@ -2017,7 +2017,7 @@ def test_sidebar_exposes_product_version() -> None:
     assert "sidebar-version__number" in response.text
     assert "Ohana-Vision" in response.text
     assert 'id="vision-version"' in response.text
-    assert "v1.6.3" not in response.text
+    assert "v1.7.0" not in response.text
 
 
 def test_sidebar_version_uses_discrete_footer_styles() -> None:
@@ -2356,8 +2356,8 @@ def test_observations_list_is_not_limited_to_six_items() -> None:
     assert "this.elements.recentList.innerHTML = recent" in response.text
 
 
-def test_plugin_ui_supports_zwave_wireguard_and_shelly_telemetry() -> None:
-    """Expose dedicated controls for both new Agent plugins."""
+def test_plugin_ui_supports_observation_plugins() -> None:
+    """Expose dedicated controls for configurable Agent plugins."""
     client = make_client()
     html_response = client.get("/ui/")
     js_response = client.get("/ui/configuration.js")
@@ -2382,6 +2382,25 @@ def test_plugin_ui_supports_zwave_wireguard_and_shelly_telemetry() -> None:
     assert "architecture-service-shelly-maximum-age" in html_response.text
     assert "shelly_telemetry_enabled" not in js_response.text
     assert 'type === "shelly_telemetry"' in js_response.text
+    assert (
+        '<option value="teleinformation">Téléinformation</option>' in html_response.text
+    )
+    assert "architecture-service-teleinformation-fields" in html_response.text
+    assert "architecture-service-teleinformation-power-entity" in html_response.text
+    assert "architecture-service-teleinformation-tariff-entity" in html_response.text
+    assert "architecture-service-teleinformation-blue-off-peak-entity" in (
+        html_response.text
+    )
+    assert "architecture-service-teleinformation-red-peak-entity" in (
+        html_response.text
+    )
+    assert 'plugin.id === "teleinformation"' in js_response.text
+    assert "plugin-teleinformation-home-assistant-url" in js_response.text
+    assert "plugin-teleinformation-access-token" in js_response.text
+    assert "plugin-teleinformation-token-environment" in js_response.text
+    assert "plugin-teleinformation-verify-tls" in js_response.text
+    assert 'type === "teleinformation"' in js_response.text
+    assert "teleinformation.freshness" not in html_response.text
 
 
 def test_sidebar_exposes_agent_version_placeholder() -> None:
