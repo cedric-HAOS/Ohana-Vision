@@ -23,6 +23,8 @@ const DHCP_CATEGORY_LABELS = Object.freeze({
 
 const ARCHITECTURE_MINIMUM_COLUMNS = 15;
 const ARCHITECTURE_MINIMUM_ROWS = 10;
+const DNS_NAME_PATTERN =
+    /^(?=.{1,253}$)(?!-)[A-Za-z0-9-]+(?:\.(?!-)[A-Za-z0-9-]+)*$/;
 
 const PLUGIN_STATUS_LABELS = Object.freeze({
     active: "Actif",
@@ -99,6 +101,8 @@ export class ConfigurationController {
                 byId("dhcp-reservation-dialog"),
             dhcpReservationForm:
                 byId("dhcp-reservation-form"),
+            dhcpReservationHostname:
+                byId("dhcp-reservation-hostname"),
             dhcpReservationDialogTitle:
                 byId(
                     "dhcp-reservation-dialog-title",
@@ -183,6 +187,14 @@ export class ConfigurationController {
                 (event) => {
                     event.preventDefault();
                     void this.saveReservation();
+                },
+            );
+
+        this.elements.dhcpReservationHostname
+            ?.addEventListener(
+                "input",
+                () => {
+                    this.validateReservationHostname();
                 },
             );
 
@@ -711,21 +723,25 @@ export class ConfigurationController {
         const mac = escapeHtml(
             reservation.mac_address,
         );
+        const validHostname =
+            this.isValidDNSName(
+                reservation.hostname,
+            );
 
         return `
             <tr>
                 <td>
                     <span class="configuration-table__device">
                         <strong>${escapeHtml(reservation.hostname)}</strong>
-                        <small>${escapeHtml(DHCP_CATEGORY_LABELS[reservation.category] ?? reservation.category)}</small>
+                        <small>${escapeHtml(DHCP_CATEGORY_LABELS[reservation.category] ?? reservation.category)}${validHostname ? "" : " · Nom DNS invalide"}</small>
                     </span>
                 </td>
                 <td>${escapeHtml(reservation.address)}</td>
                 <td><code>${mac}</code></td>
                 <td>Réservé</td>
                 <td>
-                    <span class="status-badge ${active ? "status-badge--healthy" : "status-badge--unknown"}">
-                        ${active ? "Actif" : "Inactif"}
+                    <span class="status-badge ${validHostname ? (active ? "status-badge--healthy" : "status-badge--unknown") : "status-badge--error"}">
+                        ${validHostname ? (active ? "Actif" : "Inactif") : "À corriger"}
                     </span>
                 </td>
                 <td>
@@ -885,6 +901,7 @@ export class ConfigurationController {
             reservation?.category
                 ?? "infrastructure",
         );
+        this.validateReservationHostname();
 
         dialog.showModal();
     }
@@ -895,6 +912,8 @@ export class ConfigurationController {
     }
 
     async saveReservation() {
+        this.validateReservationHostname();
+
         if (
             !this.dhcp
             || !this.elements
@@ -910,7 +929,7 @@ export class ConfigurationController {
         const reservation = {
             hostname: this.value(
                 "dhcp-reservation-hostname",
-            ),
+            ).toLowerCase(),
             address: this.value(
                 "dhcp-reservation-address",
             ),
@@ -956,6 +975,67 @@ export class ConfigurationController {
             "Réservation DHCP enregistrée.",
             previousDHCP,
         );
+    }
+
+    validateReservationHostname() {
+        const field =
+            this.elements.dhcpReservationHostname;
+
+        if (!field) {
+            return true;
+        }
+
+        const hostname = field.value.trim();
+        const valid = this.isValidDNSName(hostname);
+
+        field.setCustomValidity(
+            !hostname || valid
+                ? ""
+                : this.dnsNameValidationMessage(
+                    hostname,
+                ),
+        );
+        field.setAttribute(
+            "aria-invalid",
+            valid ? "false" : "true",
+        );
+
+        return valid;
+    }
+
+    isValidDNSName(value) {
+        return DNS_NAME_PATTERN.test(
+            String(value).trim(),
+        );
+    }
+
+    dnsNameValidationMessage(value) {
+        const hostname = String(value).trim();
+        const suggestion = hostname
+            .toLowerCase()
+            .replace(/[\s_]+/g, "-");
+        const example = suggestion
+            && suggestion !== hostname
+            && this.isValidDNSName(suggestion)
+                ? ` Essayez « ${suggestion} ».`
+                : "";
+
+        return (
+            "Utilisez uniquement des lettres, des chiffres, "
+            + "des tirets et des points. Un nom DNS ne peut "
+            + "pas commencer par un tiret."
+            + example
+        );
+    }
+
+    invalidDHCPReservations() {
+        return (this.dhcp?.reservations ?? [])
+            .filter(
+                (reservation) =>
+                    !this.isValidDNSName(
+                        reservation.hostname,
+                    ),
+            );
     }
 
     handleDHCPTableClick(event) {
@@ -1011,6 +1091,32 @@ export class ConfigurationController {
         previousDHCP = null,
     ) {
         hideError(this.elements.error);
+
+        const invalidReservations =
+            this.invalidDHCPReservations();
+
+        if (invalidReservations.length) {
+            if (previousDHCP) {
+                this.dhcp = previousDHCP;
+                this.renderDHCP();
+            }
+
+            const invalidNames =
+                invalidReservations
+                    .map((reservation) =>
+                        `« ${reservation.hostname} »`,
+                    )
+                    .join(", ");
+
+            showError(
+                this.elements.error,
+                "Modification DHCP refusée : "
+                + "nom DNS invalide pour "
+                + `${invalidNames}. Utilisez des tirets `
+                + "à la place des espaces ou underscores.",
+            );
+            return;
+        }
 
         try {
             this.dhcp = await requestJson(

@@ -341,6 +341,23 @@ def test_static_ui_exposes_configuration_controller() -> None:
     assert "DHCP de ${reservation.hostname} ?" in response.text
 
 
+def test_dhcp_reservation_validates_dns_hostname_before_submission() -> None:
+    """DHCP reservation form must reject underscores before calling Agent."""
+    html = make_client().get("/")
+    script = make_client().get("/ui/configuration.js")
+
+    assert html.status_code == 200
+    assert script.status_code == 200
+    assert 'id="dhcp-reservation-hostname-help"' in html.text
+    assert 'maxlength="253"' in html.text
+    assert "DNS_NAME_PATTERN" in script.text
+    assert "validateReservationHostname()" in script.text
+    assert "invalidDHCPReservations()" in script.text
+    assert "Utilisez des tirets" in script.text
+    assert "Nom DNS invalide" in script.text
+    assert "esp-lave-vaiselle" not in script.text
+
+
 def test_configuration_persists_device_role_in_metadata() -> None:
     """The architecture editor must preserve and update a device role."""
     response = make_client().get("/ui/configuration.js")
@@ -2017,7 +2034,7 @@ def test_sidebar_exposes_product_version() -> None:
     assert "sidebar-version__number" in response.text
     assert "Ohana-Vision" in response.text
     assert 'id="vision-version"' in response.text
-    assert "v1.7.0" not in response.text
+    assert "v1.7.1" not in response.text
 
 
 def test_sidebar_version_uses_discrete_footer_styles() -> None:

@@ -6,6 +6,27 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# v1.7.1 — Validation des noms DHCP — 2026-07-29
+
+## Corrigé
+
+- Validation immédiate des noms d’hôte dans le formulaire de réservation DHCP.
+- Message explicite lorsque le caractère `_`, un espace ou un autre caractère
+  incompatible DNS est utilisé.
+- Suggestion automatique utilisant un tiret, par exemple
+  `esp-lave_vaiselle` → `esp-lave-vaiselle`.
+- Contrôle de l’ensemble des réservations avant l’envoi vers Agent.
+- Signalement visuel des réservations au nom invalide dans le tableau DHCP.
+- Ajustement automatique de la taille des noms d’équipements longs dans la
+  topologie afin qu’ils restent à l’intérieur de leur carte.
+- Troncature de secours avec conservation du nom complet dans l’infobulle SVG
+  pour les libellés exceptionnellement longs.
+
+## Qualité
+
+- Validation frontend alignée sur le contrat `DHCPReservation` d’Ohana-Agent.
+- Version du paquet alignée sur `1.7.1`.
+
 # v1.7.0 — Téléinformation Linky — 2026-07-29
 
 ## Ajouté

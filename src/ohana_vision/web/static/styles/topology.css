@@ -277,6 +277,16 @@
     letter-spacing: -0.01em;
 }
 
+.topology-device__label--long {
+    font-size: 16px;
+    letter-spacing: -0.02em;
+}
+
+.topology-device__label--very-long {
+    font-size: 14px;
+    letter-spacing: -0.025em;
+}
+
 .topology-device__detail {
     fill: color-mix(
         in srgb,

@@ -599,6 +599,24 @@ def test_topology_device_title_preserves_complete_information() -> None:
     assert 'details.join(" — ")' in response.text
 
 
+def test_topology_device_long_labels_stay_inside_cards() -> None:
+    """Long equipment names must be resized before they can overflow."""
+    client = make_client()
+
+    javascript = client.get("/ui/topology_canvas.js")
+    stylesheet = client.get("/ui/styles/topology.css")
+
+    assert javascript.status_code == 200
+    assert stylesheet.status_code == 200
+    assert "static DEVICE_LABEL_MAX_WIDTH = 128;" in javascript.text
+    assert "fitDeviceLabel(" in javascript.text
+    assert "getComputedTextLength()" in javascript.text
+    assert "topology-device__label--long" in javascript.text
+    assert "topology-device__label--very-long" in javascript.text
+    assert ".topology-device__label--long {" in stylesheet.text
+    assert ".topology-device__label--very-long {" in stylesheet.text
+
+
 def test_topology_canvas_preserves_card_readability_on_compact_screens() -> None:
     """Compact screens must start with a readable, pannable viewport."""
     client = make_client()

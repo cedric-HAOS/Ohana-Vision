@@ -792,7 +792,8 @@
           <div class="configuration-form-grid">
            <label class="configuration-span-2">
             Nom de l’équipement
-            <input id="dhcp-reservation-hostname" required type="text">
+            <input aria-describedby="dhcp-reservation-hostname-help" autocomplete="off" id="dhcp-reservation-hostname" maxlength="253" required spellcheck="false" type="text">
+            <small id="dhcp-reservation-hostname-help">Lettres, chiffres, tirets et points uniquement. Utilisez « - » à la place de « _ ».</small>
            </label>
            <label>
             Adresse IP

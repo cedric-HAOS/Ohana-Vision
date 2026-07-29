@@ -7,6 +7,10 @@ class TopologyCanvas {
 
     static DEVICE_HEIGHT = 128;
 
+    static DEVICE_LABEL_MAX_WIDTH = 128;
+
+    static DEVICE_LABEL_MIN_FONT_SIZE = 13;
+
     static MIN_ZOOM = 0.55;
 
     static MAX_ZOOM = 3;
@@ -2036,11 +2040,16 @@ class TopologyCanvas {
                 continue;
             }
 
-            layer.append(
-                this.createDevice(
-                    device,
-                    position,
-                    order,
+            const renderedDevice = this.createDevice(
+                device,
+                position,
+                order,
+            );
+
+            layer.append(renderedDevice);
+            this.fitDeviceLabel(
+                renderedDevice.querySelector(
+                    ".topology-device__label",
                 ),
             );
         }
@@ -2375,13 +2384,117 @@ class TopologyCanvas {
 
     createDeviceLabel(label) {
         const text = this.createSvgElement("text");
+        const normalizedLabel = String(label ?? "");
+        const labelLength = Array.from(
+            normalizedLabel,
+        ).length;
 
         text.classList.add("topology-device__label");
+
+        if (labelLength >= 17) {
+            text.classList.add(
+                "topology-device__label--long",
+            );
+        }
+
+        if (labelLength >= 23) {
+            text.classList.add(
+                "topology-device__label--very-long",
+            );
+        }
+
         text.setAttribute("x", 78);
         text.setAttribute("y", 58);
-        text.textContent = label;
+        text.dataset.fullLabel = normalizedLabel;
+        text.textContent = normalizedLabel;
 
         return text;
+    }
+
+    fitDeviceLabel(text) {
+        if (
+            !text
+            || typeof text.getComputedTextLength
+                !== "function"
+        ) {
+            return;
+        }
+
+        const fullLabel = text.dataset.fullLabel
+            ?? text.textContent
+            ?? "";
+        const maximumWidth =
+            TopologyCanvas.DEVICE_LABEL_MAX_WIDTH;
+        let measuredWidth;
+
+        try {
+            measuredWidth = text.getComputedTextLength();
+        } catch {
+            return;
+        }
+
+        if (
+            !Number.isFinite(measuredWidth)
+            || measuredWidth <= maximumWidth
+            || measuredWidth <= 0
+        ) {
+            return;
+        }
+
+        const computedFontSize = Number.parseFloat(
+            window.getComputedStyle(text).fontSize,
+        );
+        const currentFontSize =
+            Number.isFinite(computedFontSize)
+                ? computedFontSize
+                : 21;
+        const fittedFontSize = Math.max(
+            TopologyCanvas.DEVICE_LABEL_MIN_FONT_SIZE,
+            currentFontSize
+                * maximumWidth
+                / measuredWidth,
+        );
+
+        text.style.fontSize = `${fittedFontSize}px`;
+
+        try {
+            measuredWidth = text.getComputedTextLength();
+        } catch {
+            return;
+        }
+
+        if (measuredWidth <= maximumWidth) {
+            return;
+        }
+
+        const characters = Array.from(fullLabel);
+        let lowerBound = 0;
+        let upperBound = characters.length;
+
+        while (lowerBound < upperBound) {
+            const midpoint = Math.ceil(
+                (lowerBound + upperBound) / 2,
+            );
+
+            text.textContent = [
+                ...characters.slice(0, midpoint),
+                "…",
+            ].join("");
+
+            if (
+                text.getComputedTextLength()
+                <= maximumWidth
+            ) {
+                lowerBound = midpoint;
+            } else {
+                upperBound = midpoint - 1;
+            }
+        }
+
+        text.textContent = [
+            ...characters.slice(0, lowerBound),
+            "…",
+        ].join("");
     }
 
     createDeviceDetail(device) {
