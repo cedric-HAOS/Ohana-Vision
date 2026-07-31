@@ -1239,3 +1239,9 @@
     }
 }
 
+
+.topology-heading-status__indicator--suspended,
+.topology-tools-panel__state--suspended {
+    color: var(--status-unknown, #7f93a8);
+    background: var(--status-unknown, #7f93a8);
+}

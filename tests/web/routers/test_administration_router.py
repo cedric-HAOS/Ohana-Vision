@@ -28,6 +28,44 @@ class FakeAdministrationClient:
             "server_node_id": "infra-01",
         }
 
+    def read_network(self) -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "interface": "eth0",
+            "connection_name": "ohana-static",
+            "method": "manual",
+            "address": "192.168.1.10/24",
+            "gateway": "192.168.1.1",
+            "dns_servers": ["192.168.1.11", "192.168.1.12"],
+            "active": True,
+            "pending_change": None,
+        }
+
+    def write_network(
+        self,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        return {
+            "transaction_id": "network-transaction",
+            "expires_at": "2026-07-30T14:00:00+02:00",
+            "state": {
+                **self.read_network(),
+                **payload["settings"],
+            },
+        }
+
+    def confirm_network(self, transaction_id: str) -> dict[str, Any]:
+        return {
+            **self.read_network(),
+            "confirmed_transaction_id": transaction_id,
+        }
+
+    def rollback_network(self, transaction_id: str) -> dict[str, Any]:
+        return {
+            **self.read_network(),
+            "rolled_back_transaction_id": transaction_id,
+        }
+
     def write_dhcp(
         self,
         payload: dict[str, Any],
@@ -102,6 +140,7 @@ def test_administration_routes_proxy_agent_documents() -> None:
 
     capabilities = client.get("/api/administration/capabilities")
     dhcp = client.get("/api/administration/dhcp")
+    network = client.get("/api/administration/network")
     infrastructure = client.get("/api/administration/infrastructure")
     plugins = client.get("/api/administration/plugins")
     plugin = client.get("/api/administration/plugins/dns")
@@ -109,6 +148,8 @@ def test_administration_routes_proxy_agent_documents() -> None:
     assert capabilities.status_code == 200
     assert "dhcp.read" in capabilities.json()["operations"]
     assert dhcp.json()["server_node_id"] == "infra-01"
+    assert network.json()["address"] == "192.168.1.10/24"
+    assert network.json()["dns_servers"] == ["192.168.1.11", "192.168.1.12"]
     assert infrastructure.json()["infrastructure"]["id"] == "ohana-house"
     assert plugins.json()["plugins"][0]["id"] == "dns"
     assert plugin.json()["id"] == "dns"
@@ -120,6 +161,26 @@ def test_administration_routes_proxy_writes() -> None:
     dhcp_response = client.put(
         "/api/administration/dhcp",
         json={"schema_version": 1},
+    )
+    network_response = client.put(
+        "/api/administration/network",
+        json={
+            "schema_version": 1,
+            "rollback_seconds": 90,
+            "settings": {
+                "interface": "eth0",
+                "method": "manual",
+                "address": "192.168.1.20/24",
+                "gateway": "192.168.1.1",
+                "dns_servers": ["192.168.1.11"],
+            },
+        },
+    )
+    network_confirm_response = client.post(
+        "/api/administration/network/network-transaction/confirm",
+    )
+    network_rollback_response = client.post(
+        "/api/administration/network/network-transaction/rollback",
     )
     infrastructure_response = client.put(
         "/api/administration/infrastructure",
@@ -137,6 +198,14 @@ def test_administration_routes_proxy_writes() -> None:
     )
 
     assert dhcp_response.json() == {"schema_version": 1}
+    assert network_response.json()["transaction_id"] == "network-transaction"
+    assert network_response.json()["state"]["address"] == "192.168.1.20/24"
+    assert network_confirm_response.json()["confirmed_transaction_id"] == (
+        "network-transaction"
+    )
+    assert network_rollback_response.json()["rolled_back_transaction_id"] == (
+        "network-transaction"
+    )
     assert infrastructure_response.json() == {"nodes": []}
     assert plugin_response.json()["id"] == "dns"
     assert plugin_response.json()["enabled"] is False

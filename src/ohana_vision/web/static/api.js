@@ -10,6 +10,14 @@ export const API = Object.freeze({
         "/api/administration/capabilities",
     administrationDHCP:
         "/api/administration/dhcp",
+    administrationNetwork:
+        "/api/administration/network",
+    administrationNetworkConfirm(transactionId) {
+        return `${this.administrationNetwork}/${encodeURIComponent(transactionId)}/confirm`;
+    },
+    administrationNetworkRollback(transactionId) {
+        return `${this.administrationNetwork}/${encodeURIComponent(transactionId)}/rollback`;
+    },
     administrationInfrastructure:
         "/api/administration/infrastructure",
     administrationPlugins:

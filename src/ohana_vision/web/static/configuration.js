@@ -26,6 +26,68 @@ const ARCHITECTURE_MINIMUM_ROWS = 10;
 const DNS_NAME_PATTERN =
     /^(?=.{1,253}$)(?!-)[A-Za-z0-9-]+(?:\.(?!-)[A-Za-z0-9-]+)*$/;
 
+
+const SERVICE_PORT_POLICIES = Object.freeze({
+    dhcp: { mode: "hidden", defaultPort: null },
+    dns: { mode: "hidden", defaultPort: null },
+    mqtt: { mode: "optional", defaultPort: 1883 },
+    ntp: { mode: "optional", defaultPort: 123 },
+    home_assistant: { mode: "hidden", defaultPort: 8123 },
+    home_assistant_telemetry: { mode: "hidden", defaultPort: null },
+    shelly_telemetry: { mode: "hidden", defaultPort: null },
+    teleinformation: { mode: "hidden", defaultPort: null },
+    zwave: { mode: "optional", defaultPort: 3000 },
+    wireguard: { mode: "optional", defaultPort: null },
+    http: { mode: "optional", defaultPort: 80 },
+    https: { mode: "optional", defaultPort: 443 },
+    other: { mode: "optional", defaultPort: null },
+});
+
+function isIpv4Address(value) {
+    const parts = value.split(".");
+    return parts.length === 4
+        && parts.every((part) => {
+            if (!/^\d{1,3}$/.test(part)) {
+                return false;
+            }
+            const number = Number(part);
+            return number >= 0 && number <= 255;
+        });
+}
+
+function isDnsHostname(value) {
+    const normalized = value.trim().replace(/\.$/, "");
+    return DNS_NAME_PATTERN.test(normalized)
+        && normalized.split(".").every((label) => label.length <= 63);
+}
+
+function endpointTypeForAddress(value) {
+    return isIpv4Address(value.trim()) ? "ip" : "hostname";
+}
+
+function servicePortPolicy(type) {
+    return SERVICE_PORT_POLICIES[type]
+        ?? SERVICE_PORT_POLICIES.other;
+}
+
+function isHomeAssistantTelemetryPlugin(plugin) {
+    return [
+        "home_assistant_telemetry",
+        "shelly_telemetry",
+    ].includes(plugin?.id);
+}
+
+function normalizePluginPresentation(plugin) {
+    if (plugin?.id !== "shelly_telemetry") {
+        return plugin;
+    }
+
+    return {
+        ...plugin,
+        name: "Télémétrie Home Assistant",
+    };
+}
+
 const PLUGIN_STATUS_LABELS = Object.freeze({
     active: "Actif",
     idle: "En attente",
@@ -42,7 +104,8 @@ const PLUGIN_ICONS = Object.freeze({
     network: "/ui/assets/icons/infrastructure/network.svg",
     zwave: "/ui/assets/icons/protocols/radio-tower.svg",
     wireguard: "/ui/assets/icons/network/shield-check.svg",
-    shelly_telemetry: "/ui/assets/icons/hardware/plug-zap.svg",
+    home_assistant_telemetry: "/ui/assets/icons/observability/activity.svg",
+    shelly_telemetry: "/ui/assets/icons/observability/activity.svg",
     teleinformation: "/ui/assets/icons/observability/gauge.svg",
 });
 
@@ -51,6 +114,9 @@ const PLUGIN_ICONS = Object.freeze({
  */
 export class ConfigurationController {
     constructor() {
+        this.network = null;
+        this.networkAvailable = false;
+        this.networkLoadError = null;
         this.dhcp = null;
         this.dhcpAvailable = false;
         this.dhcpLoadError = null;
@@ -75,6 +141,15 @@ export class ConfigurationController {
         return {
             error: byId("configuration-error"),
             notice: byId("configuration-notice"),
+            networkForm: byId("network-settings-form"),
+            networkMethod: byId("network-method"),
+            networkConfirm: byId("network-confirm"),
+            networkRollback: byId("network-rollback"),
+            networkPendingChange: byId("network-pending-change"),
+            networkPendingActions: byId("network-pending-actions"),
+            networkManualFields: Array.from(
+                document.querySelectorAll(".network-manual-field"),
+            ),
             panels: Array.from(
                 document.querySelectorAll(
                     "[data-configuration-panel]",
@@ -164,6 +239,30 @@ export class ConfigurationController {
     }
 
     initialize() {
+        this.elements.networkForm
+            ?.addEventListener(
+                "submit",
+                (event) => {
+                    event.preventDefault();
+                    void this.saveNetworkSettings();
+                },
+            );
+        this.elements.networkMethod
+            ?.addEventListener(
+                "change",
+                () => this.updateNetworkMethodFields(),
+            );
+        this.elements.networkConfirm
+            ?.addEventListener(
+                "click",
+                () => void this.confirmNetworkChange(),
+            );
+        this.elements.networkRollback
+            ?.addEventListener(
+                "click",
+                () => void this.rollbackNetworkChange(),
+            );
+
         this.elements.dhcpSettingsForm
             ?.addEventListener(
                 "submit",
@@ -316,6 +415,12 @@ export class ConfigurationController {
             },
         );
         document.getElementById(
+            "architecture-device-monitoring-schedule-enabled",
+        )?.addEventListener(
+            "change",
+            () => this.updateMonitoringScheduleFields(),
+        );
+        document.getElementById(
             "architecture-service-type",
         )?.addEventListener(
             "change",
@@ -455,6 +560,25 @@ export class ConfigurationController {
                 );
             }
 
+            this.network = null;
+            this.networkAvailable = operations.includes(
+                "system.network.read",
+            );
+            this.networkLoadError = null;
+
+            if (this.networkAvailable) {
+                try {
+                    this.network = await fetchJson(
+                        API.administrationNetwork,
+                    );
+                } catch (error) {
+                    this.networkLoadError = this.errorMessage(error);
+                }
+            } else {
+                this.networkLoadError =
+                    "NetworkManager n’est pas administrable dans cet environnement.";
+            }
+
             this.plugins = [];
             this.pluginsAvailable = operations.includes(
                 "plugins.read",
@@ -467,8 +591,9 @@ export class ConfigurationController {
                         await fetchJson(
                             API.administrationPlugins,
                         );
-                    this.plugins =
-                        pluginsPayload.plugins ?? [];
+                    this.plugins = (
+                        pluginsPayload.plugins ?? []
+                    ).map(normalizePluginPresentation);
                 } catch (error) {
                     this.pluginsLoadError =
                         this.errorMessage(error);
@@ -476,6 +601,7 @@ export class ConfigurationController {
             }
 
             this.loaded = true;
+            this.renderNetwork();
             this.renderArchitecture();
             this.renderPlugins();
 
@@ -520,6 +646,14 @@ export class ConfigurationController {
         });
 
         if (
+            sectionName === "network"
+            && this.loaded
+            && this.networkAvailable
+        ) {
+            void this.refreshNetwork();
+        }
+
+        if (
             sectionName === "plugins"
             && this.loaded
             && this.pluginsAvailable
@@ -528,6 +662,201 @@ export class ConfigurationController {
         }
 
         return true;
+    }
+
+    async refreshNetwork() {
+        if (!this.networkAvailable) {
+            return;
+        }
+        try {
+            this.network = await fetchJson(API.administrationNetwork);
+            this.networkLoadError = null;
+            this.renderNetwork();
+        } catch (error) {
+            this.networkLoadError = this.errorMessage(error);
+            showError(
+                this.elements.error,
+                "Réseau de l’Agent indisponible : " + this.networkLoadError,
+            );
+        }
+    }
+
+    renderNetwork() {
+        const state = this.network;
+        const enabled = Boolean(state && this.networkAvailable);
+        this.setNetworkControlsEnabled(enabled);
+
+        this.setText("network-interface-summary", state?.interface ?? "Indisponible");
+        this.setText("network-connection-summary", state?.connection_name ?? "NetworkManager");
+        this.setText("network-address-summary", state?.address ?? "—");
+        this.setText(
+            "network-method-summary",
+            state?.method === "auto" ? "DHCP" : state ? "Adresse statique" : "—",
+        );
+        this.setText(
+            "network-state-summary",
+            state?.active ? "Connecté" : state ? "Déconnecté" : "Indisponible",
+        );
+        this.setText(
+            "network-gateway-summary",
+            state?.gateway ? `Passerelle ${state.gateway}` : "Aucune passerelle",
+        );
+
+        if (!state) {
+            this.setValue("network-interface", "");
+            return;
+        }
+        this.setValue("network-interface", state.interface ?? "");
+        this.setValue("network-method", state.method ?? "manual");
+        this.setValue("network-address", state.address ?? "");
+        this.setValue("network-gateway", state.gateway ?? "");
+        this.setValue("network-dns", (state.dns_servers ?? []).join(", "));
+        this.updateNetworkMethodFields();
+        this.renderNetworkPendingChange(state.pending_change);
+    }
+
+    setNetworkControlsEnabled(enabled) {
+        this.elements.networkForm
+            ?.querySelectorAll("input, select, button")
+            .forEach((control) => {
+                control.disabled = !enabled;
+            });
+    }
+
+    updateNetworkMethodFields() {
+        const manual = this.value("network-method") !== "auto";
+        this.elements.networkManualFields.forEach((field) => {
+            field.hidden = !manual;
+            field.querySelectorAll("input").forEach((input) => {
+                input.required = manual;
+            });
+        });
+    }
+
+    renderNetworkPendingChange(pending) {
+        const visible = Boolean(pending?.transaction_id);
+        this.elements.networkPendingChange?.classList.toggle("hidden", !visible);
+        this.elements.networkPendingActions?.classList.toggle("hidden", !visible);
+        if (!visible) {
+            if (this.elements.networkPendingChange) {
+                this.elements.networkPendingChange.textContent = "";
+            }
+            return;
+        }
+        const requestedAddress = pending.requested?.address ?? "la nouvelle adresse";
+        this.elements.networkPendingChange.textContent =
+            `Modification en attente pour ${requestedAddress}. `
+            + `Retour automatique prévu à ${new Date(pending.expires_at).toLocaleTimeString("fr-FR")}.`;
+    }
+
+    networkPayload() {
+        const method = this.value("network-method");
+        return {
+            schema_version: 1,
+            rollback_seconds: Number(this.value("network-rollback-seconds")),
+            settings: {
+                interface: this.value("network-interface").trim(),
+                method,
+                address: method === "manual"
+                    ? this.value("network-address").trim()
+                    : null,
+                gateway: method === "manual"
+                    ? this.value("network-gateway").trim()
+                    : null,
+                dns_servers: method === "manual"
+                    ? this.listValue("network-dns")
+                    : [],
+            },
+        };
+    }
+
+    async saveNetworkSettings() {
+        const payload = this.networkPayload();
+        const currentAddress = this.network?.address ?? null;
+        const nextAddress = payload.settings.address;
+        if (!window.confirm(
+            "Appliquer cette configuration réseau ? La connexion peut être interrompue. "
+            + "L’ancienne configuration sera restaurée automatiquement sans confirmation.",
+        )) {
+            return;
+        }
+        hideError(this.elements.error);
+        const redirectUrl = this.networkRedirectUrl(nextAddress);
+        try {
+            const change = await requestJson(
+                API.administrationNetwork,
+                {
+                    method: "PUT",
+                    body: JSON.stringify(payload),
+                },
+            );
+            this.network = change.state;
+            this.network.pending_change = {
+                transaction_id: change.transaction_id,
+                expires_at: change.expires_at,
+                requested: payload.settings,
+            };
+            this.renderNetwork();
+            this.showNotice(
+                "La configuration a été appliquée. Reconnectez-vous et confirmez avant le retour automatique.",
+            );
+            if (redirectUrl && nextAddress !== currentAddress) {
+                window.setTimeout(() => window.location.assign(redirectUrl), 1500);
+            }
+        } catch (error) {
+            const message = this.errorMessage(error);
+            if (redirectUrl && /failed to fetch|networkerror|réseau/i.test(message)) {
+                window.setTimeout(() => window.location.assign(redirectUrl), 1500);
+                return;
+            }
+            showError(this.elements.error, "Modification réseau refusée : " + message);
+        }
+    }
+
+    networkRedirectUrl(address) {
+        if (!address) {
+            return null;
+        }
+        const host = String(address).split("/", 1)[0];
+        if (!isIpv4Address(host)) {
+            return null;
+        }
+        const port = window.location.port ? `:${window.location.port}` : "";
+        return `${window.location.protocol}//${host}${port}/#configuration-network`;
+    }
+
+    async confirmNetworkChange() {
+        const transactionId = this.network?.pending_change?.transaction_id;
+        if (!transactionId) {
+            return;
+        }
+        try {
+            this.network = await requestJson(
+                API.administrationNetworkConfirm(transactionId),
+                { method: "POST" },
+            );
+            this.renderNetwork();
+            this.showNotice("La nouvelle configuration réseau est confirmée.");
+        } catch (error) {
+            showError(this.elements.error, "Confirmation impossible : " + this.errorMessage(error));
+        }
+    }
+
+    async rollbackNetworkChange() {
+        const transactionId = this.network?.pending_change?.transaction_id;
+        if (!transactionId || !window.confirm("Restaurer immédiatement l’ancienne configuration réseau ?")) {
+            return;
+        }
+        try {
+            this.network = await requestJson(
+                API.administrationNetworkRollback(transactionId),
+                { method: "POST" },
+            );
+            this.renderNetwork();
+            this.showNotice("L’ancienne configuration réseau a été restaurée.");
+        } catch (error) {
+            showError(this.elements.error, "Restauration impossible : " + this.errorMessage(error));
+        }
     }
 
     renderDHCP() {
@@ -1659,7 +1988,36 @@ export class ConfigurationController {
             device.metadata
                 ?.network_presence_enabled !== false,
         );
+        const monitoringSchedule = device.metadata?.monitoring_schedule;
+        const monitoringPeriod = monitoringSchedule?.periods?.[0] ?? {};
+        this.setChecked(
+            "architecture-device-monitoring-schedule-enabled",
+            Boolean(monitoringSchedule?.enabled !== false && monitoringSchedule?.periods?.length),
+        );
+        this.setValue(
+            "architecture-device-monitoring-start",
+            monitoringPeriod.start ?? "07:00",
+        );
+        this.setValue(
+            "architecture-device-monitoring-end",
+            monitoringPeriod.end ?? "22:00",
+        );
+        this.setValue(
+            "architecture-device-monitoring-timezone",
+            monitoringSchedule?.timezone ?? "Europe/Paris",
+        );
+        this.setValue(
+            "architecture-device-monitoring-grace",
+            monitoringSchedule?.startup_grace_seconds ?? 300,
+        );
+        this.setMonitoringScheduleDays(
+            monitoringPeriod.days ?? [
+                "monday", "tuesday", "wednesday", "thursday",
+                "friday", "saturday", "sunday",
+            ],
+        );
         this.updateNetworkPresenceControl();
+        this.updateMonitoringScheduleFields();
         this.renderAssociatedServices(device);
     }
 
@@ -1690,7 +2048,20 @@ export class ConfigurationController {
             "architecture-device-network-presence",
             true,
         );
+        this.setChecked(
+            "architecture-device-monitoring-schedule-enabled",
+            false,
+        );
+        this.setValue("architecture-device-monitoring-start", "07:00");
+        this.setValue("architecture-device-monitoring-end", "22:00");
+        this.setValue("architecture-device-monitoring-timezone", "Europe/Paris");
+        this.setValue("architecture-device-monitoring-grace", 300);
+        this.setMonitoringScheduleDays([
+            "monday", "tuesday", "wednesday", "thursday",
+            "friday", "saturday", "sunday",
+        ]);
         this.updateNetworkPresenceControl();
+        this.updateMonitoringScheduleFields();
         this.renderAssociatedServices(null);
     }
 
@@ -1708,23 +2079,80 @@ export class ConfigurationController {
         );
     }
 
-    updateShellyServiceFields() {
-        const isShelly = this.value(
-            "architecture-service-type",
-        ) === "shelly_telemetry";
+    updateMonitoringScheduleFields() {
+        const enabled = this.checked(
+            "architecture-device-monitoring-schedule-enabled",
+        );
         const fields = document.getElementById(
-            "architecture-service-shelly-fields",
+            "architecture-device-monitoring-schedule-fields",
+        );
+        if (fields) {
+            fields.hidden = !enabled;
+        }
+
+        const requiredControls = [
+            "architecture-device-monitoring-start",
+            "architecture-device-monitoring-end",
+            "architecture-device-monitoring-timezone",
+        ];
+        const optionalControls = [
+            "architecture-device-monitoring-grace",
+        ];
+
+        for (const id of requiredControls) {
+            const control = document.getElementById(id);
+            if (control) {
+                control.disabled = !enabled;
+                control.required = enabled;
+            }
+        }
+        for (const id of optionalControls) {
+            const control = document.getElementById(id);
+            if (control) {
+                control.disabled = !enabled;
+            }
+        }
+        for (const control of document.querySelectorAll(
+            "[data-monitoring-day]",
+        )) {
+            control.disabled = !enabled;
+        }
+    }
+
+    monitoringScheduleDays() {
+        return Array.from(document.querySelectorAll(
+            "[data-monitoring-day]",
+        ))
+            .filter((control) => control.checked)
+            .map((control) => control.dataset.monitoringDay);
+    }
+
+    setMonitoringScheduleDays(days) {
+        const selected = new Set(days ?? []);
+        for (const control of document.querySelectorAll(
+            "[data-monitoring-day]",
+        )) {
+            control.checked = selected.has(control.dataset.monitoringDay);
+        }
+    }
+
+    updateHomeAssistantTelemetryServiceFields() {
+        const isHomeAssistantTelemetry = this.value(
+            "architecture-service-type",
+        ) === "home_assistant_telemetry";
+        const fields = document.getElementById(
+            "architecture-service-home-assistant-telemetry-fields",
         );
         const powerEntity = document.getElementById(
-            "architecture-service-shelly-power-entity",
+            "architecture-service-home-assistant-primary-entity",
         );
 
         if (fields) {
-            fields.hidden = !isShelly;
+            fields.hidden = !isHomeAssistantTelemetry;
         }
 
         if (powerEntity) {
-            powerEntity.required = isShelly;
+            powerEntity.required = isHomeAssistantTelemetry;
         }
     }
 
@@ -1736,8 +2164,7 @@ export class ConfigurationController {
             "architecture-service-teleinformation-fields",
         );
         const requiredEntityIds = [
-            "architecture-service-teleinformation-power-entity",
-            "architecture-service-teleinformation-tariff-entity",
+            "architecture-service-teleinformation-meter-id",
         ];
 
         if (fields) {
@@ -1753,9 +2180,45 @@ export class ConfigurationController {
         }
     }
 
+    updateServicePortField() {
+        const type = this.value("architecture-service-type");
+        const policy = servicePortPolicy(type);
+        const field = document.getElementById(
+            "architecture-service-port-field",
+        );
+        const control = document.getElementById(
+            "architecture-service-port",
+        );
+        const help = document.getElementById(
+            "architecture-service-port-help",
+        );
+
+        if (!field || !control) {
+            return;
+        }
+
+        field.hidden = policy.mode === "hidden";
+        control.required = policy.mode === "required";
+
+        if (policy.mode === "hidden") {
+            control.value = policy.defaultPort === null
+                ? ""
+                : String(policy.defaultPort);
+        } else if (!control.value && policy.defaultPort !== null) {
+            control.value = String(policy.defaultPort);
+        }
+
+        if (help) {
+            help.textContent = policy.defaultPort === null
+                ? "Facultatif : laissez vide pour utiliser la configuration du plugin."
+                : `Facultatif : ${policy.defaultPort} est utilisé par défaut.`;
+        }
+    }
+
     updateServiceSpecificFields() {
-        this.updateShellyServiceFields();
+        this.updateHomeAssistantTelemetryServiceFields();
         this.updateTeleinformationServiceFields();
+        this.updateServicePortField();
     }
 
     editService(serviceId) {
@@ -1780,7 +2243,9 @@ export class ConfigurationController {
         );
         this.setValue(
             "architecture-service-type",
-            service.type,
+            service.type === "shelly_telemetry"
+                ? "home_assistant_telemetry"
+                : service.type,
         );
         this.setValue(
             "architecture-service-port",
@@ -1803,16 +2268,28 @@ export class ConfigurationController {
             service.critical ?? false,
         );
         this.setValue(
-            "architecture-service-shelly-power-entity",
-            service.metadata?.power_entity_id ?? "",
+            "architecture-service-home-assistant-primary-entity",
+            service.metadata?.primary_entity_id
+                ?? service.metadata?.power_entity_id
+                ?? "",
         );
         this.setValue(
-            "architecture-service-shelly-energy-entity",
-            service.metadata?.energy_entity_id ?? "",
+            "architecture-service-home-assistant-secondary-entity",
+            service.metadata?.secondary_entity_id
+                ?? service.metadata?.energy_entity_id
+                ?? "",
         );
         this.setValue(
-            "architecture-service-shelly-maximum-age",
+            "architecture-service-home-assistant-maximum-age",
             service.metadata?.maximum_age_seconds ?? 900,
+        );
+        this.setValue(
+            "architecture-service-teleinformation-meter-id",
+            service.metadata?.meter_id ?? "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-source-id",
+            service.metadata?.source_id ?? "rpi-linky",
         );
         this.setValue(
             "architecture-service-teleinformation-power-entity",
@@ -1848,7 +2325,7 @@ export class ConfigurationController {
         );
         this.setValue(
             "architecture-service-teleinformation-maximum-age",
-            service.metadata?.maximum_age_seconds ?? 180,
+            service.metadata?.maximum_age_seconds ?? 30,
         );
         this.updateServiceSpecificFields();
     }
@@ -1858,7 +2335,7 @@ export class ConfigurationController {
             showError(
                 this.elements.error,
                 "Ajoutez d’abord un équipement "
-                + "possédant une adresse IP.",
+                + "possédant un hôte ou une adresse IP.",
             );
             return;
         }
@@ -1898,16 +2375,24 @@ export class ConfigurationController {
             false,
         );
         this.setValue(
-            "architecture-service-shelly-power-entity",
+            "architecture-service-home-assistant-primary-entity",
             "",
         );
         this.setValue(
-            "architecture-service-shelly-energy-entity",
+            "architecture-service-home-assistant-secondary-entity",
             "",
         );
         this.setValue(
-            "architecture-service-shelly-maximum-age",
+            "architecture-service-home-assistant-maximum-age",
             900,
+        );
+        this.setValue(
+            "architecture-service-teleinformation-meter-id",
+            "",
+        );
+        this.setValue(
+            "architecture-service-teleinformation-source-id",
+            "rpi-linky",
         );
         this.setValue(
             "architecture-service-teleinformation-power-entity",
@@ -1943,7 +2428,7 @@ export class ConfigurationController {
         );
         this.setValue(
             "architecture-service-teleinformation-maximum-age",
-            180,
+            30,
         );
         this.updateServiceSpecificFields();
     }
@@ -1964,7 +2449,7 @@ export class ConfigurationController {
         if (!device?.node) {
             showError(
                 this.elements.error,
-                "Renseignez d’abord l’adresse IP "
+                "Renseignez d’abord l’hôte ou l’adresse IP "
                 + "de cet équipement et enregistrez-le.",
             );
             return;
@@ -2152,8 +2637,38 @@ export class ConfigurationController {
         const networkPresenceEnabled = this.checked(
             "architecture-device-network-presence",
         );
+        const monitoringScheduleEnabled = this.checked(
+            "architecture-device-monitoring-schedule-enabled",
+        );
+        const monitoringDays = this.monitoringScheduleDays();
 
         if (!name) {
+            return;
+        }
+
+        const addressControl = document.getElementById(
+            "architecture-device-address",
+        );
+        const validAddress = !address
+            || isIpv4Address(address)
+            || isDnsHostname(address);
+
+        addressControl?.setCustomValidity(
+            validAddress
+                ? ""
+                : "Saisissez une adresse IPv4 ou un nom DNS valide.",
+        );
+
+        if (!validAddress) {
+            addressControl?.reportValidity();
+            return;
+        }
+
+        if (monitoringScheduleEnabled && !monitoringDays.length) {
+            showError(
+                this.elements.error,
+                "Sélectionnez au moins un jour de surveillance.",
+            );
             return;
         }
 
@@ -2211,6 +2726,25 @@ export class ConfigurationController {
                 .network_presence_enabled;
         }
 
+        if (monitoringScheduleEnabled) {
+            device.metadata.monitoring_schedule = {
+                enabled: true,
+                timezone: this.value(
+                    "architecture-device-monitoring-timezone",
+                ) || "Europe/Paris",
+                periods: [{
+                    days: monitoringDays,
+                    start: this.value("architecture-device-monitoring-start"),
+                    end: this.value("architecture-device-monitoring-end"),
+                }],
+                startup_grace_seconds: Number(this.value(
+                    "architecture-device-monitoring-grace",
+                ) || 0),
+            };
+        } else {
+            delete device.metadata.monitoring_schedule;
+        }
+
         if (address) {
             const nodeId = device.node ?? id;
             let node =
@@ -2224,7 +2758,7 @@ export class ConfigurationController {
                     name,
                     description: "",
                     endpoint: {
-                        type: "ip",
+                        type: endpointTypeForAddress(address),
                         address,
                     },
                 };
@@ -2233,6 +2767,7 @@ export class ConfigurationController {
                 );
             } else {
                 node.name = name;
+                node.endpoint.type = endpointTypeForAddress(address);
                 node.endpoint.address = address;
             }
 
@@ -2302,28 +2837,36 @@ export class ConfigurationController {
                 "architecture-service-teleinformation-red-peak-entity",
         };
 
-        if (type === "shelly_telemetry") {
-            metadata.power_entity_id = this.value(
-                "architecture-service-shelly-power-entity",
+        if (type === "home_assistant_telemetry") {
+            metadata.primary_entity_id = this.value(
+                "architecture-service-home-assistant-primary-entity",
             );
-            const energyEntityId = this.value(
-                "architecture-service-shelly-energy-entity",
+            const secondaryEntityId = this.value(
+                "architecture-service-home-assistant-secondary-entity",
             );
             const maximumAge = Number(this.value(
-                "architecture-service-shelly-maximum-age",
+                "architecture-service-home-assistant-maximum-age",
             ) || 900);
 
-            if (energyEntityId) {
-                metadata.energy_entity_id = energyEntityId;
+            if (secondaryEntityId) {
+                metadata.secondary_entity_id = secondaryEntityId;
             } else {
-                delete metadata.energy_entity_id;
+                delete metadata.secondary_entity_id;
             }
 
             metadata.maximum_age_seconds = maximumAge;
+            delete metadata.power_entity_id;
+            delete metadata.energy_entity_id;
             for (const field of Object.keys(teleinformationEntityFields)) {
                 delete metadata[field];
             }
         } else if (type === "teleinformation") {
+            metadata.meter_id = this.value(
+                "architecture-service-teleinformation-meter-id",
+            );
+            metadata.source_id = this.value(
+                "architecture-service-teleinformation-source-id",
+            ) || "rpi-linky";
             for (const [field, controlId] of Object.entries(
                 teleinformationEntityFields,
             )) {
@@ -2338,17 +2881,28 @@ export class ConfigurationController {
 
             metadata.maximum_age_seconds = Number(this.value(
                 "architecture-service-teleinformation-maximum-age",
-            ) || 180);
+            ) || 30);
+            delete metadata.primary_entity_id;
+            delete metadata.secondary_entity_id;
             delete metadata.power_entity_id;
             delete metadata.energy_entity_id;
         } else {
+            delete metadata.primary_entity_id;
+            delete metadata.secondary_entity_id;
             delete metadata.power_entity_id;
             delete metadata.energy_entity_id;
             delete metadata.maximum_age_seconds;
+            delete metadata.meter_id;
+            delete metadata.source_id;
             for (const field of Object.keys(teleinformationEntityFields)) {
                 delete metadata[field];
             }
         }
+
+        const portPolicy = servicePortPolicy(type);
+        const resolvedPort = portPolicy.mode === "hidden"
+            ? portPolicy.defaultPort
+            : (port ? Number(port) : null);
 
         const values = {
             id,
@@ -2357,7 +2911,7 @@ export class ConfigurationController {
             node: this.value(
                 "architecture-service-node",
             ),
-            port: port ? Number(port) : null,
+            port: resolvedPort,
             implementation: this.value(
                 "architecture-service-implementation",
             ) || null,
@@ -2815,7 +3369,8 @@ export class ConfigurationController {
             const pluginsPayload = await fetchJson(
                 API.administrationPlugins,
             );
-            this.plugins = pluginsPayload.plugins ?? [];
+            this.plugins = (pluginsPayload.plugins ?? [])
+                .map(normalizePluginPresentation);
             this.pluginsLoadError = null;
 
             if (
@@ -3062,13 +3617,13 @@ export class ConfigurationController {
     pluginActivationField(plugin) {
         if (
             plugin.id === "network"
-            || plugin.id === "shelly_telemetry"
+            || isHomeAssistantTelemetryPlugin(plugin)
             || plugin.id === "teleinformation"
         ) {
             const scope = plugin.id === "network"
                 ? "Choisissez les équipements surveillés dans Configuration → Architecture."
-                : plugin.id === "shelly_telemetry"
-                    ? "Ajoutez un service Shelly Telemetry à chaque équipement concerné dans Configuration → Architecture."
+                : isHomeAssistantTelemetryPlugin(plugin)
+                    ? "Ajoutez un service Télémétrie Home Assistant à chaque équipement concerné dans Configuration → Architecture."
                     : "Ajoutez le service Téléinformation au RPI-Linky dans Configuration → Architecture.";
 
             return `
@@ -3115,8 +3670,8 @@ export class ConfigurationController {
             return "Le serveur WireGuard est contrôlé directement dans Freebox OS. Le service WireGuard doit être déclaré sur la Freebox dans l’onglet Architecture et Ohana-Agent doit être autorisé par la Freebox.";
         }
 
-        if (plugin.id === "shelly_telemetry") {
-            return "Cette page configure la connexion Home Assistant. Les entités et l’âge maximal sont définis dans chaque service Shelly Telemetry de l’architecture.";
+        if (isHomeAssistantTelemetryPlugin(plugin)) {
+            return "Cette page configure la connexion Home Assistant. Les entités et l’âge maximal sont définis dans chaque service Télémétrie Home Assistant de l’architecture.";
         }
 
         if (plugin.id === "teleinformation") {
@@ -3132,7 +3687,7 @@ export class ConfigurationController {
             document.getElementById("plugin-enabled");
         const enabled = (
             plugin?.id === "network"
-            || plugin?.id === "shelly_telemetry"
+            || isHomeAssistantTelemetryPlugin(plugin)
             || plugin?.id === "teleinformation"
         )
             ? true
@@ -3309,7 +3864,7 @@ export class ConfigurationController {
             `;
         }
 
-        if (plugin.id === "shelly_telemetry") {
+        if (isHomeAssistantTelemetryPlugin(plugin)) {
             const tokenHint = configuration.access_token_configured
                 ? "Un jeton Home Assistant est déjà configuré. Laissez vide pour le conserver."
                 : "Renseignez un jeton d’accès longue durée Home Assistant ou une variable d’environnement.";
@@ -3317,47 +3872,83 @@ export class ConfigurationController {
                 ${common}
                 <label>
                     URL Home Assistant
-                    <input id="plugin-shelly-home-assistant-url" type="url" value="${escapeHtml(configuration.home_assistant_url ?? "http://ha-green.ohana.lan:8123")}" required>
+                    <input id="plugin-home-assistant-telemetry-url" type="url" value="${escapeHtml(configuration.home_assistant_url ?? "http://ha-green.ohana.lan:8123")}" required>
                 </label>
                 <label class="configuration-span-2">
                     Jeton Home Assistant
-                    <input id="plugin-shelly-access-token" type="password" value="" autocomplete="new-password">
+                    <input id="plugin-home-assistant-telemetry-token" type="password" value="" autocomplete="new-password">
                     <small>${escapeHtml(tokenHint)}</small>
                 </label>
                 <label class="configuration-span-2">
                     Variable d’environnement du jeton
-                    <input id="plugin-shelly-token-environment" type="text" value="${escapeHtml(configuration.access_token_environment_variable ?? "OHANA_HOME_ASSISTANT_TOKEN")}" placeholder="OHANA_HOME_ASSISTANT_TOKEN">
+                    <input id="plugin-home-assistant-telemetry-token-environment" type="text" value="${escapeHtml(configuration.access_token_environment_variable ?? "OHANA_HOME_ASSISTANT_TOKEN")}" placeholder="OHANA_HOME_ASSISTANT_TOKEN">
                 </label>
                 <label class="configuration-check configuration-span-2">
-                    <input id="plugin-shelly-verify-tls" type="checkbox" ${configuration.verify_tls !== false ? "checked" : ""}>
+                    <input id="plugin-home-assistant-telemetry-verify-tls" type="checkbox" ${configuration.verify_tls !== false ? "checked" : ""}>
                     Vérifier le certificat TLS de Home Assistant
                 </label>
             `;
         }
 
         if (plugin.id === "teleinformation") {
-            const tokenHint = configuration.access_token_configured
-                ? "Un jeton Home Assistant est déjà configuré. Laissez vide pour le conserver."
-                : "Renseignez un jeton d’accès longue durée Home Assistant ou une variable d’environnement.";
+            const ingestionTokenHint = configuration.ingestion_token_configured
+                ? "Un jeton d’ingestion est déjà configuré. Laissez vide pour le conserver."
+                : "Utilisez le même jeton dans l’add-on teleinfo2mqtt sur RPI-Linky.";
+            const legacyTokenHint = configuration.access_token_configured
+                ? "Un jeton Home Assistant historique est configuré."
+                : "Uniquement nécessaire pour le mode historique Home Assistant.";
             return `
                 ${common}
                 <label>
-                    URL Home Assistant
-                    <input id="plugin-teleinformation-home-assistant-url" type="url" value="${escapeHtml(configuration.home_assistant_url ?? "http://ha-green.ohana.lan:8123")}" required>
+                    Mode de réception
+                    <select id="plugin-teleinformation-mode">
+                        <option value="direct_http" ${configuration.mode !== "home_assistant" ? "selected" : ""}>HTTP direct depuis teleinfo2mqtt</option>
+                        <option value="home_assistant" ${configuration.mode === "home_assistant" ? "selected" : ""}>Home Assistant (historique)</option>
+                    </select>
+                </label>
+                <label>
+                    Port d’écoute Agent
+                    <input id="plugin-teleinformation-listen-port" type="number" min="1" max="65535" value="${escapeHtml(configuration.listen_port ?? 8770)}" required>
+                </label>
+                <label>
+                    Adresse d’écoute
+                    <input id="plugin-teleinformation-listen-host" type="text" value="${escapeHtml(configuration.listen_host ?? "0.0.0.0")}" required>
                 </label>
                 <label class="configuration-span-2">
-                    Jeton Home Assistant
-                    <input id="plugin-teleinformation-access-token" type="password" value="" autocomplete="new-password">
-                    <small>${escapeHtml(tokenHint)}</small>
+                    Jeton d’ingestion RPI-Linky
+                    <input id="plugin-teleinformation-ingestion-token" type="password" value="" autocomplete="new-password">
+                    <small>${escapeHtml(ingestionTokenHint)}</small>
                 </label>
                 <label class="configuration-span-2">
-                    Variable d’environnement du jeton
-                    <input id="plugin-teleinformation-token-environment" type="text" value="${escapeHtml(configuration.access_token_environment_variable ?? "OHANA_HOME_ASSISTANT_TOKEN")}" placeholder="OHANA_HOME_ASSISTANT_TOKEN">
+                    Variable d’environnement du jeton d’ingestion
+                    <input id="plugin-teleinformation-ingestion-token-environment" type="text" value="${escapeHtml(configuration.ingestion_token_environment_variable ?? "OHANA_TELEINFORMATION_INGESTION_TOKEN")}" placeholder="OHANA_TELEINFORMATION_INGESTION_TOKEN">
                 </label>
-                <label class="configuration-check configuration-span-2">
-                    <input id="plugin-teleinformation-verify-tls" type="checkbox" ${configuration.verify_tls !== false ? "checked" : ""}>
-                    Vérifier le certificat TLS de Home Assistant
-                </label>
+                <p class="configuration-span-2 configuration-help">
+                    Endpoint à configurer dans l’add-on :
+                    <code>http://infra-01.ohana.lan:${escapeHtml(configuration.listen_port ?? 8770)}/v1/teleinformation/frames</code>
+                </p>
+                <details class="configuration-span-2 configuration-legacy-fields">
+                    <summary>Mode historique Home Assistant</summary>
+                    <div class="configuration-form-grid">
+                        <label>
+                            URL Home Assistant
+                            <input id="plugin-teleinformation-home-assistant-url" type="url" value="${escapeHtml(configuration.home_assistant_url ?? "http://ha-green.ohana.lan:8123")}">
+                        </label>
+                        <label>
+                            Jeton Home Assistant
+                            <input id="plugin-teleinformation-access-token" type="password" value="" autocomplete="new-password">
+                            <small>${escapeHtml(legacyTokenHint)}</small>
+                        </label>
+                        <label>
+                            Variable d’environnement du jeton
+                            <input id="plugin-teleinformation-token-environment" type="text" value="${escapeHtml(configuration.access_token_environment_variable ?? "OHANA_HOME_ASSISTANT_TOKEN")}">
+                        </label>
+                        <label class="configuration-check">
+                            <input id="plugin-teleinformation-verify-tls" type="checkbox" ${configuration.verify_tls !== false ? "checked" : ""}>
+                            Vérifier le certificat TLS
+                        </label>
+                    </div>
+                </details>
             `;
         }
 
@@ -3530,25 +4121,39 @@ export class ConfigurationController {
                 "plugin-wireguard-verify-tls",
             );
             delete configuration.app_token_configured;
-        } else if (plugin.id === "shelly_telemetry") {
+        } else if (isHomeAssistantTelemetryPlugin(plugin)) {
             configuration.home_assistant_url = this.value(
-                "plugin-shelly-home-assistant-url",
+                "plugin-home-assistant-telemetry-url",
             );
             configuration.access_token =
-                this.value("plugin-shelly-access-token")
+                this.value("plugin-home-assistant-telemetry-token")
                 || null;
             configuration.access_token_environment_variable =
-                this.value("plugin-shelly-token-environment")
+                this.value("plugin-home-assistant-telemetry-token-environment")
                 || null;
             configuration.verify_tls = this.checked(
-                "plugin-shelly-verify-tls",
+                "plugin-home-assistant-telemetry-verify-tls",
             );
             delete configuration.devices;
             delete configuration.access_token_configured;
         } else if (plugin.id === "teleinformation") {
+            configuration.mode = this.value("plugin-teleinformation-mode")
+                || "direct_http";
+            configuration.listen_host = this.value(
+                "plugin-teleinformation-listen-host",
+            ) || "0.0.0.0";
+            configuration.listen_port = Number(this.value(
+                "plugin-teleinformation-listen-port",
+            ) || 8770);
+            configuration.ingestion_token =
+                this.value("plugin-teleinformation-ingestion-token")
+                || null;
+            configuration.ingestion_token_environment_variable =
+                this.value("plugin-teleinformation-ingestion-token-environment")
+                || null;
             configuration.home_assistant_url = this.value(
                 "plugin-teleinformation-home-assistant-url",
-            );
+            ) || "http://ha-green.ohana.lan:8123";
             configuration.access_token =
                 this.value("plugin-teleinformation-access-token")
                 || null;
@@ -3559,6 +4164,7 @@ export class ConfigurationController {
                 "plugin-teleinformation-verify-tls",
             );
             delete configuration.access_token_configured;
+            delete configuration.ingestion_token_configured;
         } else if (plugin.id === "mqtt") {
             configuration.keepalive_seconds = Number(
                 this.value("plugin-mqtt-keepalive"),
@@ -3613,7 +4219,7 @@ export class ConfigurationController {
         return {
             enabled: (
                 plugin.id === "network"
-                || plugin.id === "shelly_telemetry"
+                || isHomeAssistantTelemetryPlugin(plugin)
                 || plugin.id === "teleinformation"
             )
                 ? true
@@ -3807,6 +4413,13 @@ export class ConfigurationController {
             .split(",")
             .map((item) => item.trim())
             .filter(Boolean);
+    }
+
+    setText(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = String(value ?? "");
+        }
     }
 
     setValue(id, value) {

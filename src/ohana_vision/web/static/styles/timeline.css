@@ -894,3 +894,18 @@
         rgb(125 162 255 / 25%)
         transparent;
 }
+
+.timeline-legend__indicator--suspended,
+.timeline-row__status--suspended {
+    background: var(--ohana-health-unknown);
+    box-shadow: 0 0 0.75rem var(--ohana-health-unknown-soft);
+}
+
+.timeline-period--suspended {
+    color: var(--ohana-health-unknown);
+    opacity: 0.72;
+}
+
+.timeline-row__current--suspended {
+    background: var(--ohana-health-unknown-soft);
+}

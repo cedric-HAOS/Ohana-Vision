@@ -9,6 +9,7 @@ class HealthStatus(StrEnum):
     """Possible health states for an infrastructure entity."""
 
     HEALTHY = "healthy"
+    SUSPENDED = "suspended"
     DEGRADED = "degraded"
     UNAVAILABLE = "unavailable"
     UNKNOWN = "unknown"
@@ -16,6 +17,7 @@ class HealthStatus(StrEnum):
 
 
 _HEALTH_PRIORITY: dict[HealthStatus, int] = {
+    HealthStatus.SUSPENDED: -1,
     HealthStatus.HEALTHY: 0,
     HealthStatus.UNKNOWN: 1,
     HealthStatus.STALE: 2,
@@ -43,6 +45,7 @@ class Health:
 
         return self.status in {
             HealthStatus.HEALTHY,
+            HealthStatus.SUSPENDED,
             HealthStatus.DEGRADED,
         }
 

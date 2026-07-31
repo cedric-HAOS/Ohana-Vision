@@ -1,0 +1,7 @@
+
+/* Monitoring schedules: an intentionally inactive target is neutral. */
+.status-badge--suspended {
+    color: var(--ohana-health-unknown, #7f93a8);
+    background: var(--ohana-health-unknown-soft, rgba(127, 147, 168, 0.14));
+    border-color: color-mix(in srgb, var(--ohana-health-unknown, #7f93a8) 35%, transparent);
+}

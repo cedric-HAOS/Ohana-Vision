@@ -272,7 +272,7 @@ de l'Agent.
 
 - indicateur discret sur les équipements adressables
 - états présent, absent et inconnu
-- absence d’indicateur pour les équipements sans adresse IP
+- absence d’indicateur pour les équipements sans hôte ni adresse IP
 - légende intégrée à l’aide à la lecture
 
 **Statut :** ✅ Terminé
@@ -303,6 +303,31 @@ de l'Agent.
 - saisie des entités SINSTS, NTARF et EASF01 à EASF06 ;
 - administration du plugin et test immédiat ;
 - projection des observations dans Services et Infrastructure.
+
+**Statut :** ✅ Terminé
+
+---
+
+## Version 1.8.0 — Lot A : télémétrie et formulaires de services
+
+- présentation du plugin **Télémétrie Home Assistant** ;
+- migration visuelle des anciens services `shelly_telemetry` ;
+- saisie d’une adresse IPv4 ou d’un nom DNS pour les équipements ;
+- affichage contextuel du champ Port selon le type de service ;
+- conservation des anciens contrats Agent pendant la transition.
+
+**Statut :** ✅ Terminé
+
+---
+
+## Version 1.9.0 — Lot B : Téléinformation directe et plages horaires
+
+- configuration de l’envoi HTTP direct depuis `teleinfo2mqtt` ;
+- identification du compteur Linky et de la source RPI-Linky ;
+- maintien temporaire du mode historique Home Assistant ;
+- plages horaires au niveau des équipements ;
+- héritage par les services et la présence réseau ;
+- état **Suspendu** neutre dans la santé globale et les incidents.
 
 **Statut :** ✅ Terminé
 
@@ -372,3 +397,11 @@ de l'Agent.
 - diagnostics à la demande
 - opérations d'administration
 - suivi de l'exécution
+
+
+## Version 1.10.0 — Lot C : réseau de l’Agent
+
+- [x] Vue NetworkManager en lecture.
+- [x] Formulaire IPv4 statique ou DHCP.
+- [x] Confirmation et restauration pendant la fenêtre de rollback.
+- [x] Redirection vers la nouvelle adresse IPv4.

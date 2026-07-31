@@ -83,6 +83,10 @@
      <p class="sidebar-navigation__title">
       Configuration
      </p>
+     <button class="sidebar-navigation__item" data-navigation-target="configuration-network" type="button">
+      <span aria-hidden="true" class="sidebar-navigation__icon sidebar-navigation__icon--network"></span>
+      <span>Réseau Agent</span>
+     </button>
      <button class="sidebar-navigation__item" data-navigation-target="configuration-dhcp" type="button">
       <span
     aria-hidden="true"
@@ -671,6 +675,97 @@
        <div class="configuration-notice hidden" id="configuration-notice" role="status">
        </div>
        <section
+        aria-label="Configuration réseau de l’Agent"
+        class="configuration-panel"
+        data-configuration-panel="network"
+        id="network-configuration-panel"
+        hidden
+       >
+        <div class="configuration-summary">
+         <article class="configuration-summary-card">
+          <span>Interface active</span>
+          <strong id="network-interface-summary">—</strong>
+          <small id="network-connection-summary">NetworkManager</small>
+         </article>
+         <article class="configuration-summary-card">
+          <span>Adresse IPv4</span>
+          <strong id="network-address-summary">—</strong>
+          <small id="network-method-summary">—</small>
+         </article>
+         <article class="configuration-summary-card">
+          <span>État</span>
+          <strong id="network-state-summary">—</strong>
+          <small id="network-gateway-summary">—</small>
+         </article>
+        </div>
+        <div class="configuration-grid configuration-grid--dhcp">
+         <section class="configuration-card">
+          <div class="configuration-card__heading">
+           <div>
+            <p class="panel-heading__kicker">Système</p>
+            <h2>Réseau d’INFRA-01</h2>
+           </div>
+          </div>
+          <p>Cette configuration modifie directement la connexion NetworkManager utilisée par Ohana-Agent.</p>
+          <div class="configuration-notice" id="network-safety-notice">
+           Une restauration automatique est programmée. Après le changement, reconnectez-vous à la nouvelle adresse et confirmez avant la fin du délai.
+          </div>
+          <div class="configuration-notice hidden" id="network-pending-change" role="status"></div>
+          <div class="configuration-form-actions hidden" id="network-pending-actions">
+           <button class="button" id="network-confirm" type="button">Confirmer la nouvelle adresse</button>
+           <button class="configuration-danger-button" id="network-rollback" type="button">Restaurer maintenant</button>
+          </div>
+         </section>
+         <aside class="configuration-card configuration-editor">
+          <div class="configuration-card__heading">
+           <div>
+            <p class="panel-heading__kicker">Configuration IPv4</p>
+            <h2>Interface de l’Agent</h2>
+           </div>
+          </div>
+          <form id="network-settings-form">
+           <div class="configuration-form-grid">
+            <label>
+             Interface
+             <input id="network-interface" required type="text">
+            </label>
+            <label>
+             Mode IPv4
+             <select id="network-method">
+              <option value="manual">Adresse statique</option>
+              <option value="auto">DHCP</option>
+             </select>
+            </label>
+            <label class="configuration-span-2 network-manual-field">
+             Adresse avec préfixe
+             <input id="network-address" placeholder="192.168.1.10/24" type="text">
+            </label>
+            <label class="network-manual-field">
+             Passerelle
+             <input id="network-gateway" placeholder="192.168.1.1" type="text">
+            </label>
+            <label class="network-manual-field">
+             Serveurs DNS
+             <input id="network-dns" placeholder="192.168.1.11, 192.168.1.12" type="text">
+            </label>
+            <label>
+             Délai de retour
+             <select id="network-rollback-seconds">
+              <option value="60">60 secondes</option>
+              <option value="90" selected>90 secondes</option>
+              <option value="120">120 secondes</option>
+              <option value="180">180 secondes</option>
+             </select>
+            </label>
+           </div>
+           <div class="configuration-form-actions">
+            <button class="button" id="network-apply" type="submit">Appliquer avec retour automatique</button>
+           </div>
+          </form>
+         </aside>
+        </div>
+       </section>
+       <section
         aria-label="Configuration DHCP"
         class="configuration-panel"
         data-configuration-panel="dhcp"
@@ -887,16 +982,54 @@
              <input id="architecture-device-role" placeholder="Passerelle, serveur DNS, caméra…" type="text">
             </label>
             <label class="configuration-span-2">
-             Adresse IP
-             <input id="architecture-device-address" type="text">
+             Hôte ou adresse IP
+             <input id="architecture-device-address" placeholder="192.168.1.71 ou she-01.ohana.lan" type="text">
+             <small>Adresse IPv4, nom d’hôte ou nom DNS complet.</small>
             </label>
             <label class="configuration-check configuration-span-2 architecture-presence-toggle">
              <input id="architecture-device-network-presence" type="checkbox">
              <span>
               Surveiller la présence réseau
-              <small>Disponible lorsque l’équipement possède une adresse IP.</small>
+              <small>Disponible lorsque l’équipement possède un hôte ou une adresse IP.</small>
              </span>
             </label>
+            <section class="configuration-span-2 monitoring-schedule-fields">
+             <label class="configuration-check">
+              <input id="architecture-device-monitoring-schedule-enabled" type="checkbox">
+              <span>
+               Limiter la surveillance à une plage horaire
+               <small>Les services de l’équipement seront suspendus en dehors de cette plage.</small>
+              </span>
+             </label>
+             <div class="configuration-form-grid" id="architecture-device-monitoring-schedule-fields" hidden>
+              <label>
+               Début
+               <input id="architecture-device-monitoring-start" type="time" value="07:00">
+              </label>
+              <label>
+               Fin
+               <input id="architecture-device-monitoring-end" type="time" value="22:00">
+              </label>
+              <label>
+               Fuseau horaire
+               <input id="architecture-device-monitoring-timezone" type="text" value="Europe/Paris">
+              </label>
+              <label>
+               Délai de démarrage (secondes)
+               <input id="architecture-device-monitoring-grace" min="0" max="86400" type="number" value="300">
+              </label>
+              <fieldset class="configuration-span-2 monitoring-schedule-days">
+               <legend>Jours actifs</legend>
+               <label><input data-monitoring-day="monday" type="checkbox" checked> Lun</label>
+               <label><input data-monitoring-day="tuesday" type="checkbox" checked> Mar</label>
+               <label><input data-monitoring-day="wednesday" type="checkbox" checked> Mer</label>
+               <label><input data-monitoring-day="thursday" type="checkbox" checked> Jeu</label>
+               <label><input data-monitoring-day="friday" type="checkbox" checked> Ven</label>
+               <label><input data-monitoring-day="saturday" type="checkbox" checked> Sam</label>
+               <label><input data-monitoring-day="sunday" type="checkbox" checked> Dim</label>
+              </fieldset>
+             </div>
+            </section>
              <section class="architecture-device-services-panel configuration-span-2">
               <div class="architecture-device-services-heading">
                <div>
@@ -925,14 +1058,15 @@
               <option value="home_assistant">Home Assistant</option>
               <option value="zwave">Z-Wave</option>
               <option value="wireguard">WireGuard</option>
-              <option value="shelly_telemetry">Shelly Telemetry</option>
+              <option value="home_assistant_telemetry">Télémétrie Home Assistant</option>
               <option value="teleinformation">Téléinformation</option>
               <option value="other">Autre</option>
              </select>
             </label>
-            <label>
+            <label id="architecture-service-port-field" hidden>
              Port
              <input id="architecture-service-port" max="65535" min="1" type="number">
+             <small id="architecture-service-port-help"></small>
             </label>
             <label class="configuration-span-2">
              Hébergé par
@@ -942,57 +1076,52 @@
              Implémentation
              <input id="architecture-service-implementation" placeholder="dnsmasq, AdGuard Home, Mosquitto…" type="text">
             </label>
-            <div class="configuration-form-grid configuration-span-2" id="architecture-service-shelly-fields" hidden>
+            <div class="configuration-form-grid configuration-span-2" id="architecture-service-home-assistant-telemetry-fields" hidden>
              <label>
-              Entité de puissance
-              <input id="architecture-service-shelly-power-entity" placeholder="sensor.shelly_power" type="text">
+              Entité principale
+              <input id="architecture-service-home-assistant-primary-entity" placeholder="sensor.shelly_power" type="text">
              </label>
              <label>
-              Entité d’énergie (facultatif)
-              <input id="architecture-service-shelly-energy-entity" placeholder="sensor.shelly_energy" type="text">
+              Entité secondaire (facultatif)
+              <input id="architecture-service-home-assistant-secondary-entity" placeholder="sensor.shelly_energy" type="text">
              </label>
              <label class="configuration-span-2">
               Âge maximal de la dernière mesure (secondes)
-              <input id="architecture-service-shelly-maximum-age" min="1" type="number" value="900">
+              <input id="architecture-service-home-assistant-maximum-age" min="1" type="number" value="900">
              </label>
             </div>
             <div class="configuration-form-grid configuration-span-2" id="architecture-service-teleinformation-fields" hidden>
              <label>
-              Puissance apparente (SINSTS)
-              <input id="architecture-service-teleinformation-power-entity" placeholder="sensor.teleinfo_041964385922_sinsts" type="text">
+              Identifiant du compteur Linky
+              <input id="architecture-service-teleinformation-meter-id" placeholder="041964385922" type="text">
              </label>
              <label>
-              Période tarifaire (NTARF)
-              <input id="architecture-service-teleinformation-tariff-entity" placeholder="sensor.teleinfo_041964385922_ntarf" type="text">
-             </label>
-             <label>
-              Index HC Bleue (EASF01) — facultatif
-              <input id="architecture-service-teleinformation-blue-off-peak-entity" placeholder="sensor.teleinfo_041964385922_easf01" type="text">
-             </label>
-             <label>
-              Index HP Bleue (EASF02) — facultatif
-              <input id="architecture-service-teleinformation-blue-peak-entity" placeholder="sensor.teleinfo_041964385922_easf02" type="text">
-             </label>
-             <label>
-              Index HC Blanc (EASF03) — facultatif
-              <input id="architecture-service-teleinformation-white-off-peak-entity" placeholder="sensor.teleinfo_041964385922_easf03" type="text">
-             </label>
-             <label>
-              Index HP Blanc (EASF04) — facultatif
-              <input id="architecture-service-teleinformation-white-peak-entity" placeholder="sensor.teleinfo_041964385922_easf04" type="text">
-             </label>
-             <label>
-              Index HC Rouge (EASF05) — facultatif
-              <input id="architecture-service-teleinformation-red-off-peak-entity" placeholder="sensor.teleinfo_041964385922_easf05" type="text">
-             </label>
-             <label>
-              Index HP Rouge (EASF06) — facultatif
-              <input id="architecture-service-teleinformation-red-peak-entity" placeholder="sensor.teleinfo_041964385922_easf06" type="text">
+              Identifiant de la source
+              <input id="architecture-service-teleinformation-source-id" placeholder="rpi-linky" type="text" value="rpi-linky">
              </label>
              <label class="configuration-span-2">
               Âge maximal de la dernière trame (secondes)
-              <input id="architecture-service-teleinformation-maximum-age" min="1" type="number" value="180">
+              <input id="architecture-service-teleinformation-maximum-age" min="1" type="number" value="30">
              </label>
+             <details class="configuration-span-2 configuration-legacy-fields">
+              <summary>Compatibilité Home Assistant (mode historique)</summary>
+              <div class="configuration-form-grid">
+               <label>
+                Puissance apparente (SINSTS)
+                <input id="architecture-service-teleinformation-power-entity" placeholder="sensor.teleinfo_041964385922_sinsts" type="text">
+               </label>
+               <label>
+                Période tarifaire (NTARF)
+                <input id="architecture-service-teleinformation-tariff-entity" placeholder="sensor.teleinfo_041964385922_ntarf" type="text">
+               </label>
+               <label>Index HC Bleue (EASF01)<input id="architecture-service-teleinformation-blue-off-peak-entity" type="text"></label>
+               <label>Index HP Bleue (EASF02)<input id="architecture-service-teleinformation-blue-peak-entity" type="text"></label>
+               <label>Index HC Blanc (EASF03)<input id="architecture-service-teleinformation-white-off-peak-entity" type="text"></label>
+               <label>Index HP Blanc (EASF04)<input id="architecture-service-teleinformation-white-peak-entity" type="text"></label>
+               <label>Index HC Rouge (EASF05)<input id="architecture-service-teleinformation-red-off-peak-entity" type="text"></label>
+               <label>Index HP Rouge (EASF06)<input id="architecture-service-teleinformation-red-peak-entity" type="text"></label>
+              </div>
+             </details>
             </div>
             <label class="configuration-check">
              <input id="architecture-service-enabled" type="checkbox">

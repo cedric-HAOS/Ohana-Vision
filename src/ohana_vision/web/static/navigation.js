@@ -1,6 +1,7 @@
 "use strict";
 
 const CONFIGURATION_ROUTES = Object.freeze({
+    "configuration-network": "configuration",
     "configuration-dhcp": "configuration",
     "configuration-architecture": "configuration",
     "configuration-plugins": "configuration",

@@ -100,6 +100,8 @@ Les observations reçues en temps réel présentent notamment :
 La section **Configuration** permet d'administrer l'infrastructure sans ouvrir
 ni modifier de fichier YAML :
 
+- **Réseau Agent** : lecture de NetworkManager, configuration IPv4 et
+  confirmation protégée par un retour automatique ;
 - **Baux DHCP** : plage dynamique, passerelle, DNS, NTP, durée des baux,
   réservations et consultation des baux actifs ;
 - **Architecture** : cartographie sur grille, déplacement par glisser-déposer,
@@ -107,9 +109,13 @@ ni modifier de fichier YAML :
   sélectionnant leur source puis leur destination ;
 - **Plugins** : état, activation, configuration et test immédiat des plugins
   DHCP, DNS, NTP, MQTT, présence réseau, Z-Wave, WireGuard Freebox et
-  Shelly Telemetry et Téléinformation réellement enregistrés dans Ohana-Agent.
+  Télémétrie Home Assistant et Téléinformation réellement enregistrés dans Ohana-Agent.
 
-Vision présente et valide les formulaires, puis transmet la demande à l'API
+La version 1.10.0 ajoute la page **Réseau Agent**. Elle ne dispose d’aucun
+privilège système : elle présente le formulaire et suit la reconnexion, tandis
+qu’Agent applique ou restaure la connexion NetworkManager via son helper limité.
+
+Vision présente et valide les formulaires, puis transmet la demande à l’API
 locale authentifiée d'Ohana-Agent. L'Agent reste seul propriétaire des fichiers
 et applique ses validations métier avant toute écriture.
 
@@ -211,6 +217,9 @@ Le frontend reste un moteur de rendu. La validation, les projections, la santé 
 | `GET` | `/api/timeline` | Lire les périodes métier |
 | `GET` | `/api/runtime` | Lire l'état du runtime |
 | `GET` | `/api/administration/capabilities` | Lire les opérations Agent disponibles |
+| `GET/PUT` | `/api/administration/network` | Lire ou modifier le réseau de l’Agent |
+| `POST` | `/api/administration/network/{id}/confirm` | Confirmer une modification réseau |
+| `POST` | `/api/administration/network/{id}/rollback` | Restaurer l’ancienne configuration |
 | `GET/PUT` | `/api/administration/dhcp` | Lire ou modifier le serveur DHCP |
 | `GET/PUT` | `/api/administration/infrastructure` | Lire ou modifier l'architecture |
 | `GET` | `/api/administration/plugins` | Lister les plugins Agent |
@@ -289,10 +298,10 @@ python -m pytest
 python -m ruff check .
 ```
 
-État validé pour la v1.4.0 :
+État validé pour la v1.9.0 :
 
 ```text
-764 tests passent
+799 tests passent
 ```
 
 Les scénarios d'intégration réels ont également été validés :
@@ -306,10 +315,12 @@ Les scénarios d'intégration réels ont également été validés :
 
 ## État actuel
 
-La version **1.4.0** affiche la présence réseau des équipements déclarés dans
-l’infrastructure et disposant d’une adresse IP. Elle interprète les observations
-`network.reachable` produites par Ohana-Agent sans transformer Vision en outil
-de supervision réseau généraliste.
+La version **1.9.0** affiche la présence réseau des équipements déclarés dans
+l’infrastructure et disposant d’une adresse IPv4 ou d’un nom DNS. Elle interprète
+les observations `network.reachable` produites par Ohana-Agent sans transformer
+Vision en outil de supervision réseau généraliste. Elle présente également le
+plugin générique **Télémétrie Home Assistant** et masque le champ Port lorsque le
+type de service n’autorise pas de surcharge locale.
 
 La topologie conserve ses badges de santé fonctionnelle et ajoute un indicateur
 plus discret pour la présence : **Présent**, **Absent** ou **Inconnu**.
@@ -325,14 +336,25 @@ l’architecture, des services et des plugins DNS, NTP et MQTT à travers l’AP
 d’Ohana-Agent. Le jeton d’administration reste exclusivement utilisé par le
 backend de Vision.
 
+La version 1.9.0 ajoute également la réception Téléinformation directe et les plages horaires de surveillance au niveau des équipements.
+
 Les prochaines évolutions concerneront principalement l'historique avancé,
 l'amélioration des capacités administrables et la supervision multi-agents.
 ### Téléinformation Linky
 
-L’éditeur d’architecture permet de rattacher un service `teleinformation` au
-RPI-Linky. Il expose les entités Home Assistant `SINSTS`, `NTARF` et les six
-index Tempo `EASF01` à `EASF06`. La page Plugins configure la connexion Home
-Assistant, affiche le nombre de tâches et permet un test immédiat. Les
-observations `teleinformation.freshness` alimentent ensuite les cartes de
-service, l’équipement hôte et la timeline.
+L’éditeur d’architecture rattache un service `teleinformation` au RPI-Linky et
+demande l’identifiant du compteur ainsi que l’identifiant de source. La page
+Plugins configure le récepteur HTTP dédié d’Agent : adresse d’écoute, port et
+jeton d’ingestion. `teleinfo2mqtt` peut alors envoyer chaque trame directement
+vers Agent, indépendamment de Home Assistant et du broker de HA-Green.
+
+Le mode Home Assistant et ses entités `SINSTS`, `NTARF` et `EASF01` à `EASF06`
+restent disponibles dans une section de compatibilité pendant la migration.
+
+### Plages horaires
+
+La fiche d’un équipement peut définir une plage de surveillance avec ses jours,
+son fuseau horaire et un délai de démarrage. En dehors de cette plage, les
+services et la présence réseau hérités affichent **Suspendu**. Cet état reste
+visible dans la timeline sans être compté comme incident ou dégradation.
 

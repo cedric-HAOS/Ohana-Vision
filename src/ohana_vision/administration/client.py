@@ -56,6 +56,28 @@ class AgentAdministrationClient:
             payload,
         )
 
+    def read_network(self) -> dict[str, Any]:
+        """Read the Agent host NetworkManager state."""
+        return self._request("GET", "/v1/system/network")
+
+    def write_network(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Apply a candidate Agent host network configuration."""
+        return self._request("PUT", "/v1/system/network", payload)
+
+    def confirm_network(self, transaction_id: str) -> dict[str, Any]:
+        """Confirm a pending Agent host network change."""
+        return self._request(
+            "POST",
+            f"/v1/system/network/{quote(transaction_id, safe='')}/confirm",
+        )
+
+    def rollback_network(self, transaction_id: str) -> dict[str, Any]:
+        """Restore the previous Agent host network configuration."""
+        return self._request(
+            "POST",
+            f"/v1/system/network/{quote(transaction_id, safe='')}/rollback",
+        )
+
     def read_plugins(self) -> dict[str, Any]:
         """Read registered plugins and their runtime state."""
         return self._request("GET", "/v1/plugins")

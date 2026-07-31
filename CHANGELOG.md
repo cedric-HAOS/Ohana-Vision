@@ -6,6 +6,68 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.10.0] — Lot C : réseau de l’Agent — 2026-07-30
+
+## Ajouté
+
+- Page **Configuration → Réseau Agent** affichant l’état NetworkManager réel
+  d’INFRA-01.
+- Formulaire IPv4 statique ou DHCP avec adresse, passerelle, DNS et délai de
+  retour automatique.
+- Confirmation explicite de la nouvelle configuration et restauration manuelle
+  de l’ancienne configuration pendant la fenêtre de sécurité.
+- Redirection vers la nouvelle adresse IPv4 lorsque l’adresse de l’hôte change.
+
+## Sécurité
+
+- Avertissement avant toute application et aucun accès direct de Vision à
+  NetworkManager ou aux privilèges root.
+- Les opérations sont proxifiées vers l’API authentifiée d’Ohana-Agent.
+
+## Qualité
+
+- Tests des routes de proxy, des contrôles statiques et de la navigation.
+- Version du paquet alignée sur `1.10.0`.
+
+---
+
+# [1.9.0] — Lot B : Téléinformation directe et surveillance planifiée — 2026-07-30
+
+## Ajouté
+
+- Mode recommandé **Réception HTTP directe** pour le plugin Téléinformation.
+- Configuration du port d’écoute, du jeton d’ingestion et de la source
+  `teleinfo2mqtt` depuis la page Plugins.
+- Identifiant du compteur et identifiant de source dans les services
+  Téléinformation.
+- Plage horaire facultative dans la fiche d’un équipement : jours, début, fin,
+  fuseau horaire et délai de démarrage.
+- État visuel **Suspendu** dans les cartes, détails, topologie et timeline.
+
+## Compatibilité
+
+- Les champs Home Assistant historiques restent accessibles dans une section de
+  compatibilité pendant la migration vers l’envoi direct.
+- Les équipements sans plage horaire conservent exactement leur comportement.
+
+## Qualité
+
+- Tests du nouvel état de santé et des contrats statiques des formulaires.
+- Version du paquet alignée sur `1.9.0`.
+
+---
+
+# [1.8.0] — Lot A : télémétrie et formulaires de services — 2026-07-30
+
+## Modifié
+
+- Renommage de Shelly Telemetry en **Télémétrie Home Assistant**.
+- Migration automatique des services `shelly_telemetry` affichés dans l’éditeur.
+- Champ **Hôte ou adresse IP** acceptant les noms DNS.
+- Champ Port affiché uniquement pour les types de service qui permettent une surcharge.
+
+---
+
 # v1.7.1 — Validation des noms DHCP — 2026-07-29
 
 ## Corrigé

@@ -1095,3 +1095,29 @@
         grid-template-columns: 1fr;
     }
 }
+
+.monitoring-schedule-fields {
+    display: grid;
+    gap: var(--ohana-space-3, 0.75rem);
+}
+
+.monitoring-schedule-days {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    border: 1px solid var(--ohana-border-subtle);
+    border-radius: var(--ohana-radius-md);
+    padding: 0.75rem;
+}
+
+.monitoring-schedule-days label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.configuration-legacy-fields {
+    border: 1px solid var(--ohana-border-subtle);
+    border-radius: var(--ohana-radius-md);
+    padding: 0.75rem;
+}

@@ -281,11 +281,17 @@ def test_static_ui_exposes_graphical_configuration_views() -> None:
     response = make_client().get("/ui/")
 
     assert response.status_code == 200
+    assert 'data-navigation-target="configuration-network"' in response.text
     assert 'data-navigation-target="configuration-dhcp"' in response.text
     assert 'data-navigation-target="configuration-architecture"' in response.text
     assert 'data-navigation-target="configuration-plugins"' in response.text
     assert 'data-view="configuration"' in response.text
     assert "data-configuration-tab=" not in response.text
+    assert 'id="network-settings-form"' in response.text
+    assert 'id="network-interface"' in response.text
+    assert 'id="network-address"' in response.text
+    assert 'id="network-confirm"' in response.text
+    assert 'id="network-rollback"' in response.text
     assert 'id="dhcp-settings-form"' in response.text
     assert 'id="dhcp-reservations-table"' in response.text
     assert 'id="architecture-board"' in response.text
@@ -1743,6 +1749,7 @@ def test_navigation_specialized_views_remain_independent() -> None:
     assert response.status_code == 200
     assert "return new Set([" in response.text
     assert "this.routeView(viewName)" in response.text
+    assert '"configuration-network": "configuration"' in response.text
     assert '"configuration-dhcp": "configuration"' in response.text
     assert '"configuration-architecture": "configuration"' in response.text
     assert '"configuration-plugins": "configuration"' in response.text
@@ -2387,22 +2394,32 @@ def test_plugin_ui_supports_observation_plugins() -> None:
     assert "plugin-zwave-verify-tls" in js_response.text
     assert "plugin-wireguard-app-token" in js_response.text
     assert "plugin-wireguard-verify-tls" in js_response.text
-    assert 'plugin.id === "shelly_telemetry"' in js_response.text
-    assert "plugin-shelly-home-assistant-url" in js_response.text
+    assert '"home_assistant_telemetry"' in js_response.text
+    assert '"shelly_telemetry"' in js_response.text
+    assert "plugin-home-assistant-telemetry-url" in js_response.text
     assert "plugin-shelly-devices" not in js_response.text
     assert (
-        '<option value="shelly_telemetry">Shelly Telemetry</option>'
+        '<option value="home_assistant_telemetry">Télémétrie Home Assistant</option>'
         in html_response.text
     )
-    assert "architecture-service-shelly-power-entity" in html_response.text
-    assert "architecture-service-shelly-energy-entity" in html_response.text
-    assert "architecture-service-shelly-maximum-age" in html_response.text
+    assert "architecture-service-home-assistant-primary-entity" in html_response.text
+    assert "architecture-service-home-assistant-secondary-entity" in html_response.text
+    assert "architecture-service-home-assistant-maximum-age" in html_response.text
     assert "shelly_telemetry_enabled" not in js_response.text
-    assert 'type === "shelly_telemetry"' in js_response.text
+    assert 'service.type === "shelly_telemetry"' in js_response.text
     assert (
         '<option value="teleinformation">Téléinformation</option>' in html_response.text
     )
     assert "architecture-service-teleinformation-fields" in html_response.text
+    assert "architecture-device-monitoring-schedule-enabled" in html_response.text
+    assert "architecture-device-monitoring-start" in html_response.text
+    assert "architecture-device-monitoring-end" in html_response.text
+    assert "architecture-device-monitoring-timezone" in html_response.text
+    assert "architecture-service-teleinformation-meter-id" in html_response.text
+    assert "architecture-service-teleinformation-source-id" in html_response.text
+    assert "plugin-teleinformation-mode" in js_response.text
+    assert "plugin-teleinformation-listen-port" in js_response.text
+    assert "plugin-teleinformation-ingestion-token" in js_response.text
     assert "architecture-service-teleinformation-power-entity" in html_response.text
     assert "architecture-service-teleinformation-tariff-entity" in html_response.text
     assert "architecture-service-teleinformation-blue-off-peak-entity" in (
@@ -2575,3 +2592,20 @@ def test_equipment_views_share_the_official_icon_catalog() -> None:
     assert "architecture-map-device__icon" in configuration.text
     assert "device-details__official-icon" in details.text
     assert "--services-host-icon" in services.text
+
+
+def test_architecture_editor_supports_dns_hosts_and_contextual_ports() -> None:
+    client = make_client()
+    html_response = client.get("/ui/")
+    js_response = client.get("/ui/configuration.js")
+
+    assert "Hôte ou adresse IP" in html_response.text
+    assert "she-01.ohana.lan" in html_response.text
+    assert 'id="architecture-service-port-field" hidden' in html_response.text
+    assert "SERVICE_PORT_POLICIES" in js_response.text
+    assert "endpointTypeForAddress" in js_response.text
+    assert 'return isIpv4Address(value.trim()) ? "ip" : "hostname";' in (
+        js_response.text
+    )
+    assert 'home_assistant_telemetry: { mode: "hidden"' in js_response.text
+    assert 'mqtt: { mode: "optional", defaultPort: 1883 }' in js_response.text

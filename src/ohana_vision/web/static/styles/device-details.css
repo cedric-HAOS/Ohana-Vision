@@ -532,3 +532,11 @@
         transform: translateX(0) scale(1);
     }
 }
+
+.device-details__health--suspended {
+    --details-health: var(--unknown);
+}
+
+.device-details__service-status--suspended {
+    color: var(--unknown);
+}

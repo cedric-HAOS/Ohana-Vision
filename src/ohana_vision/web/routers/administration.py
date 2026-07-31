@@ -68,6 +68,37 @@ def write_dhcp(
     )
 
 
+@router.get("/network")
+def read_network(request: Request) -> dict[str, Any]:
+    """Read the Agent host NetworkManager state."""
+    client = _client(request)
+    return _call(client.read_network)
+
+
+@router.put("/network")
+def write_network(
+    request: Request,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    """Apply a candidate Agent host network configuration."""
+    client = _client(request)
+    return _call(lambda: client.write_network(payload))
+
+
+@router.post("/network/{transaction_id}/confirm")
+def confirm_network(transaction_id: str, request: Request) -> dict[str, Any]:
+    """Confirm a pending Agent host network configuration."""
+    client = _client(request)
+    return _call(lambda: client.confirm_network(transaction_id))
+
+
+@router.post("/network/{transaction_id}/rollback")
+def rollback_network(transaction_id: str, request: Request) -> dict[str, Any]:
+    """Restore the previous Agent host network configuration."""
+    client = _client(request)
+    return _call(lambda: client.rollback_network(transaction_id))
+
+
 @router.get("/plugins")
 def read_plugins(request: Request) -> dict[str, Any]:
     """Read plugins registered by Agent."""

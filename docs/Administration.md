@@ -1,6 +1,6 @@
 # Administration graphique
 
-Ohana-Vision 1.3.0 permet d'administrer le DHCP, l'architecture et les plugins
+Ohana-Vision 1.10.0 permet d’administrer le réseau de l’Agent, le DHCP, l’architecture et les plugins
 intégrés sans modifier directement les fichiers YAML. Vision présente les
 formulaires et transmet les changements à l'API locale authentifiée
 d'Ohana-Agent. Agent valide, écrit et applique seul la configuration.
@@ -9,10 +9,29 @@ d'Ohana-Agent. Agent valide, écrit et applique seul la configuration.
 
 1. Ouvrir `http://ADRESSE_DU_SERVEUR:8000`.
 2. Choisir **Configuration** dans la barre latérale.
-3. Choisir **Baux DHCP**, **Architecture** ou **Plugins**.
+3. Choisir **Réseau Agent**, **Baux DHCP**, **Architecture** ou **Plugins**.
 
 Les onglets indisponibles sont désactivés selon les capacités réellement
 annoncées par l'Agent.
+
+## Administrer le réseau d’INFRA-01
+
+La page **Réseau Agent** lit l’état NetworkManager exposé par Agent :
+interface active, nom de connexion, adresse IPv4, passerelle, DNS et mode DHCP
+ou statique.
+
+Pour modifier la connexion :
+
+1. saisir la nouvelle configuration et choisir un délai de retour ;
+2. confirmer l’avertissement ;
+3. laisser Vision appliquer la configuration par l’intermédiaire d’Agent ;
+4. se reconnecter à la nouvelle adresse si nécessaire ;
+5. cliquer sur **Confirmer la nouvelle adresse** avant l’expiration du délai.
+
+Sans confirmation, Agent restaure automatiquement l’ancienne connexion. Le
+bouton **Restaurer maintenant** permet de déclencher cette restauration sans
+attendre. Vision n’accède jamais directement à `nmcli`, `sudo` ou aux fichiers
+NetworkManager.
 
 ## Administrer les plugins
 
@@ -60,14 +79,14 @@ Le navigateur calcule seul les coordonnées d'affichage.
 ## Gérer les services
 
 1. Cliquer sur l'équipement qui héberge le service.
-2. Vérifier son adresse IP.
+2. Vérifier son hôte ou son adresse IP.
 3. Dans **Services associés**, choisir un service ou cliquer sur
    **Ajouter un service**.
-4. Renseigner le type, le port, l'implémentation, l'activation et la criticité.
+4. Renseigner le type, les options affichées pour ce type, l'implémentation, l'activation et la criticité.
 5. Enregistrer le brouillon puis appliquer l'architecture.
 
 Un service est rattaché au nœud de l'équipement sélectionné. Un équipement doit
-donc avoir une adresse IP avant de pouvoir héberger un service.
+donc avoir une adresse IPv4 ou un nom DNS avant de pouvoir héberger un service.
 
 ## Créer ou modifier une liaison
 
@@ -99,6 +118,8 @@ retourné par Agent.
 
 - le jeton Agent n'est jamais envoyé au navigateur ;
 - toute application complète demande confirmation ;
+- une modification réseau conserve l’ancienne connexion jusqu’à confirmation
+  ou restauration automatique ;
 - Vision ne lit et n'écrit aucun fichier de configuration de plugin ;
 - Agent refuse les documents invalides ;
 - les écritures sont atomiques et la configuration précédente est restaurée en

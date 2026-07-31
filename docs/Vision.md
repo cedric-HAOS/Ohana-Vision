@@ -133,7 +133,7 @@ En cas de redémarrage de Vision, l'Agent retransmet périodiquement la configur
 # La présence réseau des équipements
 
 Ohana-Agent peut produire une observation légère `network.reachable` pour les
-équipements possédant une adresse IP. Vision rattache cette observation à la
+équipements possédant une adresse IPv4 ou un nom DNS. Vision rattache cette observation à la
 topologie et affiche un indicateur discret ainsi que les détails de la dernière
 vérification.
 

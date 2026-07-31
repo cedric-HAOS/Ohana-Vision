@@ -45,3 +45,30 @@ def test_aggregate_health_returns_unknown_for_empty_collection() -> None:
     health = aggregate_health([])
 
     assert health.status is HealthStatus.UNKNOWN
+
+
+def test_suspended_health_is_available_without_being_healthy() -> None:
+    health = Health(status=HealthStatus.SUSPENDED)
+
+    assert health.is_healthy is False
+    assert health.is_available is True
+
+
+def test_aggregate_health_keeps_suspended_when_everything_is_suspended() -> None:
+    health = aggregate_health(
+        [
+            Health(status=HealthStatus.SUSPENDED, reason="Plage inactive."),
+            Health(status=HealthStatus.SUSPENDED),
+        ]
+    )
+
+    assert health.status is HealthStatus.SUSPENDED
+    assert health.reason == "Plage inactive."
+
+
+def test_aggregate_health_ignores_suspended_beside_healthy() -> None:
+    health = aggregate_health(
+        [Health(status=HealthStatus.SUSPENDED), Health(status=HealthStatus.HEALTHY)]
+    )
+
+    assert health.status is HealthStatus.HEALTHY

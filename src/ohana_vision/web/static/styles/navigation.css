@@ -346,6 +346,13 @@
         url("../assets/icons/navigation/settings.svg");
 }
 
+.sidebar-navigation__icon--network {
+    mask-image:
+        url("../assets/icons/navigation/network.svg");
+    -webkit-mask-image:
+        url("../assets/icons/navigation/network.svg");
+}
+
 .sidebar-navigation__icon--dhcp {
     mask-image:
         url("../assets/icons/network/router.svg");

@@ -105,6 +105,7 @@ export function normalizeHealthStatus(status) {
 
     const supportedStatuses = new Set([
         "healthy",
+        "suspended",
         "degraded",
         "unhealthy",
         "unknown",
@@ -124,6 +125,7 @@ export function normalizeHealthStatus(status) {
 export function healthStatusLabel(status) {
     const labels = {
         healthy: "Sain",
+        suspended: "Suspendu",
         degraded: "Dégradé",
         unhealthy: "Indisponible",
         unknown: "Inconnu",
