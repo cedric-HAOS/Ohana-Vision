@@ -67,6 +67,8 @@
     --link-color: #8fa4b8;
     --link-glow: rgb(143 164 184 / 12%);
     --link-width: 4;
+    --flow-duration: 3.2s;
+    --flow-dasharray: 2 22;
     opacity: 0;
     animation:
         topology-link-enter 300ms ease-out forwards;
@@ -91,7 +93,7 @@
 .topology-link__flow {
     stroke: rgb(255 255 255 / 92%);
     stroke-width: calc(var(--link-width) + 0.75);
-    stroke-dasharray: 2 22;
+    stroke-dasharray: var(--flow-dasharray);
     opacity: 0;
     pointer-events: none;
 }
@@ -115,39 +117,51 @@
 }
 
 .topology-link--visual-ethernet-100m {
-    --link-color: #64748b;
-    --link-glow: rgb(100 116 139 / 12%);
+    --link-color: #ff6b6b;
+    --link-glow: rgb(255 107 107 / 12%);
     --link-width: 3;
+    --flow-duration: 5.6s;
+    --flow-dasharray: 2 30;
 }
 
 .topology-link--visual-ethernet-1g {
-    --link-color: #8fa4b8;
-    --link-glow: rgb(143 164 184 / 12%);
+    --link-color: #ff9f43;
+    --link-glow: rgb(255 159 67 / 12%);
     --link-width: 3.25;
+    --flow-duration: 4.4s;
+    --flow-dasharray: 2 25;
 }
 
 .topology-link--visual-ethernet-2-5g {
-    --link-color: #5ba8ff;
-    --link-glow: rgb(91 168 255 / 14%);
+    --link-color: #ffd166;
+    --link-glow: rgb(255 209 102 / 14%);
     --link-width: 4;
+    --flow-duration: 3.6s;
+    --flow-dasharray: 2 21;
 }
 
 .topology-link--visual-ethernet-5g {
-    --link-color: #4f8cff;
-    --link-glow: rgb(79 140 255 / 15%);
+    --link-color: #55d68b;
+    --link-glow: rgb(85 214 139 / 15%);
     --link-width: 4.5;
+    --flow-duration: 2.8s;
+    --flow-dasharray: 2 17;
 }
 
 .topology-link--visual-ethernet-8g {
-    --link-color: #22b8cf;
-    --link-glow: rgb(34 184 207 / 15%);
+    --link-color: #38d9c5;
+    --link-glow: rgb(56 217 197 / 15%);
     --link-width: 4.75;
+    --flow-duration: 2.1s;
+    --flow-dasharray: 2 14;
 }
 
 .topology-link--visual-ethernet-10g {
-    --link-color: #28d7c0;
-    --link-glow: rgb(40 215 192 / 16%);
+    --link-color: #4debff;
+    --link-glow: rgb(77 235 255 / 16%);
     --link-width: 5;
+    --flow-duration: 1.6s;
+    --flow-dasharray: 2 11;
 }
 
 .topology-link--visual-wifi {
@@ -481,7 +495,13 @@
 .topology-link--focused.topology-link--flow-overlay
 .topology-link__flow {
     opacity: 0.95;
-    animation: topology-link-flow 1.4s linear infinite;
+}
+
+.topology-link--ethernet.topology-link--flow-overlay
+.topology-link__flow {
+    opacity: 0.72;
+    animation:
+        topology-link-flow var(--flow-duration) linear infinite;
 }
 
 .topology-link--focused.topology-link--flow-dashed
@@ -965,7 +985,7 @@
     top: 0.75rem;
     left: 0.75rem;
     z-index: 7;
-    width: min(17rem, calc(100% - 1.5rem));
+    width: min(25.5rem, calc(100% - 1.5rem));
     overflow: hidden;
     border: 1px solid rgb(91 113 148 / 48%);
     border-radius: 14px;
@@ -1031,7 +1051,7 @@
 }
 
 .topology-tools-panel__help {
-    max-height: 18rem;
+    max-height: 25rem;
     padding: 0.75rem 0.85rem 0.85rem;
     border-top: 1px solid rgb(91 113 148 / 30%);
     opacity: 1;
@@ -1069,7 +1089,7 @@
 
 .topology-tools-panel__sections {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(13.25rem, 1.65fr) minmax(7rem, 1fr);
     gap: 0.8rem;
 }
 
@@ -1125,34 +1145,166 @@
     background: none;
 }
 
-.topology-tools-panel__line--ethernet-100m {
+.topology-tools-panel__line--ethernet {
     height: 3px;
-    background: #64748b;
-}
-
-.topology-tools-panel__line--ethernet-1g {
-    height: 3.25px;
     background: #8fa4b8;
 }
 
-.topology-tools-panel__line--ethernet-2-5g {
-    height: 4px;
-    background: #5ba8ff;
+.topology-tools-panel__ethernet-icon {
+    position: relative;
+    width: 0.72rem;
+    height: 0.58rem;
+    margin-left: -0.25rem;
+    border: 1px solid #8fa4b8;
+    border-radius: 2px;
 }
 
-.topology-tools-panel__line--ethernet-5g {
-    height: 4.5px;
-    background: #4f8cff;
+.topology-tools-panel__ethernet-icon::before {
+    position: absolute;
+    top: 0.12rem;
+    left: 0.12rem;
+    width: 0.08rem;
+    height: 0.08rem;
+    background: #8fa4b8;
+    box-shadow:
+        0.16rem 0 #8fa4b8,
+        0.32rem 0 #8fa4b8,
+        0.48rem 0 #8fa4b8;
+    content: "";
 }
 
-.topology-tools-panel__line--ethernet-8g {
-    height: 4.75px;
-    background: #22b8cf;
+.topology-tools-panel__ethernet-speeds {
+    position: relative;
+    margin-top: 0.55rem;
+    margin-left: 0.85rem;
+    padding: 0.62rem;
+    border: 1px solid rgb(91 113 148 / 48%);
+    border-radius: 9px;
+    background: rgb(19 31 52 / 72%);
 }
 
-.topology-tools-panel__line--ethernet-10g {
-    height: 5px;
-    background: #28d7c0;
+.topology-tools-panel__ethernet-speeds::before {
+    position: absolute;
+    top: -0.85rem;
+    left: -0.58rem;
+    width: 0.58rem;
+    height: 1.15rem;
+    border-bottom: 1px solid rgb(143 164 184 / 68%);
+    border-left: 1px solid rgb(143 164 184 / 68%);
+    border-bottom-left-radius: 5px;
+    content: "";
+}
+
+.topology-tools-panel__speed-heading,
+.topology-tools-panel__speed-caption,
+.topology-tools-panel__cadence-caption {
+    display: block;
+}
+
+.topology-tools-panel__speed-heading {
+    color: var(--text);
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.topology-tools-panel__speed-caption,
+.topology-tools-panel__cadence-caption {
+    margin-top: 0.24rem;
+    font-size: 0.58rem;
+}
+
+.topology-tools-panel__speed-list {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.topology-tools-panel__speed {
+    display: grid;
+    min-height: 1.3rem;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 5px;
+    color: var(--speed-color);
+    background: color-mix(in srgb, var(--speed-color) 16%, transparent);
+    font-size: 0.56rem;
+    font-weight: 700;
+}
+
+.topology-tools-panel__speed--100m {
+    --speed-color: #ff6b6b;
+}
+
+.topology-tools-panel__speed--1g {
+    --speed-color: #ff9f43;
+}
+
+.topology-tools-panel__speed--2-5g {
+    --speed-color: #ffd166;
+}
+
+.topology-tools-panel__speed--5g {
+    --speed-color: #55d68b;
+}
+
+.topology-tools-panel__speed--8g {
+    --speed-color: #38d9c5;
+}
+
+.topology-tools-panel__speed--10g {
+    --speed-color: #4debff;
+}
+
+.topology-tools-panel__cadence-caption {
+    margin-top: 0.55rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgb(91 113 148 / 30%);
+}
+
+.topology-tools-panel__cadences {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.3rem;
+    margin-top: 0.42rem;
+}
+
+.topology-tools-panel__cadences > span {
+    display: grid;
+    gap: 0.18rem;
+    font-size: 0.52rem;
+    text-align: center;
+}
+
+.topology-tools-panel__cadence {
+    display: block;
+    height: 3px;
+    border-radius: 999px;
+    background-repeat: repeat-x;
+    background-size: var(--cadence-step) 3px;
+    background-image:
+        linear-gradient(
+            90deg,
+            currentColor 0 3px,
+            transparent 3px
+        );
+}
+
+.topology-tools-panel__cadence--slow {
+    --cadence-step: 17px;
+    color: #ff6b6b;
+}
+
+.topology-tools-panel__cadence--medium {
+    --cadence-step: 10px;
+    color: #ffd166;
+}
+
+.topology-tools-panel__cadence--fast {
+    --cadence-step: 6px;
+    color: #4debff;
 }
 
 .topology-tools-panel__state {
@@ -1208,7 +1360,7 @@
     .topology-tools-panel {
         top: 0.65rem;
         left: 0.65rem;
-        width: min(15.5rem, calc(100% - 1.3rem));
+        width: min(20rem, calc(100% - 1.3rem));
     }
 
     .topology-tools-panel__header {
@@ -1220,11 +1372,15 @@
     }
 
     .topology-tools-panel__sections {
-        gap: 0.6rem;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
     }
 
     .topology-tools-panel__section + .topology-tools-panel__section {
-        padding-left: 0.6rem;
+        padding-top: 0.75rem;
+        padding-left: 0;
+        border-top: 1px solid rgb(91 113 148 / 30%);
+        border-left: 0;
     }
 
     .topology-tools-panel__list {
@@ -1233,6 +1389,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .topology-link--ethernet.topology-link--flow-overlay
+    .topology-link__flow {
+        animation: none;
+    }
+
     .topology-tools-panel__help,
     .topology-tools-panel__toggle span {
         transition: none;

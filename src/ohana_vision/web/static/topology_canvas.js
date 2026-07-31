@@ -188,7 +188,7 @@ class TopologyCanvas {
             <div class="topology-tools-panel__sections">
                 <section class="topology-tools-panel__section">
                     <span class="topology-tools-panel__heading">
-                        Liaisons
+                        Type de liaison
                     </span>
                     <ul class="topology-tools-panel__list">
                         <li>
@@ -200,30 +200,44 @@ class TopologyCanvas {
                             Wi-Fi
                         </li>
                         <li>
-                            <span class="topology-tools-panel__line topology-tools-panel__line--ethernet-100m"></span>
-                            Ethernet 100 Mb/s
-                        </li>
-                        <li>
-                            <span class="topology-tools-panel__line topology-tools-panel__line--ethernet-1g"></span>
-                            Ethernet 1 Gb/s
-                        </li>
-                        <li>
-                            <span class="topology-tools-panel__line topology-tools-panel__line--ethernet-2-5g"></span>
-                            Ethernet 2,5 Gb/s
-                        </li>
-                        <li>
-                            <span class="topology-tools-panel__line topology-tools-panel__line--ethernet-5g"></span>
-                            Ethernet 5 Gb/s
-                        </li>
-                        <li>
-                            <span class="topology-tools-panel__line topology-tools-panel__line--ethernet-8g"></span>
-                            Ethernet 8 Gb/s
-                        </li>
-                        <li>
-                            <span class="topology-tools-panel__line topology-tools-panel__line--ethernet-10g"></span>
-                            Ethernet 10 Gb/s
+                            <span class="topology-tools-panel__line topology-tools-panel__line--ethernet"></span>
+                            <span class="topology-tools-panel__ethernet-icon" aria-hidden="true"></span>
+                            Ethernet
                         </li>
                     </ul>
+                    <div class="topology-tools-panel__ethernet-speeds">
+                        <span class="topology-tools-panel__speed-heading">
+                            Débit · Ethernet uniquement
+                        </span>
+                        <span class="topology-tools-panel__speed-caption">
+                            Couleur + animation = capacité
+                        </span>
+                        <div class="topology-tools-panel__speed-list">
+                            <span class="topology-tools-panel__speed topology-tools-panel__speed--100m">100M</span>
+                            <span class="topology-tools-panel__speed topology-tools-panel__speed--1g">1G</span>
+                            <span class="topology-tools-panel__speed topology-tools-panel__speed--2-5g">2,5G</span>
+                            <span class="topology-tools-panel__speed topology-tools-panel__speed--5g">5G</span>
+                            <span class="topology-tools-panel__speed topology-tools-panel__speed--8g">8G</span>
+                            <span class="topology-tools-panel__speed topology-tools-panel__speed--10g">10G</span>
+                        </div>
+                        <span class="topology-tools-panel__cadence-caption">
+                            Cadence croissante selon le débit
+                        </span>
+                        <div class="topology-tools-panel__cadences" aria-hidden="true">
+                            <span>
+                                <i class="topology-tools-panel__cadence topology-tools-panel__cadence--slow"></i>
+                                Lente
+                            </span>
+                            <span>
+                                <i class="topology-tools-panel__cadence topology-tools-panel__cadence--medium"></i>
+                                Moyenne
+                            </span>
+                            <span>
+                                <i class="topology-tools-panel__cadence topology-tools-panel__cadence--fast"></i>
+                                Rapide
+                            </span>
+                        </div>
+                    </div>
                 </section>
                 <section class="topology-tools-panel__section">
                     <span class="topology-tools-panel__heading">

@@ -6,6 +6,25 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.10.1] — Lecture des capacités réseau — 2026-07-31
+
+## Amélioré
+
+- Légende de topologie restructurée pour distinguer le type Ethernet de sa
+  capacité négociée ou déclarée.
+- Palette chaude à froide pour repérer immédiatement les liaisons Ethernet les
+  plus lentes.
+- Animation des liaisons Ethernet calibrée sur leur capacité, sans suggérer une
+  mesure de trafic ou de saturation.
+- Respect de la préférence système de réduction des animations.
+
+## Qualité
+
+- Tests statiques adaptés à la hiérarchie de légende et aux cadences par débit.
+- Version du paquet alignée sur `1.10.1`.
+
+---
+
 # [1.10.0] — Lot C : réseau de l’Agent — 2026-07-30
 
 ## Ajouté

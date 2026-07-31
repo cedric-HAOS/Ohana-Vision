@@ -375,17 +375,17 @@ def test_topology_links_use_capacity_colours() -> None:
     assert ".topology-link--visual-wifi" in response.text
     assert "--link-color: #38bdf8;" in response.text
     assert ".topology-link--visual-ethernet-100m" in response.text
-    assert "--link-color: #64748b;" in response.text
+    assert "--link-color: #ff6b6b;" in response.text
     assert ".topology-link--visual-ethernet-1g" in response.text
-    assert "--link-color: #8fa4b8;" in response.text
+    assert "--link-color: #ff9f43;" in response.text
     assert ".topology-link--visual-ethernet-2-5g" in response.text
-    assert "--link-color: #5ba8ff;" in response.text
+    assert "--link-color: #ffd166;" in response.text
     assert ".topology-link--visual-ethernet-5g" in response.text
-    assert "--link-color: #4f8cff;" in response.text
+    assert "--link-color: #55d68b;" in response.text
     assert ".topology-link--visual-ethernet-8g" in response.text
-    assert "--link-color: #22b8cf;" in response.text
+    assert "--link-color: #38d9c5;" in response.text
     assert ".topology-link--visual-ethernet-10g" in response.text
-    assert "--link-color: #28d7c0;" in response.text
+    assert "--link-color: #4debff;" in response.text
     assert ".topology-link--health-healthy {" not in response.text
     assert ".topology-link--health-degraded {" not in response.text
     assert ".topology-link--health-unhealthy {" not in response.text
@@ -645,15 +645,19 @@ def test_topology_canvas_renders_unified_tools_panel() -> None:
     assert "findTopologyControls()" in response.text
     assert 'closest(".topology-workspace")' in response.text
     assert "Aide à la lecture" in response.text
-    assert "Liaisons" in response.text
+    assert "Type de liaison" in response.text
     assert "États" in response.text
     assert "Fibre" in response.text
-    assert "Ethernet 100 Mb/s" in response.text
-    assert "Ethernet 1 Gb/s" in response.text
-    assert "Ethernet 2,5 Gb/s" in response.text
-    assert "Ethernet 5 Gb/s" in response.text
-    assert "Ethernet 8 Gb/s" in response.text
-    assert "Ethernet 10 Gb/s" in response.text
+    assert "Débit · Ethernet uniquement" in response.text
+    assert "Couleur + animation = capacité" in response.text
+    assert "Cadence croissante selon le débit" in response.text
+    assert ">100M<" in response.text
+    assert ">1G<" in response.text
+    assert ">2,5G<" in response.text
+    assert ">5G<" in response.text
+    assert ">8G<" in response.text
+    assert ">10G<" in response.text
+    assert "Saturation" not in response.text
     assert "WAN" not in response.text
     assert "Équipements" not in response.text
     assert "replaceChildren(svg, toolsPanel)" in response.text
@@ -690,17 +694,19 @@ def test_topology_tools_panel_is_fixed_and_responsive() -> None:
     assert "position: static;" in response.text
     assert ".topology-tools-panel__line--fiber" in response.text
     assert ".topology-tools-panel__line--wifi" in response.text
-    assert ".topology-tools-panel__line--ethernet-100m" in response.text
-    assert ".topology-tools-panel__line--ethernet-1g" in response.text
-    assert ".topology-tools-panel__line--ethernet-2-5g" in response.text
-    assert ".topology-tools-panel__line--ethernet-5g" in response.text
-    assert ".topology-tools-panel__line--ethernet-8g" in response.text
-    assert ".topology-tools-panel__line--ethernet-10g" in response.text
+    assert ".topology-tools-panel__line--ethernet" in response.text
+    assert ".topology-tools-panel__ethernet-speeds" in response.text
+    assert ".topology-tools-panel__speed--100m" in response.text
+    assert ".topology-tools-panel__speed--1g" in response.text
+    assert ".topology-tools-panel__speed--2-5g" in response.text
+    assert ".topology-tools-panel__speed--5g" in response.text
+    assert ".topology-tools-panel__speed--8g" in response.text
+    assert ".topology-tools-panel__speed--10g" in response.text
     assert "background: #a78bfa;" in response.text
     assert "border-top: 3px dotted #38bdf8;" in response.text
     assert "background: #8fa4b8;" in response.text
-    assert "background: #5ba8ff;" in response.text
-    assert "background: #28d7c0;" in response.text
+    assert "--speed-color: #ff6b6b;" in response.text
+    assert "--speed-color: #4debff;" in response.text
     assert ".topology-tools-panel__line--wan" not in response.text
     assert ".topology-tools-panel--collapsed" in response.text
     assert "@media (max-width: 620px)" in response.text
@@ -722,3 +728,22 @@ def test_topology_focus_animates_solid_and_dashed_links() -> None:
     assert ".topology-link--focused.topology-link--flow-overlay" in stylesheet.text
     assert ".topology-link--focused.topology-link--flow-dashed" in stylesheet.text
     assert "@keyframes topology-link-flow" in stylesheet.text
+
+
+def test_ethernet_capacity_controls_permanent_animation_cadence() -> None:
+    """Ethernet motion must represent capacity, never measured traffic."""
+    client = make_client()
+
+    response = client.get("/ui/styles/topology.css")
+
+    assert response.status_code == 200
+    assert ".topology-link--ethernet.topology-link--flow-overlay" in response.text
+    assert "--flow-duration: 5.6s;" in response.text
+    assert "--flow-duration: 4.4s;" in response.text
+    assert "--flow-duration: 3.6s;" in response.text
+    assert "--flow-duration: 2.8s;" in response.text
+    assert "--flow-duration: 2.1s;" in response.text
+    assert "--flow-duration: 1.6s;" in response.text
+    assert "animation:" in response.text
+    assert "var(--flow-duration)" in response.text
+    assert "@media (prefers-reduced-motion: reduce)" in response.text
