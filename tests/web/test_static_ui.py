@@ -2503,6 +2503,9 @@ def test_services_map_javascript_is_available() -> None:
     assert "class ServicesController" in response.text
     assert "API.administrationInfrastructure" in response.text
     assert "latestCapabilityStates(" in response.text
+    assert "timelineService(" in response.text
+    assert "this.currentStatus(timelineService.periods)" in response.text
+    assert "timelineService?.capabilities" in response.text
     assert "groupByHost(" in response.text
     assert "service.critical" in response.text
 
@@ -2520,7 +2523,7 @@ def test_services_map_stylesheet_is_available() -> None:
 
 
 def test_application_wires_services_controller() -> None:
-    """The frontend application must refresh services with live observations."""
+    """The frontend must refresh services from observations and the timeline."""
     response = make_client().get("/ui/application.js")
 
     assert response.status_code == 200
@@ -2568,6 +2571,7 @@ def test_frontend_limits_observations_and_coalesces_realtime_refreshes() -> None
     assert "?since=${encodeURIComponent(" in response.text
     assert 'activeView === "observations"' in response.text
     assert 'activeView === "timeline"' in response.text
+    assert "this.services.render();" in response.text
     assert "this.services.invalidate()" in response.text
 
 

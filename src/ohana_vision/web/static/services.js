@@ -404,18 +404,53 @@ export class ServicesController {
                     ?? "",
                 );
                 const enabled = service.enabled !== false;
-                const capabilityStates =
+                const observedCapabilityStates =
                     this.latestCapabilityStates(
                         observations,
                         serviceId,
                         nodeId,
                     );
+                const timelineService = this.timelineService(
+                    serviceId,
+                    nodeId,
+                );
+                const observedByCapability = new Map(
+                    observedCapabilityStates.map((capability) => [
+                        capability.id,
+                        capability.observation,
+                    ]),
+                );
+                const timelineCapabilityStates = Array.isArray(
+                    timelineService?.capabilities,
+                )
+                    ? timelineService.capabilities.map((capability) => {
+                        const capabilityId = String(
+                            capability.capability_id ?? "capability",
+                        );
+
+                        return {
+                            id: capabilityId,
+                            status: this.currentStatus(
+                                capability.periods,
+                            ),
+                            observation:
+                                observedByCapability.get(capabilityId)
+                                ?? null,
+                        };
+                    })
+                    : [];
+                const capabilityStates =
+                    timelineCapabilityStates.length > 0
+                        ? timelineCapabilityStates
+                        : observedCapabilityStates;
                 const status = enabled
-                    ? this.aggregateStatus(
-                        capabilityStates.map(
-                            (capability) => capability.status,
-                        ),
-                    )
+                    ? timelineService
+                        ? this.currentStatus(timelineService.periods)
+                        : this.aggregateStatus(
+                            capabilityStates.map(
+                                (capability) => capability.status,
+                            ),
+                        )
                     : "disabled";
                 const host = this.resolveHost(nodeId);
                 const latestObservation = capabilityStates
@@ -471,6 +506,49 @@ export class ServicesController {
                         "fr",
                     );
             });
+    }
+
+    /** Return the timeline entry used by the equipment details panel. */
+    timelineService(serviceId, nodeId) {
+        const nodes = this.state.timeline?.nodes ?? [];
+        const node = Array.isArray(nodes)
+            ? nodes.find((candidate) => {
+                return String(candidate.node_id ?? "") === nodeId;
+            })
+            : nodes[nodeId];
+        const services = Array.isArray(node?.services)
+            ? node.services
+            : [];
+
+        return services.find((service) => {
+            return String(service.service_id ?? "") === serviceId;
+        }) ?? null;
+    }
+
+    /** Resolve the current status exactly like the equipment details panel. */
+    currentStatus(periods) {
+        if (!Array.isArray(periods)) {
+            return "unknown";
+        }
+
+        const openPeriod = periods.find(
+            (period) => !period.ended_at,
+        );
+
+        if (openPeriod?.status) {
+            return normalizeHealthStatus(openPeriod.status);
+        }
+
+        const latestPeriod = periods
+            .slice()
+            .sort((first, second) => {
+                return this.timestamp(second.started_at)
+                    - this.timestamp(first.started_at);
+            })[0];
+
+        return normalizeHealthStatus(
+            latestPeriod?.status ?? "unknown",
+        );
     }
 
     /**

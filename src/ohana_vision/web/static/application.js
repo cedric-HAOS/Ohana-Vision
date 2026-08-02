@@ -407,8 +407,12 @@ export class ApplicationController {
                 );
             } else if (
                 activeView === "services"
-                || activeView === "observations"
             ) {
+                operations.push(
+                    this.loadObservations(),
+                    this.loadTimeline(),
+                );
+            } else if (activeView === "observations") {
                 operations.push(
                     this.loadObservations(),
                 );
@@ -669,6 +673,12 @@ export class ApplicationController {
                 this.timelineLastLoadedAt = Date.now();
                 this.timeline.render();
                 this.deviceDetails.refresh();
+                if (
+                    this.navigation?.activeView
+                        === "services"
+                ) {
+                    this.services.render();
+                }
             } catch (error) {
                 setTimeline(
                     null,

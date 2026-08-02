@@ -6,6 +6,24 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.10.2] — Cohérence de la santé des services — 2026-08-02
+
+## Corrigé
+
+- La carte des services utilise désormais la timeline complète, comme la
+  fiche équipement, au lieu de déduire la santé des 100 dernières
+  observations globales.
+- Les capacités et leur état restent visibles même lorsque leurs observations
+  ont été évincées de la liste récente.
+
+## Qualité
+
+- Tests statiques ajoutés pour garantir l'usage de la timeline dans la vue
+  Services.
+- Version du paquet alignée sur `1.10.2`.
+
+---
+
 # [1.10.1] — Lecture des capacités réseau — 2026-07-31
 
 ## Amélioré
