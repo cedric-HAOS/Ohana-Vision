@@ -1296,6 +1296,8 @@ class TopologyCanvas {
 
         const side =
             routedLinks[0].routing[endpoint].side;
+        const deviceId =
+            routedLinks[0].routing[endpoint].deviceId;
         const horizontalSide =
             side === "top" || side === "bottom";
         const oppositeEndpoint = endpoint === "source"

@@ -6,6 +6,21 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.10.5] — Correction du rendu des liaisons multiples — 2026-08-04
+
+## Corrigé
+
+- Le calcul des points d’ancrage utilise désormais l’équipement porté par le
+  groupe de liaisons. Une passerelle reliée à plusieurs équipements, notamment
+  une passerelle Z-Wave, n’interrompt plus le rendu de la topologie.
+
+## Qualité
+
+- Test de non-régression du dimensionnement des points d’ancrage partagés.
+- Version du paquet alignée sur `1.10.5`.
+
+---
+
 # [1.10.4] — Groupes radio et état des nœuds Z-Wave — 2026-08-04
 
 ## Ajouté

@@ -611,6 +611,20 @@ def test_topology_canvas_supports_collapsible_radio_groups() -> None:
     assert ".topology-link--visual-zwave" in stylesheet.text
 
 
+def test_topology_canvas_sizes_shared_link_anchors_from_their_device() -> None:
+    """Several links on one device must not use an undefined identifier."""
+    client = make_client()
+
+    response = client.get("/ui/topology_canvas.js")
+
+    assert response.status_code == 200
+    assert (
+        "const deviceId =\n"
+        "            routedLinks[0].routing[endpoint].deviceId;" in response.text
+    )
+    assert "this.deviceDimensions(deviceId).width - 48" in response.text
+
+
 def test_topology_device_title_preserves_complete_information() -> None:
     """Compact cards must retain full details in their SVG title."""
     client = make_client()
