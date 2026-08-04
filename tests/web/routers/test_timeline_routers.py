@@ -292,6 +292,38 @@ def test_timeline_router_accepts_a_bounded_history_window() -> None:
     ]
 
 
+def test_timeline_window_reopens_after_monitoring_suspension() -> None:
+    """A bounded window must keep a healthy period after scheduled monitoring."""
+    store = make_store(
+        make_observation(
+            status=HealthStatus.UNKNOWN,
+            observed_at=datetime(2026, 7, 11, 8, 0, tzinfo=UTC),
+        ),
+        make_observation(
+            status=HealthStatus.HEALTHY,
+            observed_at=datetime(2026, 7, 11, 10, 30, tzinfo=UTC),
+        ),
+    )
+    client = make_client(store)
+
+    response = client.get(
+        "/timeline",
+        params={
+            "since": "2026-07-11T10:00:00Z",
+            "until": "2026-07-11T12:00:00Z",
+        },
+    )
+
+    assert response.status_code == 200
+    periods = response.json()["periods"]
+    assert [period["status"] for period in periods] == [
+        "unknown",
+        "healthy",
+    ]
+    assert periods[-1]["started_at"] == "2026-07-11T10:30:00Z"
+    assert periods[-1]["ended_at"] == "2026-07-11T12:00:00Z"
+
+
 def test_timeline_router_rejects_naive_since() -> None:
     """A timezone-naive lower bound must produce HTTP 422."""
     client = make_client(make_store(make_observation()))

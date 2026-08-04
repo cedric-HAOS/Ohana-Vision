@@ -998,6 +998,17 @@ def test_topology_refreshes_status_without_reloading_definition() -> None:
     assert "API.topology" not in status_refresh
 
 
+def test_topology_reconciles_health_from_recent_observations() -> None:
+    """The map must not depend only on a possibly stale timeline."""
+    response = make_client().get("/ui/topology.js")
+
+    assert response.status_code == 200
+    assert "buildObservationHealthIndex(" in response.text
+    assert "resolveDeviceHealth(" in response.text
+    assert '?.target_type === "device"' in response.text
+    assert "normalizeHealthStatus(" in response.text
+
+
 def test_application_entry_point_is_minimal() -> None:
     """The frontend entry point must only start the application."""
     response = make_client().get("/ui/app.js")
@@ -1546,7 +1557,7 @@ def test_application_loads_timeline_endpoint() -> None:
 
     assert "API.timeline" in response.text
     assert "setTimeline(" in response.text
-    assert "loadTimeline()" in response.text
+    assert "loadTimeline(" in response.text
 
 
 def test_api_declares_timeline_endpoint() -> None:
@@ -2573,6 +2584,14 @@ def test_frontend_limits_observations_and_coalesces_realtime_refreshes() -> None
     assert 'activeView === "timeline"' in response.text
     assert "this.services.render();" in response.text
     assert "this.services.invalidate()" in response.text
+
+
+def test_realtime_observation_forces_timeline_reload() -> None:
+    """A fresh accepted observation must refresh stale service statuses."""
+    response = make_client().get("/ui/application.js")
+
+    assert response.status_code == 200
+    assert "this.loadTimeline({\n                        force: true," in response.text
 
 
 def test_equipment_views_share_the_official_icon_catalog() -> None:

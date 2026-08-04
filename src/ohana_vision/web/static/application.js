@@ -398,19 +398,25 @@ export class ApplicationController {
                 operations.push(
                     this.loadRuntime(),
                     this.loadObservations(),
-                    this.loadTimeline(),
+                    this.loadTimeline({
+                        force: true,
+                    }),
                 );
             } else if (activeView === "infrastructure") {
                 operations.push(
                     this.loadObservations(),
-                    this.loadTimeline(),
+                    this.loadTimeline({
+                        force: true,
+                    }),
                 );
             } else if (
                 activeView === "services"
             ) {
                 operations.push(
                     this.loadObservations(),
-                    this.loadTimeline(),
+                    this.loadTimeline({
+                        force: true,
+                    }),
                 );
             } else if (activeView === "observations") {
                 operations.push(
@@ -418,7 +424,9 @@ export class ApplicationController {
                 );
             } else if (activeView === "timeline") {
                 operations.push(
-                    this.loadTimeline(),
+                    this.loadTimeline({
+                        force: true,
+                    }),
                 );
             }
 

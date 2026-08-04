@@ -6,6 +6,26 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.10.3] — Cohérence de la carte et des plages horaires — 2026-08-04
+
+## Corrigé
+
+- La réception d'une observation force désormais la relecture de la timeline,
+  sans attendre le délai de rafraîchissement, afin que la carte et la liste des
+  observations restent cohérentes.
+- La carte réconcilie la timeline avec les observations de santé plus récentes
+  et ignore les observations de présence réseau réservées aux équipements.
+- La reconstruction d'une fenêtre de timeline conserve l'état suspendu puis
+  rouvre correctement la période lors de la reprise de la surveillance.
+
+## Qualité
+
+- Tests de non-régression de la carte, du rafraîchissement temps réel et des
+  timelines bornées par une plage horaire.
+- Version du paquet alignée sur `1.10.3`.
+
+---
+
 # [1.10.2] — Cohérence de la santé des services — 2026-08-02
 
 ## Corrigé

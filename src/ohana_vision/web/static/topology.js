@@ -7,8 +7,18 @@ import {
 
 import {
     hideError,
+    normalizeHealthStatus,
     showError,
 } from "./utils.js";
+
+const STATUS_PRIORITY = Object.freeze({
+    suspended: -1,
+    healthy: 0,
+    unknown: 1,
+    stale: 2,
+    degraded: 3,
+    unhealthy: 4,
+});
 
 /**
  * Controls the infrastructure topology.
@@ -362,11 +372,20 @@ export class TopologyController {
         if (Array.isArray(nodes)) {
             return Object.fromEntries(
                 nodes.map((node) => {
+                    const period = this.currentPeriod(
+                        node.periods,
+                    );
+
                     return [
                         node.node_id,
-                        this.currentStatus(
-                            node.periods,
-                        ),
+                        {
+                            status:
+                                period?.status
+                                ?? "unknown",
+                            observed_at:
+                                period?.started_at
+                                ?? null,
+                        },
                     ];
                 }),
             );
@@ -378,15 +397,127 @@ export class TopologyController {
                     nodeId,
                     node,
                 ]) => {
+                    const period = this.currentPeriod(
+                        node.periods,
+                    );
+
                     return [
                         nodeId,
-                        this.currentStatus(
-                            node.periods,
-                        ),
+                        {
+                            status:
+                                period?.status
+                                ?? "unknown",
+                            observed_at:
+                                period?.started_at
+                                ?? null,
+                        },
                     ];
                 },
             ),
         );
+    }
+
+    buildObservationHealthIndex(observations) {
+        const latestByCapability = new Map();
+
+        for (const observation of (
+            observations ?? []
+        )) {
+            if (
+                observation.metadata
+                    ?.target_type === "device"
+            ) {
+                continue;
+            }
+
+            const nodeId = String(
+                observation.node_id ?? "",
+            );
+            const serviceId = String(
+                observation.service_id ?? "",
+            );
+            const capabilityId = String(
+                observation.capability_id ?? "",
+            );
+
+            if (
+                !nodeId
+                || !serviceId
+                || !capabilityId
+            ) {
+                continue;
+            }
+
+            const key = [
+                nodeId,
+                serviceId,
+                capabilityId,
+            ].join("\u0000");
+            const current =
+                latestByCapability.get(key);
+
+            if (
+                !current
+                || this.timestamp(
+                    observation.observed_at,
+                ) >= this.timestamp(
+                    current.observed_at,
+                )
+            ) {
+                latestByCapability.set(
+                    key,
+                    observation,
+                );
+            }
+        }
+
+        const nodeHealth = {};
+
+        for (const observation of latestByCapability.values()) {
+            const nodeId = String(
+                observation.node_id,
+            );
+            const status = normalizeHealthStatus(
+                observation.status,
+            );
+            const current = nodeHealth[nodeId];
+
+            if (
+                !current
+                || STATUS_PRIORITY[status]
+                    > STATUS_PRIORITY[
+                        current.status
+                    ]
+                || (
+                    status === current.status
+                    && this.timestamp(
+                        observation.observed_at,
+                    ) > this.timestamp(
+                        current.observed_at,
+                    )
+                )
+            ) {
+                nodeHealth[nodeId] = {
+                    status,
+                    observed_at:
+                        observation.observed_at,
+                };
+                continue;
+            }
+
+            if (
+                this.timestamp(
+                    observation.observed_at,
+                ) > this.timestamp(
+                    current.observed_at,
+                )
+            ) {
+                current.observed_at =
+                    observation.observed_at;
+            }
+        }
+
+        return nodeHealth;
     }
 
     buildDeviceHealth(
@@ -397,6 +528,10 @@ export class TopologyController {
             this.buildNodeHealthIndex(
                 timeline,
             );
+        const observationHealth =
+            this.buildObservationHealthIndex(
+                this.state.observations,
+            );
 
         return Object.fromEntries(
             (
@@ -404,11 +539,13 @@ export class TopologyController {
                 ?? []
             ).map((device) => {
                 const status = device.node_id
-                    ? (
+                    ? this.resolveDeviceHealth(
                         nodeHealth[
                             device.node_id
-                        ]
-                        ?? "unknown"
+                        ],
+                        observationHealth[
+                            device.node_id
+                        ],
                     )
                     : "unknown";
 
@@ -418,6 +555,27 @@ export class TopologyController {
                 ];
             }),
         );
+    }
+
+    resolveDeviceHealth(
+        timelineHealth,
+        observationHealth,
+    ) {
+        if (
+            observationHealth
+            && (
+                !timelineHealth
+                || this.timestamp(
+                    observationHealth.observed_at,
+                ) >= this.timestamp(
+                    timelineHealth.observed_at,
+                )
+            )
+        ) {
+            return observationHealth.status;
+        }
+
+        return timelineHealth?.status ?? "unknown";
     }
 
     buildDevicePresence(
@@ -522,6 +680,16 @@ export class TopologyController {
         }
 
         return "unknown";
+    }
+
+    timestamp(value) {
+        const timestamp = new Date(
+            String(value ?? ""),
+        ).getTime();
+
+        return Number.isFinite(timestamp)
+            ? timestamp
+            : 0;
     }
 
 }
