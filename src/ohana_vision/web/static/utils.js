@@ -10,6 +10,7 @@ const DEVICE_ICON_PATHS = Object.freeze({
     home_assistant: "/ui/assets/icons/hardware/house.svg",
     camera: "/ui/assets/icons/hardware/camera.svg",
     smart_device: "/ui/assets/icons/hardware/plug-zap.svg",
+    zwave_module: "/ui/assets/icons/protocols/radio-tower.svg",
     solar: "/ui/assets/icons/hardware/battery-charging.svg",
     computer: "/ui/assets/icons/containers-cloud/monitor-cog.svg",
     storage: "/ui/assets/icons/hardware/hard-drive.svg",

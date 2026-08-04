@@ -13,7 +13,7 @@ class TopologyCanvas {
 
     static DEVICE_LABEL_MAX_WIDTH = 128;
 
-    static COMPACT_DEVICE_LABEL_MAX_WIDTH = 84;
+    static COMPACT_DEVICE_LABEL_MAX_WIDTH = 104;
 
     static DEVICE_LABEL_MIN_FONT_SIZE = 13;
 
@@ -142,6 +142,7 @@ class TopologyCanvas {
         this.resizeObserver.observe(this.container);
 
         window.requestAnimationFrame(() => {
+            this.fitVisibleDeviceLabels(svg);
             this.fitContentToViewport();
 
             if (this.selectedDeviceId) {
@@ -1238,10 +1239,20 @@ class TopologyCanvas {
             });
         }
 
-        this.distributeLinkAnchors(routedLinks);
-        this.routeLinks(routedLinks, positions);
+        const zWaveBusGroups = this.zWaveBusGroups(
+            routedLinks,
+        );
+        const groupedZWaveLinks = new Set(
+            zWaveBusGroups.flatMap((group) => group.links),
+        );
+        const individualLinks = routedLinks.filter(
+            (routedLink) => !groupedZWaveLinks.has(routedLink),
+        );
 
-        for (const routedLink of routedLinks) {
+        this.distributeLinkAnchors(individualLinks);
+        this.routeLinks(individualLinks, positions);
+
+        for (const routedLink of individualLinks) {
             layer.append(
                 this.createLink(
                     routedLink.link,
@@ -1253,6 +1264,246 @@ class TopologyCanvas {
                 ),
             );
         }
+
+        for (const group of zWaveBusGroups) {
+            this.renderZWaveBusGroup(layer, group);
+        }
+    }
+
+    zWaveBusGroups(routedLinks) {
+        const groups = new Map();
+
+        for (const routedLink of routedLinks) {
+            if (this.linkVisualKind(routedLink.link) !== "zwave") {
+                continue;
+            }
+
+            const sourceRadioKind = this.radioGroupKind(
+                routedLink.link.source_device_id,
+            );
+            const targetRadioKind = this.radioGroupKind(
+                routedLink.link.target_device_id,
+            );
+
+            if (
+                (sourceRadioKind === "zwave")
+                === (targetRadioKind === "zwave")
+            ) {
+                continue;
+            }
+
+            const gatewayId = sourceRadioKind === "zwave"
+                ? routedLink.link.target_device_id
+                : routedLink.link.source_device_id;
+            const gatewayEndpoint =
+                routedLink.link.source_device_id === gatewayId
+                    ? "source"
+                    : "target";
+            const leafEndpoint = gatewayEndpoint === "source"
+                ? "target"
+                : "source";
+
+            if (!groups.has(gatewayId)) {
+                groups.set(gatewayId, []);
+            }
+
+            groups.get(gatewayId).push({
+                routedLink,
+                gatewayEndpoint,
+                leafEndpoint,
+            });
+        }
+
+        return [...groups.entries()]
+            .filter(([, links]) => links.length >= 3)
+            .map(([gatewayId, links]) => ({
+                gatewayId,
+                links: links.map(({routedLink}) => routedLink),
+                entries: links,
+            }));
+    }
+
+    renderZWaveBusGroup(layer, group) {
+        const sideGroups = new Map();
+
+        for (const entry of group.entries) {
+            const gatewayPosition =
+                entry.routedLink[`${entry.gatewayEndpoint}Position`];
+            const leafPosition =
+                entry.routedLink[`${entry.leafEndpoint}Position`];
+            const side = this.relativeLinkSide(
+                gatewayPosition,
+                leafPosition,
+            );
+
+            if (!sideGroups.has(side)) {
+                sideGroups.set(side, []);
+            }
+
+            sideGroups.get(side).push(entry);
+        }
+
+        for (const [side, entries] of sideGroups) {
+            this.renderZWaveBusSide(
+                layer,
+                group.gatewayId,
+                side,
+                entries,
+            );
+        }
+    }
+
+    relativeLinkSide(origin, target) {
+        const deltaX = target.x - origin.x;
+        const deltaY = target.y - origin.y;
+
+        if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+            return deltaX >= 0 ? "right" : "left";
+        }
+
+        return deltaY >= 0 ? "bottom" : "top";
+    }
+
+    oppositeLinkSide(side) {
+        return {
+            top: "bottom",
+            right: "left",
+            bottom: "top",
+            left: "right",
+        }[side] ?? "left";
+    }
+
+    renderZWaveBusSide(
+        layer,
+        gatewayId,
+        side,
+        entries,
+    ) {
+        const firstEntry = entries[0];
+        const gatewayPosition =
+            firstEntry.routedLink[
+                `${firstEntry.gatewayEndpoint}Position`
+            ];
+        const gatewayRouting = {
+            deviceId: gatewayId,
+            side,
+            offset: 0,
+        };
+        const gatewayAnchor = this.linkAnchor(
+            gatewayPosition,
+            gatewayRouting,
+        );
+        const sideVector = this.linkSideVector(side);
+        const busOrigin = {
+            x:
+                gatewayAnchor.x
+                + sideVector.x * TopologyCanvas.ROUTE_LEAD,
+            y:
+                gatewayAnchor.y
+                + sideVector.y * TopologyCanvas.ROUTE_LEAD,
+        };
+        const junctions = [];
+
+        for (const entry of entries) {
+            const {routedLink} = entry;
+            const leafDeviceId =
+                routedLink.link[
+                    `${entry.leafEndpoint}_device_id`
+                ];
+            const leafPosition =
+                routedLink[`${entry.leafEndpoint}Position`];
+
+            routedLink.routing[entry.gatewayEndpoint] = {
+                deviceId: gatewayId,
+                side,
+                offset: 0,
+            };
+            routedLink.routing[entry.leafEndpoint] = {
+                deviceId: leafDeviceId,
+                side: this.oppositeLinkSide(side),
+                offset: 0,
+            };
+
+            const leafAnchor = this.linkAnchor(
+                leafPosition,
+                routedLink.routing[entry.leafEndpoint],
+            );
+            const horizontal = side === "left" || side === "right";
+            const junction = horizontal
+                ? {x: busOrigin.x, y: leafAnchor.y}
+                : {x: leafAnchor.x, y: busOrigin.y};
+
+            junctions.push(junction);
+            routedLink.routing.path = this.roundedLinkPath([
+                junction,
+                leafAnchor,
+            ]);
+
+            layer.append(
+                this.createLink(
+                    routedLink.link,
+                    routedLink.sourcePosition,
+                    routedLink.targetPosition,
+                    this.linkHealth(routedLink.link),
+                    routedLink.order,
+                    routedLink.routing,
+                ),
+            );
+        }
+
+        const horizontal = side === "left" || side === "right";
+        const sortedJunctions = [...junctions].sort(
+            (first, second) => horizontal
+                ? first.y - second.y
+                : first.x - second.x,
+        );
+        const trunkStart = sortedJunctions[0];
+        const trunkEnd = sortedJunctions.at(-1);
+        const connectorEnd = horizontal
+            ? {x: busOrigin.x, y: gatewayAnchor.y}
+            : {x: gatewayAnchor.x, y: busOrigin.y};
+
+        layer.prepend(
+            this.createZWaveBus(
+                gatewayId,
+                [
+                    this.roundedLinkPath([
+                        gatewayAnchor,
+                        connectorEnd,
+                    ]),
+                    this.roundedLinkPath([
+                        trunkStart,
+                        trunkEnd,
+                    ]),
+                ].join(" "),
+            ),
+        );
+    }
+
+    createZWaveBus(gatewayId, pathData) {
+        const group = this.createSvgElement("g");
+
+        group.classList.add(
+            "topology-link",
+            "topology-link--zwave-bus",
+            "topology-link--visual-zwave",
+        );
+        group.dataset.sourceDeviceId = gatewayId;
+        group.dataset.targetDeviceId = gatewayId;
+        group.dataset.visualKind = "zwave";
+
+        const glow = this.createSvgElement("path");
+
+        glow.classList.add("topology-link__glow");
+        glow.setAttribute("d", pathData);
+
+        const path = this.createSvgElement("path");
+
+        path.classList.add("topology-link__path");
+        path.setAttribute("d", pathData);
+        group.append(glow, path);
+
+        return group;
     }
 
     distributeLinkAnchors(routedLinks) {
@@ -2341,11 +2592,14 @@ class TopologyCanvas {
             );
 
             layer.append(renderedDevice);
-            this.fitDeviceLabel(
-                renderedDevice.querySelector(
-                    ".topology-device__label",
-                ),
-            );
+        }
+    }
+
+    fitVisibleDeviceLabels(svg) {
+        for (const label of svg.querySelectorAll(
+            ".topology-device__label",
+        )) {
+            this.fitDeviceLabel(label);
         }
     }
 
@@ -2687,8 +2941,8 @@ class TopologyCanvas {
             "topology-device__icon-background",
         );
         background.setAttribute("cx", compact ? 28 : 42);
-        background.setAttribute("cy", compact ? 49 : 48);
-        background.setAttribute("r", compact ? 21 : 25);
+        background.setAttribute("cy", compact ? 32 : 48);
+        background.setAttribute("r", compact ? 18 : 25);
 
         return background;
     }
@@ -2725,8 +2979,12 @@ class TopologyCanvas {
             );
         }
 
-        text.setAttribute("x", compact ? 56 : 78);
-        text.setAttribute("y", compact ? 54 : 58);
+        text.setAttribute("x", compact ? 62 : 78);
+        text.setAttribute("y", compact ? 80 : 58);
+
+        if (compact) {
+            text.setAttribute("text-anchor", "middle");
+        }
         text.dataset.fullLabel = normalizedLabel;
         text.dataset.compact = String(compact);
         text.textContent = normalizedLabel;
@@ -2927,7 +3185,7 @@ class TopologyCanvas {
         group.setAttribute(
             "transform",
             compact
-                ? "translate(72 79)"
+                ? "translate(72 34)"
                 : "translate(151 104)",
         );
 
@@ -3009,7 +3267,7 @@ class TopologyCanvas {
             "topology-device__icon",
         );
         foreignObject.setAttribute("x", compact ? 15 : 27);
-        foreignObject.setAttribute("y", compact ? 36 : 33);
+        foreignObject.setAttribute("y", compact ? 19 : 33);
         foreignObject.setAttribute("width", 30);
         foreignObject.setAttribute("height", 30);
         foreignObject.setAttribute(
@@ -3050,6 +3308,8 @@ class TopologyCanvas {
                 "/ui/assets/icons/hardware/camera.svg",
             smart_device:
                 "/ui/assets/icons/hardware/plug-zap.svg",
+            zwave_module:
+                "/ui/assets/icons/protocols/radio-tower.svg",
             solar:
                 "/ui/assets/icons/hardware/battery-charging.svg",
             computer:
@@ -3394,6 +3654,7 @@ class TopologyCanvas {
             home_assistant: "Home Assistant",
             camera: "Caméra",
             smart_device: "Objet connecté",
+            zwave_module: "Module Z-Wave",
             solar: "Solaire",
             computer: "Ordinateur",
             storage: "Stockage",

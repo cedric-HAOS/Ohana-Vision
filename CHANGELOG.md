@@ -6,6 +6,30 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.10.7] — Modules et liaisons Z-Wave harmonisés — 2026-08-04
+
+## Ajouté
+
+- Le type « Module Z-Wave » est disponible dans l’éditeur Architecture et
+  utilise une icône radio dédiée dans toutes les vues d’équipement.
+
+## Amélioré
+
+- Les cartes radio compactes réservent désormais toute leur largeur au nom,
+  avec réduction ou ellipse après insertion dans le SVG ; le nom complet reste
+  disponible dans l’infobulle et le libellé ne dépasse plus du cadre.
+- À partir de trois modules, les liaisons d’une passerelle Z-Wave partagent des
+  troncs discrets par direction au lieu de superposer un éventail de chemins.
+
+## Qualité
+
+- Validation visuelle dans Chromium d’un scénario à 12 modules : noms bornés,
+  icône dédiée, 12 branches regroupées en 3 troncs.
+- Tests statiques du type, de l’icône, du dimensionnement et du routage groupé.
+- Version du paquet alignée sur `1.10.7`.
+
+---
+
 # [1.10.6] — Positionnement explicite des équipements découverts — 2026-08-04
 
 ## Ajouté

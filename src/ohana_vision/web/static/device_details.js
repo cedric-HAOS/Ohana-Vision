@@ -747,6 +747,7 @@ export class DeviceDetailsController {
             home_assistant: "Home Assistant",
             camera: "Caméra",
             smart_device: "Objet connecté",
+            zwave_module: "Module Z-Wave",
             solar: "Solaire",
             computer: "Ordinateur",
             storage: "Stockage",

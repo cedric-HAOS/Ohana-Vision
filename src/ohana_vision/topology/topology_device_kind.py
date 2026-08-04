@@ -15,6 +15,7 @@ class TopologyDeviceKind(StrEnum):
     HOME_ASSISTANT = "home_assistant"
     CAMERA = "camera"
     SMART_DEVICE = "smart_device"
+    ZWAVE_MODULE = "zwave_module"
     SOLAR = "solar"
     COMPUTER = "computer"
     STORAGE = "storage"

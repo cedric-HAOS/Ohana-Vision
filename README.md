@@ -125,6 +125,10 @@ Les équipements Z-Wave découverts ne sont jamais ajoutés automatiquement à l
 carte persistée. La page Architecture affiche leur nombre, prépare leur
 placement autour de la passerelle sur demande, puis attend l’action
 **Appliquer l’architecture** avant toute écriture dans la configuration Agent.
+Le type **Module Z-Wave** leur attribue une icône radio dédiée. Dans la carte,
+leurs noms restent bornés aux cartes compactes et les liaisons d’une même
+passerelle sont regroupées sur des troncs communs afin de limiter
+l’enchevêtrement visuel.
 
 Le mode **Déplacer** modifie les cellules logiques `row` / `column`. Le mode
 **Relier** permet de créer une liaison entre n'importe quels équipements

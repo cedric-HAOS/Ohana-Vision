@@ -611,6 +611,42 @@ def test_topology_canvas_supports_collapsible_radio_groups() -> None:
     assert ".topology-link--visual-zwave" in stylesheet.text
 
 
+def test_topology_canvas_uses_harmonized_zwave_buses() -> None:
+    """Z-Wave nodes must share subtle radio trunks around their gateway."""
+    client = make_client()
+
+    javascript = client.get("/ui/topology_canvas.js")
+    stylesheet = client.get("/ui/styles/topology.css")
+
+    assert javascript.status_code == 200
+    assert stylesheet.status_code == 200
+    assert "zWaveBusGroups(" in javascript.text
+    assert "renderZWaveBusGroup(" in javascript.text
+    assert "createZWaveBus(" in javascript.text
+    assert "COMPACT_DEVICE_LABEL_MAX_WIDTH = 104" in javascript.text
+    assert 'text.setAttribute("text-anchor", "middle")' in javascript.text
+    assert ".topology-link--zwave-bus" in stylesheet.text
+
+
+def test_topology_canvas_supports_the_zwave_module_kind() -> None:
+    """Z-Wave modules must have their own label and official radio icon."""
+    client = make_client()
+
+    page = client.get("/ui/")
+    canvas = client.get("/ui/topology_canvas.js")
+    utils = client.get("/ui/utils.js")
+
+    assert page.status_code == 200
+    assert canvas.status_code == 200
+    assert utils.status_code == 200
+    assert '<option value="zwave_module">Module Z-Wave</option>' in page.text
+    assert 'zwave_module: "Module Z-Wave"' in canvas.text
+    assert (
+        'zwave_module: "/ui/assets/icons/protocols/radio-tower.svg"'
+        in utils.text
+    )
+
+
 def test_topology_canvas_sizes_shared_link_anchors_from_their_device() -> None:
     """Several links on one device must not use an undefined identifier."""
     client = make_client()
