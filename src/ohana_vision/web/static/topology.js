@@ -520,6 +520,58 @@ export class TopologyController {
         return nodeHealth;
     }
 
+    buildTargetDeviceHealthIndex(observations) {
+        const deviceHealth = {};
+
+        for (const observation of (
+            observations ?? []
+        )) {
+            const metadata =
+                observation.metadata ?? {};
+
+            if (
+                metadata.target_type !== "device"
+                || metadata.contributes_to_device_health
+                    !== true
+            ) {
+                continue;
+            }
+
+            const deviceId = String(
+                metadata.device_id
+                ?? observation.service_id
+                ?? "",
+            );
+
+            if (!deviceId) {
+                continue;
+            }
+
+            const current = deviceHealth[deviceId];
+
+            if (
+                current
+                && this.timestamp(
+                    observation.observed_at,
+                ) < this.timestamp(
+                    current.observed_at,
+                )
+            ) {
+                continue;
+            }
+
+            deviceHealth[deviceId] = {
+                status: normalizeHealthStatus(
+                    observation.status,
+                ),
+                observed_at:
+                    observation.observed_at,
+            };
+        }
+
+        return deviceHealth;
+    }
+
     buildDeviceHealth(
         topology,
         timeline,
@@ -532,22 +584,33 @@ export class TopologyController {
             this.buildObservationHealthIndex(
                 this.state.observations,
             );
+        const targetDeviceHealth =
+            this.buildTargetDeviceHealthIndex(
+                this.state.observations,
+            );
 
         return Object.fromEntries(
             (
                 topology?.devices
                 ?? []
             ).map((device) => {
-                const status = device.node_id
-                    ? this.resolveDeviceHealth(
-                        nodeHealth[
-                            device.node_id
-                        ],
-                        observationHealth[
-                            device.node_id
-                        ],
-                    )
-                    : "unknown";
+                const targeted =
+                    targetDeviceHealth[
+                        device.device_id
+                    ];
+                const status = targeted?.status
+                    ?? (
+                        device.node_id
+                            ? this.resolveDeviceHealth(
+                                nodeHealth[
+                                    device.node_id
+                                ],
+                                observationHealth[
+                                    device.node_id
+                                ],
+                            )
+                            : "unknown"
+                    );
 
                 return [
                     device.device_id,

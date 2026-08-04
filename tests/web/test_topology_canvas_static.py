@@ -588,6 +588,29 @@ def test_topology_canvas_renders_premium_device_cards() -> None:
     assert "letter-spacing: -0.01em;" in stylesheet.text
 
 
+def test_topology_canvas_supports_collapsible_radio_groups() -> None:
+    """Wi-Fi and Z-Wave leaves must be compact and collapsible."""
+    client = make_client()
+
+    javascript = client.get("/ui/topology_canvas.js")
+    stylesheet = client.get("/ui/styles/topology.css")
+
+    assert javascript.status_code == 200
+    assert stylesheet.status_code == 200
+    assert "COMPACT_DEVICE_WIDTH" in javascript.text
+    assert "createRadioDeviceKindIndex(" in javascript.text
+    assert "collapsedRadioGroups" in javascript.text
+    assert "createRadioGroupControls(" in javascript.text
+    assert "toggleRadioGroup(kind)" in javascript.text
+    assert "isDeviceHidden(" in javascript.text
+    assert "topology-device--compact" in javascript.text
+    assert "topology-device--radio-wifi" in stylesheet.text
+    assert "topology-device--radio-zwave" in stylesheet.text
+    assert "topology-radio-control--wifi" in stylesheet.text
+    assert "topology-radio-control--zwave" in stylesheet.text
+    assert ".topology-link--visual-zwave" in stylesheet.text
+
+
 def test_topology_device_title_preserves_complete_information() -> None:
     """Compact cards must retain full details in their SVG title."""
     client = make_client()

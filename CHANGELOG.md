@@ -6,6 +6,31 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.10.4] — Groupes radio et état des nœuds Z-Wave — 2026-08-04
+
+## Ajouté
+
+- La carte d’infrastructure propose des commandes indépendantes pour replier
+  ou déplier les groupes Wi-Fi et Z-Wave.
+- Les observations ciblées `zwave.node.alive` alimentent directement la santé
+  visuelle des équipements découverts par l’Agent.
+
+## Amélioré
+
+- Les équipements radio terminaux sont affichés sous forme de cartes compactes
+  centrées sur leur icône et leur état, tout en conservant leurs informations
+  complètes dans le détail et l’infobulle.
+- Les liaisons Z-Wave disposent d’un style distinct et le routage s’adapte aux
+  dimensions réduites des équipements.
+
+## Qualité
+
+- Tests statiques des groupes repliables, des cartes compactes et de la santé
+  ciblée des équipements Z-Wave.
+- Version du paquet alignée sur `1.10.4`.
+
+---
+
 # [1.10.3] — Cohérence de la carte et des plages horaires — 2026-08-04
 
 ## Corrigé

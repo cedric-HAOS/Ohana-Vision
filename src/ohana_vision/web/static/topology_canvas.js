@@ -7,7 +7,13 @@ class TopologyCanvas {
 
     static DEVICE_HEIGHT = 128;
 
+    static COMPACT_DEVICE_WIDTH = 124;
+
+    static COMPACT_DEVICE_HEIGHT = 98;
+
     static DEVICE_LABEL_MAX_WIDTH = 128;
+
+    static COMPACT_DEVICE_LABEL_MAX_WIDTH = 84;
 
     static DEVICE_LABEL_MIN_FONT_SIZE = 13;
 
@@ -59,8 +65,13 @@ class TopologyCanvas {
         this.topology = null;
         this.layout = null;
         this.deviceIndex = new Map();
+        this.radioDeviceKinds = new Map();
         this.deviceHealth = {};
         this.devicePresence = {};
+        this.collapsedRadioGroups = {
+            wifi: false,
+            zwave: false,
+        };
         this.toolsPanelCollapsed = Boolean(
             window.matchMedia?.("(max-width: 1199px)").matches,
         );
@@ -84,6 +95,11 @@ class TopologyCanvas {
         this.deviceIndex = this.createDeviceIndex(
             topology.devices ?? [],
         );
+        this.radioDeviceKinds =
+            this.createRadioDeviceKindIndex(
+                topology.devices ?? [],
+                topology.links ?? [],
+            );
         this.layout = this.selectLayout(
             topology.layouts ?? [],
         );
@@ -140,6 +156,8 @@ class TopologyCanvas {
     createToolsPanel() {
         const panel = document.createElement("aside");
         const controls = this.findTopologyControls();
+        const radioControls =
+            this.createRadioGroupControls();
         const header = document.createElement("div");
         const toggle = document.createElement("button");
         const help = document.createElement("div");
@@ -158,6 +176,10 @@ class TopologyCanvas {
 
         if (controls) {
             header.append(controls);
+        }
+
+        if (radioControls) {
+            header.append(radioControls);
         }
 
         toggle.className = "topology-tools-panel__toggle";
@@ -198,6 +220,10 @@ class TopologyCanvas {
                         <li>
                             <span class="topology-tools-panel__line topology-tools-panel__line--wifi"></span>
                             Wi-Fi
+                        </li>
+                        <li>
+                            <span class="topology-tools-panel__line topology-tools-panel__line--zwave"></span>
+                            Z-Wave
                         </li>
                         <li>
                             <span class="topology-tools-panel__line topology-tools-panel__line--ethernet"></span>
@@ -266,6 +292,98 @@ class TopologyCanvas {
         return panel;
     }
 
+    createRadioGroupControls() {
+        const groupKinds = [
+            {
+                kind: "wifi",
+                label: "Wi-Fi",
+            },
+            {
+                kind: "zwave",
+                label: "Z-Wave",
+            },
+        ];
+        const availableKinds = groupKinds.filter(
+            ({kind}) => this.radioDeviceCount(kind) > 0,
+        );
+
+        if (availableKinds.length === 0) {
+            return null;
+        }
+
+        const controls = document.createElement("div");
+
+        controls.className =
+            "topology-radio-controls";
+        controls.setAttribute(
+            "aria-label",
+            "Groupes radio de la carte",
+        );
+
+        for (const {kind, label} of availableKinds) {
+            const count = this.radioDeviceCount(kind);
+            const collapsed =
+                this.collapsedRadioGroups[kind];
+            const button = document.createElement("button");
+
+            button.className = [
+                "topology-radio-control",
+                `topology-radio-control--${kind}`,
+                collapsed
+                    ? "topology-radio-control--collapsed"
+                    : "",
+            ].filter(Boolean).join(" ");
+            button.type = "button";
+            button.setAttribute(
+                "aria-pressed",
+                String(collapsed),
+            );
+            button.setAttribute(
+                "aria-label",
+                collapsed
+                    ? `Déplier le groupe ${label}`
+                    : `Replier le groupe ${label}`,
+            );
+            button.innerHTML = `
+                <span class="topology-radio-control__icon" aria-hidden="true"></span>
+                <span class="topology-radio-control__label">
+                    ${this.escapeHtml(label)}
+                </span>
+                <span class="topology-radio-control__count">
+                    ${count}
+                </span>
+            `;
+            button.addEventListener("click", () => {
+                this.toggleRadioGroup(kind);
+            });
+            controls.append(button);
+        }
+
+        return controls;
+    }
+
+    toggleRadioGroup(kind) {
+        this.collapsedRadioGroups[kind] =
+            !this.collapsedRadioGroups[kind];
+
+        if (
+            this.selectedDeviceId
+            && this.isDeviceHidden(
+                this.selectedDeviceId,
+            )
+        ) {
+            this.selectedDeviceId = null;
+        }
+
+        if (this.topology) {
+            this.render(
+                this.topology,
+                this.deviceHealth,
+                this.devicePresence,
+            );
+        }
+    }
+
     findTopologyControls() {
         return (
             this.container
@@ -326,6 +444,110 @@ class TopologyCanvas {
         );
     }
 
+    createRadioDeviceKindIndex(devices, links) {
+        const supportedKinds = new Set([
+            "wifi",
+            "zwave",
+        ]);
+        const structuralKinds = new Set([
+            "internet",
+            "router",
+            "switch",
+            "access_point",
+            "server",
+            "raspberry_pi",
+            "home_assistant",
+            "computer",
+            "storage",
+        ]);
+        const deviceLinks = new Map();
+
+        for (const link of links) {
+            for (const deviceId of [
+                link.source_device_id,
+                link.target_device_id,
+            ]) {
+                if (!deviceLinks.has(deviceId)) {
+                    deviceLinks.set(deviceId, []);
+                }
+
+                deviceLinks.get(deviceId).push(link);
+            }
+        }
+
+        const radioDevices = new Map();
+
+        for (const device of devices) {
+            const linksForDevice =
+                deviceLinks.get(device.device_id) ?? [];
+            const linkKinds = new Set(
+                linksForDevice.map((link) => (
+                    String(link.kind ?? "").toLowerCase()
+                )),
+            );
+
+            if (
+                structuralKinds.has(device.kind)
+                || linkKinds.size !== 1
+            ) {
+                continue;
+            }
+
+            const [kind] = linkKinds;
+
+            if (supportedKinds.has(kind)) {
+                radioDevices.set(device.device_id, kind);
+            }
+        }
+
+        return radioDevices;
+    }
+
+    radioDeviceCount(kind) {
+        return [...this.radioDeviceKinds.values()]
+            .filter((deviceKind) => deviceKind === kind)
+            .length;
+    }
+
+    radioGroupKind(device) {
+        return this.radioDeviceKinds.get(
+            typeof device === "string"
+                ? device
+                : device?.device_id,
+        );
+    }
+
+    isCompactDevice(device) {
+        return Boolean(this.radioGroupKind(device));
+    }
+
+    isDeviceHidden(device) {
+        const groupKind = this.radioGroupKind(device);
+
+        return Boolean(
+            groupKind
+            && this.collapsedRadioGroups[groupKind],
+        );
+    }
+
+    deviceDimensions(device) {
+        if (this.isCompactDevice(device)) {
+            return {
+                width: TopologyCanvas.COMPACT_DEVICE_WIDTH,
+                height: TopologyCanvas.COMPACT_DEVICE_HEIGHT,
+                labelMaxWidth:
+                    TopologyCanvas.COMPACT_DEVICE_LABEL_MAX_WIDTH,
+            };
+        }
+
+        return {
+            width: TopologyCanvas.DEVICE_WIDTH,
+            height: TopologyCanvas.DEVICE_HEIGHT,
+            labelMaxWidth:
+                TopologyCanvas.DEVICE_LABEL_MAX_WIDTH,
+        };
+    }
+
     selectLayout(layouts) {
         if (layouts.length === 0) {
             return null;
@@ -379,38 +601,47 @@ class TopologyCanvas {
             return null;
         }
 
-        const positions = Object.values(
+        const positions = Object.entries(
             this.layout.positions ?? {},
-        );
+        ).filter(([deviceId]) => (
+            !this.isDeviceHidden(deviceId)
+        ));
 
         if (positions.length === 0) {
             return null;
         }
 
-        const halfWidth =
-            TopologyCanvas.DEVICE_WIDTH / 2;
-        const halfHeight =
-            TopologyCanvas.DEVICE_HEIGHT / 2;
-
         const minimumX = Math.min(
-            ...positions.map(
-                (position) => position.x - halfWidth,
-            ),
+            ...positions.map(([deviceId, position]) => {
+                const dimensions =
+                    this.deviceDimensions(deviceId);
+
+                return position.x - dimensions.width / 2;
+            }),
         );
         const maximumX = Math.max(
-            ...positions.map(
-                (position) => position.x + halfWidth,
-            ),
+            ...positions.map(([deviceId, position]) => {
+                const dimensions =
+                    this.deviceDimensions(deviceId);
+
+                return position.x + dimensions.width / 2;
+            }),
         );
         const minimumY = Math.min(
-            ...positions.map(
-                (position) => position.y - halfHeight,
-            ),
+            ...positions.map(([deviceId, position]) => {
+                const dimensions =
+                    this.deviceDimensions(deviceId);
+
+                return position.y - dimensions.height / 2;
+            }),
         );
         const maximumY = Math.max(
-            ...positions.map(
-                (position) => position.y + halfHeight,
-            ),
+            ...positions.map(([deviceId, position]) => {
+                const dimensions =
+                    this.deviceDimensions(deviceId);
+
+                return position.y + dimensions.height / 2;
+            }),
         );
 
         return {
@@ -970,6 +1201,13 @@ class TopologyCanvas {
                 continue;
             }
 
+            if (
+                this.isDeviceHidden(link.source_device_id)
+                || this.isDeviceHidden(link.target_device_id)
+            ) {
+                continue;
+            }
+
             routedLinks.push({
                 link,
                 order,
@@ -977,6 +1215,7 @@ class TopologyCanvas {
                 targetPosition,
                 routing: {
                     source: {
+                        deviceId: link.source_device_id,
                         side: this.linkSide(
                             link.source_device_id,
                             sourcePosition,
@@ -986,6 +1225,7 @@ class TopologyCanvas {
                         offset: 0,
                     },
                     target: {
+                        deviceId: link.target_device_id,
                         side: this.linkSide(
                             link.target_device_id,
                             targetPosition,
@@ -1082,8 +1322,8 @@ class TopologyCanvas {
         });
 
         const availableSpan = horizontalSide
-            ? TopologyCanvas.DEVICE_WIDTH - 48
-            : TopologyCanvas.DEVICE_HEIGHT - 40;
+            ? this.deviceDimensions(deviceId).width - 48
+            : this.deviceDimensions(deviceId).height - 40;
         const step = availableSpan
             / (routedLinks.length - 1);
         const start = -availableSpan / 2;
@@ -1168,27 +1408,34 @@ class TopologyCanvas {
     }
 
     linkObstacles(positions) {
-        return Object.entries(positions).map(
-            ([deviceId, position]) => ({
-                deviceId,
-                left:
-                    position.x
-                    - TopologyCanvas.DEVICE_WIDTH / 2
-                    - TopologyCanvas.ROUTE_CLEARANCE,
-                right:
-                    position.x
-                    + TopologyCanvas.DEVICE_WIDTH / 2
-                    + TopologyCanvas.ROUTE_CLEARANCE,
-                top:
-                    position.y
-                    - TopologyCanvas.DEVICE_HEIGHT / 2
-                    - TopologyCanvas.ROUTE_CLEARANCE,
-                bottom:
-                    position.y
-                    + TopologyCanvas.DEVICE_HEIGHT / 2
-                    + TopologyCanvas.ROUTE_CLEARANCE,
-            }),
-        );
+        return Object.entries(positions)
+            .filter(([deviceId]) => (
+                !this.isDeviceHidden(deviceId)
+            ))
+            .map(([deviceId, position]) => {
+                const dimensions =
+                    this.deviceDimensions(deviceId);
+
+                return {
+                    deviceId,
+                    left:
+                        position.x
+                        - dimensions.width / 2
+                        - TopologyCanvas.ROUTE_CLEARANCE,
+                    right:
+                        position.x
+                        + dimensions.width / 2
+                        + TopologyCanvas.ROUTE_CLEARANCE,
+                    top:
+                        position.y
+                        - dimensions.height / 2
+                        - TopologyCanvas.ROUTE_CLEARANCE,
+                    bottom:
+                        position.y
+                        + dimensions.height / 2
+                        + TopologyCanvas.ROUTE_CLEARANCE,
+                };
+            });
     }
 
     linkRouteCandidates(source, target, obstacles) {
@@ -1835,7 +2082,11 @@ class TopologyCanvas {
     ) {
         const anchor = this.linkAnchor(
             position,
-            {side, offset: 0},
+            {
+                deviceId,
+                side,
+                offset: 0,
+            },
         );
         const lead = this.linkLead(anchor, side);
         const segment = {
@@ -1850,24 +2101,36 @@ class TopologyCanvas {
                     return true;
                 }
 
+                if (this.isDeviceHidden(otherDeviceId)) {
+                    return true;
+                }
+
                 return !this.linkSegmentIntersectsObstacle(
                     segment,
                     {
                         left:
                             otherPosition.x
-                            - TopologyCanvas.DEVICE_WIDTH / 2
+                            - this.deviceDimensions(
+                                otherDeviceId,
+                            ).width / 2
                             - padding,
                         right:
                             otherPosition.x
-                            + TopologyCanvas.DEVICE_WIDTH / 2
+                            + this.deviceDimensions(
+                                otherDeviceId,
+                            ).width / 2
                             + padding,
                         top:
                             otherPosition.y
-                            - TopologyCanvas.DEVICE_HEIGHT / 2
+                            - this.deviceDimensions(
+                                otherDeviceId,
+                            ).height / 2
                             - padding,
                         bottom:
                             otherPosition.y
-                            + TopologyCanvas.DEVICE_HEIGHT / 2
+                            + this.deviceDimensions(
+                                otherDeviceId,
+                            ).height / 2
                             + padding,
                     },
                 );
@@ -1877,13 +2140,16 @@ class TopologyCanvas {
 
     linkAnchor(position, endpointRouting) {
         const offset = endpointRouting.offset ?? 0;
+        const dimensions = this.deviceDimensions(
+            endpointRouting.deviceId,
+        );
 
         if (endpointRouting.side === "top") {
             return {
                 x: position.x + offset,
                 y:
                     position.y
-                    - TopologyCanvas.DEVICE_HEIGHT / 2,
+                    - dimensions.height / 2,
             };
         }
 
@@ -1892,7 +2158,7 @@ class TopologyCanvas {
                 x: position.x + offset,
                 y:
                     position.y
-                    + TopologyCanvas.DEVICE_HEIGHT / 2,
+                    + dimensions.height / 2,
             };
         }
 
@@ -1900,7 +2166,7 @@ class TopologyCanvas {
             return {
                 x:
                     position.x
-                    - TopologyCanvas.DEVICE_WIDTH / 2,
+                    - dimensions.width / 2,
                 y: position.y + offset,
             };
         }
@@ -1908,7 +2174,7 @@ class TopologyCanvas {
         return {
             x:
                 position.x
-                + TopologyCanvas.DEVICE_WIDTH / 2,
+                + dimensions.width / 2,
             y: position.y + offset,
         };
     }
@@ -1973,12 +2239,16 @@ class TopologyCanvas {
 
         if (mostlyVertical) {
             const direction = Math.sign(deltaY) || 1;
+            const sourceDimensions =
+                this.deviceDimensions(sourcePosition.deviceId);
+            const targetDimensions =
+                this.deviceDimensions(targetPosition.deviceId);
             const sourceX = sourcePosition.x;
             const sourceY =
                 sourcePosition.y
                 + (
                     direction
-                    * TopologyCanvas.DEVICE_HEIGHT
+                    * sourceDimensions.height
                     / 2
                 );
             const targetX = targetPosition.x;
@@ -1986,7 +2256,7 @@ class TopologyCanvas {
                 targetPosition.y
                 - (
                     direction
-                    * TopologyCanvas.DEVICE_HEIGHT
+                    * targetDimensions.height
                     / 2
                 );
             const middleY = (sourceY + targetY) / 2;
@@ -2008,11 +2278,15 @@ class TopologyCanvas {
         }
 
         const direction = Math.sign(deltaX) || 1;
+        const sourceDimensions =
+            this.deviceDimensions(sourcePosition.deviceId);
+        const targetDimensions =
+            this.deviceDimensions(targetPosition.deviceId);
         const sourceX =
             sourcePosition.x
             + (
                 direction
-                * TopologyCanvas.DEVICE_WIDTH
+                * sourceDimensions.width
                 / 2
             );
         const sourceY = sourcePosition.y;
@@ -2020,7 +2294,7 @@ class TopologyCanvas {
             targetPosition.x
             - (
                 direction
-                * TopologyCanvas.DEVICE_WIDTH
+                * targetDimensions.width
                 / 2
             );
         const targetY = targetPosition.y;
@@ -2054,6 +2328,10 @@ class TopologyCanvas {
                 continue;
             }
 
+            if (this.isDeviceHidden(device)) {
+                continue;
+            }
+
             const renderedDevice = this.createDevice(
                 device,
                 position,
@@ -2070,11 +2348,14 @@ class TopologyCanvas {
     }
 
     createDevice(device, position, order = 0) {
-        const width = TopologyCanvas.DEVICE_WIDTH;
-        const height = TopologyCanvas.DEVICE_HEIGHT;
+        const dimensions = this.deviceDimensions(device);
+        const width = dimensions.width;
+        const height = dimensions.height;
+        const compact = this.isCompactDevice(device);
         const normalizedKind = this.normalizeClassName(
             device.kind,
         );
+        const radioGroupKind = this.radioGroupKind(device);
         const health = this.deviceStatus(device);
         const presence =
             this.devicePresenceStatus(device);
@@ -2087,6 +2368,17 @@ class TopologyCanvas {
             `topology-device--health-${health}`,
         );
         group.dataset.deviceId = device.device_id;
+
+        if (compact) {
+            group.classList.add("topology-device--compact");
+        }
+
+        if (radioGroupKind) {
+            group.classList.add(
+                `topology-device--radio-${radioGroupKind}`,
+            );
+            group.dataset.radioGroup = radioGroupKind;
+        }
 
         if (presence) {
             group.classList.add(
@@ -2148,21 +2440,33 @@ class TopologyCanvas {
             height,
         );
         const iconBackground =
-            this.createIconBackground();
+            this.createIconBackground(compact);
         const icon = this.createDeviceIcon(
             device.kind,
+            compact,
         );
         const kind = this.createDeviceKind(device.kind);
         const label = this.createDeviceLabel(
             device.label,
+            compact,
         );
         const detail = this.createDeviceDetail(device);
         const healthIndicator =
-            this.createHealthIndicator(health);
+            this.createHealthIndicator(
+                health,
+                compact,
+            );
         const presenceIndicator =
             this.createPresenceIndicator(
                 presence,
+                compact,
             );
+
+        if (compact) {
+            detail.classList.add(
+                "topology-device__detail--hidden",
+            );
+        }
 
         group.append(
             title,
@@ -2286,7 +2590,7 @@ class TopologyCanvas {
         ];
     }
 
-    createPresenceIndicator(status) {
+    createPresenceIndicator(status, compact = false) {
         if (!status) {
             return null;
         }
@@ -2301,7 +2605,9 @@ class TopologyCanvas {
         );
         group.setAttribute(
             "transform",
-            "translate(198 25)",
+            compact
+                ? "translate(106 21)"
+                : "translate(198 25)",
         );
         group.setAttribute("role", "img");
         group.setAttribute(
@@ -2370,7 +2676,7 @@ class TopologyCanvas {
         return card;
     }
 
-    createIconBackground() {
+    createIconBackground(compact = false) {
         const background = this.createSvgElement(
             "circle",
         );
@@ -2378,9 +2684,9 @@ class TopologyCanvas {
         background.classList.add(
             "topology-device__icon-background",
         );
-        background.setAttribute("cx", 42);
-        background.setAttribute("cy", 48);
-        background.setAttribute("r", 25);
+        background.setAttribute("cx", compact ? 28 : 42);
+        background.setAttribute("cy", compact ? 49 : 48);
+        background.setAttribute("r", compact ? 21 : 25);
 
         return background;
     }
@@ -2396,7 +2702,7 @@ class TopologyCanvas {
         return text;
     }
 
-    createDeviceLabel(label) {
+    createDeviceLabel(label, compact = false) {
         const text = this.createSvgElement("text");
         const normalizedLabel = String(label ?? "");
         const labelLength = Array.from(
@@ -2417,9 +2723,10 @@ class TopologyCanvas {
             );
         }
 
-        text.setAttribute("x", 78);
-        text.setAttribute("y", 58);
+        text.setAttribute("x", compact ? 56 : 78);
+        text.setAttribute("y", compact ? 54 : 58);
         text.dataset.fullLabel = normalizedLabel;
+        text.dataset.compact = String(compact);
         text.textContent = normalizedLabel;
 
         return text;
@@ -2438,7 +2745,9 @@ class TopologyCanvas {
             ?? text.textContent
             ?? "";
         const maximumWidth =
-            TopologyCanvas.DEVICE_LABEL_MAX_WIDTH;
+            text.dataset.compact === "true"
+                ? TopologyCanvas.COMPACT_DEVICE_LABEL_MAX_WIDTH
+                : TopologyCanvas.DEVICE_LABEL_MAX_WIDTH;
         let measuredWidth;
 
         try {
@@ -2603,7 +2912,7 @@ class TopologyCanvas {
         ];
     }
 
-    createHealthIndicator(status) {
+    createHealthIndicator(status, compact = false) {
         const normalized =
             this.normalizeHealthStatus(status);
 
@@ -2615,7 +2924,9 @@ class TopologyCanvas {
         );
         group.setAttribute(
             "transform",
-            "translate(151 104)",
+            compact
+                ? "translate(72 79)"
+                : "translate(151 104)",
         );
 
         const background = this.createSvgElement(
@@ -2627,7 +2938,7 @@ class TopologyCanvas {
         );
         background.setAttribute("x", 0);
         background.setAttribute("y", -15);
-        background.setAttribute("width", 58);
+        background.setAttribute("width", compact ? 43 : 58);
         background.setAttribute("height", 25);
         background.setAttribute("rx", 12.5);
 
@@ -2647,10 +2958,11 @@ class TopologyCanvas {
         label.classList.add(
             "topology-device__health-label",
         );
-        label.setAttribute("x", 22);
+        label.setAttribute("x", compact ? 21 : 22);
         label.setAttribute("y", -1);
         label.textContent = this.healthShortLabel(
             normalized,
+            compact,
         );
 
         group.append(
@@ -2662,7 +2974,18 @@ class TopologyCanvas {
         return group;
     }
 
-    healthShortLabel(status) {
+    healthShortLabel(status, compact = false) {
+        if (compact) {
+            const compactLabels = {
+                healthy: "OK",
+                degraded: "!",
+                unhealthy: "KO",
+                unknown: "?",
+            };
+
+            return compactLabels[status] ?? "?";
+        }
+
         const labels = {
             healthy: "OK",
             degraded: "WARN",
@@ -2673,7 +2996,7 @@ class TopologyCanvas {
         return labels[status] ?? "N/A";
     }
 
-    createDeviceIcon(kind) {
+    createDeviceIcon(kind, compact = false) {
         const foreignObject = this.createSvgElement(
             "foreignObject",
         );
@@ -2683,8 +3006,8 @@ class TopologyCanvas {
         foreignObject.classList.add(
             "topology-device__icon",
         );
-        foreignObject.setAttribute("x", 27);
-        foreignObject.setAttribute("y", 33);
+        foreignObject.setAttribute("x", compact ? 15 : 27);
+        foreignObject.setAttribute("y", compact ? 36 : 33);
         foreignObject.setAttribute("width", 30);
         foreignObject.setAttribute("height", 30);
         foreignObject.setAttribute(

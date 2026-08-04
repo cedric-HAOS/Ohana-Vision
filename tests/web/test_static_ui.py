@@ -1009,6 +1009,16 @@ def test_topology_reconciles_health_from_recent_observations() -> None:
     assert "normalizeHealthStatus(" in response.text
 
 
+def test_topology_uses_targeted_zwave_node_health() -> None:
+    """Discovered devices must use explicit Agent device health updates."""
+    response = make_client().get("/ui/topology.js")
+
+    assert response.status_code == 200
+    assert "buildTargetDeviceHealthIndex(" in response.text
+    assert "contributes_to_device_health" in response.text
+    assert "targetDeviceHealth[" in response.text
+
+
 def test_application_entry_point_is_minimal() -> None:
     """The frontend entry point must only start the application."""
     response = make_client().get("/ui/app.js")
