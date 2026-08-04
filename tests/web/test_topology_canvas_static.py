@@ -611,8 +611,8 @@ def test_topology_canvas_supports_collapsible_radio_groups() -> None:
     assert ".topology-link--visual-zwave" in stylesheet.text
 
 
-def test_topology_canvas_uses_harmonized_radio_buses() -> None:
-    """Wi-Fi and Z-Wave leaves must share trunks around their gateway."""
+def test_topology_canvas_routes_only_declared_radio_links() -> None:
+    """Wi-Fi and Z-Wave rendering must not add synthetic bus segments."""
     client = make_client()
 
     javascript = client.get("/ui/topology_canvas.js")
@@ -620,17 +620,16 @@ def test_topology_canvas_uses_harmonized_radio_buses() -> None:
 
     assert javascript.status_code == 200
     assert stylesheet.status_code == 200
-    assert "radioBusGroups(" in javascript.text
-    assert "renderRadioBusGroup(" in javascript.text
-    assert "createRadioBus(" in javascript.text
-    assert "const sharedEntries = links.filter" in javascript.text
-    assert "sharedEntries.length < 3" in javascript.text
     assert '"wifi",' in javascript.text
     assert '"zwave",' in javascript.text
     assert "COMPACT_DEVICE_LABEL_MAX_WIDTH = 104" in javascript.text
     assert 'text.setAttribute("text-anchor", "middle")' in javascript.text
-    assert ".topology-link--wifi-bus" in stylesheet.text
-    assert ".topology-link--zwave-bus" in stylesheet.text
+    assert "radioBusGroups(" not in javascript.text
+    assert "renderRadioBusGroup(" not in javascript.text
+    assert "createRadioBus(" not in javascript.text
+    assert ".topology-link--radio-bus" not in stylesheet.text
+    assert ".topology-link--wifi-bus" not in stylesheet.text
+    assert ".topology-link--zwave-bus" not in stylesheet.text
     assert "stroke-dasharray: none;" not in stylesheet.text
     assert "stroke-dasharray: 2 12;" in stylesheet.text
     assert "stroke-dasharray: 2 10;" in stylesheet.text

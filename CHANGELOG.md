@@ -6,6 +6,25 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.10.9] — Suppression des troncs radio artificiels — 2026-08-04
+
+## Corrigé
+
+- La carte ne génère plus de segments Wi-Fi ou Z-Wave synthétiques entre une
+  passerelle et ses équipements : chaque chemin affiché correspond désormais
+  exactement à une liaison déclarée dans la topologie.
+- Les verticales, boucles et amorces de ligne sans liaison réelle disparaissent
+  lorsque les cartes radio sont réparties sur plusieurs lignes ou colonnes.
+
+## Qualité
+
+- Validation visuelle locale avec 9 équipements Wi-Fi et 9 modules Z-Wave :
+  18 liaisons déclarées, 18 rendues et aucun tronc radio synthétique.
+- Suite complète, lint et formatage validés avant publication.
+- Version du paquet alignée sur `1.10.9`.
+
+---
+
 # [1.10.8] — Routage radio sans liaisons artificielles — 2026-08-04
 
 ## Corrigé
