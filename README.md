@@ -105,8 +105,10 @@ ni modifier de fichier YAML :
 - **Baux DHCP** : plage dynamique, passerelle, DNS, NTP, durée des baux,
   réservations et consultation des baux actifs ;
 - **Architecture** : cartographie sur grille, déplacement par glisser-déposer,
-  association des services aux équipements et création des liaisons en
-  sélectionnant leur source puis leur destination ;
+  indication des équipements Z-Wave découverts restant à positionner,
+  positionnement automatique explicite, association des services aux
+  équipements et création des liaisons en sélectionnant leur source puis leur
+  destination ;
 - **Plugins** : état, activation, configuration et test immédiat des plugins
   DHCP, DNS, NTP, MQTT, présence réseau, Z-Wave, WireGuard Freebox et
   Télémétrie Home Assistant et Téléinformation réellement enregistrés dans Ohana-Agent.
@@ -118,6 +120,11 @@ qu’Agent applique ou restaure la connexion NetworkManager via son helper limit
 Vision présente et valide les formulaires, puis transmet la demande à l’API
 locale authentifiée d'Ohana-Agent. L'Agent reste seul propriétaire des fichiers
 et applique ses validations métier avant toute écriture.
+
+Les équipements Z-Wave découverts ne sont jamais ajoutés automatiquement à la
+carte persistée. La page Architecture affiche leur nombre, prépare leur
+placement autour de la passerelle sur demande, puis attend l’action
+**Appliquer l’architecture** avant toute écriture dans la configuration Agent.
 
 Le mode **Déplacer** modifie les cellules logiques `row` / `column`. Le mode
 **Relier** permet de créer une liaison entre n'importe quels équipements
@@ -357,4 +364,3 @@ La fiche d’un équipement peut définir une plage de surveillance avec ses jou
 son fuseau horaire et un délai de démarrage. En dehors de cette plage, les
 services et la présence réseau hérités affichent **Suspendu**. Cet état reste
 visible dans la timeline sans être compté comme incident ou dégradation.
-

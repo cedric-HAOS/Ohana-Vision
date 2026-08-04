@@ -316,7 +316,7 @@
 .configuration-card--architecture-workspace {
     display: grid;
     min-height: 0;
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
     overflow: hidden;
 }
 
@@ -387,6 +387,39 @@
         var(--ohana-space-3);
     color: var(--ohana-text-muted);
     font-size: var(--ohana-font-size-sm);
+}
+
+.architecture-discovery-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ohana-space-3);
+    margin: 0 0 var(--ohana-space-3);
+    padding: var(--ohana-space-3);
+    border:
+        var(--ohana-border-width-thin)
+        solid
+        color-mix(
+            in srgb,
+            var(--ohana-brand-primary) 45%,
+            var(--ohana-border-default)
+        );
+    border-radius: var(--ohana-radius-md);
+    background:
+        color-mix(
+            in srgb,
+            var(--ohana-brand-primary) 9%,
+            var(--ohana-background-canvas)
+        );
+}
+
+.architecture-discovery-notice[hidden] {
+    display: none;
+}
+
+.architecture-discovery-count {
+    color: var(--ohana-text-primary);
+    font-weight: var(--ohana-font-weight-semibold);
 }
 
 .architecture-map {

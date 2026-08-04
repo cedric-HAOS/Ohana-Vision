@@ -347,6 +347,32 @@ def test_static_ui_exposes_configuration_controller() -> None:
     assert "DHCP de ${reservation.hostname} ?" in response.text
 
 
+def test_architecture_exposes_discovered_devices_to_position() -> None:
+    """Discovered Z-Wave devices require an explicit placement action."""
+    client = make_client()
+    page = client.get("/ui/")
+    script = client.get("/ui/configuration.js")
+    stylesheet = client.get("/ui/styles/configuration.css")
+
+    assert page.status_code == 200
+    assert script.status_code == 200
+    assert stylesheet.status_code == 200
+    assert 'id="architecture-discovery-notice" hidden' in page.text
+    assert 'id="architecture-discovery-count"' in page.text
+    assert 'id="architecture-position-discovered"' in page.text
+    assert "0 équipement à positionner" in page.text
+    assert "Positionner automatiquement" in page.text
+    assert "this.liveTopology = await fetchJson(" in script.text
+    assert "API.topology" in script.text
+    assert "discoveredDevicesToPosition()" in script.text
+    assert '=== "zwave_discovery"' in script.text
+    assert "positionDiscoveredDevices()" in script.text
+    assert "positionDevicesAroundGateway(" in script.text
+    assert "Appliquez l’architecture pour conserver ce placement." in script.text
+    assert ".architecture-discovery-notice" in stylesheet.text
+    assert ".architecture-discovery-count" in stylesheet.text
+
+
 def test_dhcp_reservation_validates_dns_hostname_before_submission() -> None:
     """DHCP reservation form must reject underscores before calling Agent."""
     html = make_client().get("/")

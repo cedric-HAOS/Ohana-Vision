@@ -6,6 +6,25 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.10.6] — Positionnement explicite des équipements découverts — 2026-08-04
+
+## Ajouté
+
+- La page Architecture compare la configuration persistée avec la topologie
+  dynamique et indique le nombre d’équipements Z-Wave restant à positionner.
+- L’action « Positionner automatiquement » ajoute ces équipements et leurs
+  liaisons au brouillon, autour de leur passerelle, sans modifier la carte avant
+  la confirmation « Appliquer l’architecture ».
+
+## Qualité
+
+- Simulation du placement des 19 équipements réels d’INFRA-01 : 59 positions
+  uniques et validation du brouillon par le modèle strict d’Ohana-Agent.
+- Tests statiques du compteur, de l’action explicite et de sa présentation.
+- Version du paquet alignée sur `1.10.6`.
+
+---
+
 # [1.10.5] — Correction du rendu des liaisons multiples — 2026-08-04
 
 ## Corrigé

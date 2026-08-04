@@ -121,6 +121,7 @@ export class ConfigurationController {
         this.dhcpAvailable = false;
         this.dhcpLoadError = null;
         this.infrastructure = null;
+        this.liveTopology = null;
         this.plugins = [];
         this.pluginsAvailable = false;
         this.pluginsLoadError = null;
@@ -190,6 +191,12 @@ export class ConfigurationController {
                 byId("architecture-board"),
             architectureAddDevice:
                 byId("architecture-add-device"),
+            architectureDiscoveryNotice:
+                byId("architecture-discovery-notice"),
+            architectureDiscoveryCount:
+                byId("architecture-discovery-count"),
+            architecturePositionDiscovered:
+                byId("architecture-position-discovered"),
             architectureModeMove:
                 byId("architecture-mode-move"),
             architectureModeLink:
@@ -385,6 +392,11 @@ export class ConfigurationController {
                 "click",
                 () => this.editNewDevice(),
             );
+        this.elements.architecturePositionDiscovered
+            ?.addEventListener(
+                "click",
+                () => this.positionDiscoveredDevices(),
+            );
         this.elements.architectureModeMove
             ?.addEventListener(
                 "click",
@@ -527,6 +539,19 @@ export class ConfigurationController {
             this.infrastructure = await fetchJson(
                 API.administrationInfrastructure,
             );
+            this.liveTopology = null;
+
+            try {
+                this.liveTopology = await fetchJson(
+                    API.topology,
+                );
+            } catch (error) {
+                this.showNotice(
+                    "Les équipements découverts sont "
+                    + "temporairement indisponibles : "
+                    + this.errorMessage(error),
+                );
+            }
             this.dhcp = null;
             this.dhcpAvailable = operations.includes(
                 "dhcp.read",
@@ -1494,6 +1519,7 @@ export class ConfigurationController {
         }
 
         this.ensureTopology();
+        this.renderDiscoveredDevices();
         const topology =
             this.infrastructure.topology;
         const layout = this.architectureLayout();
@@ -1644,6 +1670,213 @@ export class ConfigurationController {
         this.updateArchitectureModeControls();
         this.populateNodeOptions();
         this.populateDeviceOptions();
+    }
+
+    discoveredDevicesToPosition() {
+        if (!this.infrastructure || !this.liveTopology) {
+            return [];
+        }
+
+        this.ensureTopology();
+        const declaredDeviceIds = new Set(
+            this.infrastructure.topology.devices.map(
+                (device) => device.id,
+            ),
+        );
+
+        return (this.liveTopology.devices ?? [])
+            .filter((device) => (
+                device.metadata?.managed_by
+                    === "zwave_discovery"
+                && !declaredDeviceIds.has(
+                    device.device_id,
+                )
+            ));
+    }
+
+    renderDiscoveredDevices() {
+        const count =
+            this.discoveredDevicesToPosition().length;
+        const visible = count > 0;
+
+        if (this.elements.architectureDiscoveryNotice) {
+            this.elements.architectureDiscoveryNotice.hidden =
+                !visible;
+        }
+
+        if (this.elements.architectureDiscoveryCount) {
+            this.elements.architectureDiscoveryCount.textContent =
+                `${count} équipement${count > 1 ? "s" : ""} à positionner`;
+        }
+
+        if (this.elements.architecturePositionDiscovered) {
+            this.elements.architecturePositionDiscovered.disabled =
+                !visible;
+        }
+    }
+
+    positionDiscoveredDevices() {
+        const discovered =
+            this.discoveredDevicesToPosition();
+
+        if (discovered.length === 0) {
+            return;
+        }
+
+        const topology = this.infrastructure.topology;
+        const discoveredIds = new Set(
+            discovered.map((device) => device.device_id),
+        );
+
+        discovered.forEach((device) => {
+            topology.devices.push({
+                id: device.device_id,
+                label: device.label,
+                kind: device.kind,
+                node: device.node_id ?? null,
+                address: device.address ?? null,
+                metadata: {
+                    ...(device.metadata ?? {}),
+                },
+            });
+        });
+
+        const declaredDeviceIds = new Set(
+            topology.devices.map((device) => device.id),
+        );
+        const declaredLinkIds = new Set(
+            topology.links.map((link) => link.id),
+        );
+        const discoveredLinks = (
+            this.liveTopology.links ?? []
+        ).filter((link) => (
+            link.metadata?.managed_by
+                === "zwave_discovery"
+            && (
+                discoveredIds.has(link.source_device_id)
+                || discoveredIds.has(link.target_device_id)
+            )
+            && declaredDeviceIds.has(link.source_device_id)
+            && declaredDeviceIds.has(link.target_device_id)
+            && !declaredLinkIds.has(link.link_id)
+        ));
+
+        discoveredLinks.forEach((link) => {
+            topology.links.push({
+                id: link.link_id,
+                source: link.source_device_id,
+                target: link.target_device_id,
+                kind: link.kind,
+                direction: link.direction,
+                label: link.label ?? null,
+                bandwidth_mbps:
+                    link.bandwidth_mbps ?? null,
+                metadata: {
+                    ...(link.metadata ?? {}),
+                },
+            });
+        });
+
+        this.positionDevicesAroundGateway(
+            [...discoveredIds],
+            discoveredLinks,
+        );
+        this.renderArchitecture();
+        this.showNotice(
+            `${discovered.length} équipement${discovered.length > 1 ? "s" : ""} `
+            + "positionné"
+            + `${discovered.length > 1 ? "s" : ""}. `
+            + "Appliquez l’architecture pour conserver ce placement.",
+        );
+    }
+
+    positionDevicesAroundGateway(deviceIds, links) {
+        const layout = this.architectureLayout();
+
+        deviceIds.forEach((deviceId) => {
+            delete layout.positions[deviceId];
+        });
+
+        const occupied = new Set(
+            Object.values(layout.positions).map(
+                (position) =>
+                    `${position.column}:${position.row}`,
+            ),
+        );
+        const gatewayId = links
+            .map((link) => (
+                deviceIds.includes(link.source_device_id)
+                    ? link.target_device_id
+                    : link.source_device_id
+            ))
+            .find((deviceId) => layout.positions[deviceId]);
+        const anchor = layout.positions[gatewayId] ?? {
+            column: 0,
+            row: 0,
+        };
+        const candidates = [];
+
+        for (
+            let radius = 1;
+            candidates.length < deviceIds.length;
+            radius += 1
+        ) {
+            for (
+                let rowOffset = -radius;
+                rowOffset <= radius;
+                rowOffset += 1
+            ) {
+                for (
+                    let columnOffset = -radius;
+                    columnOffset <= radius;
+                    columnOffset += 1
+                ) {
+                    if (
+                        Math.max(
+                            Math.abs(columnOffset),
+                            Math.abs(rowOffset),
+                        ) !== radius
+                    ) {
+                        continue;
+                    }
+
+                    const column =
+                        anchor.column + columnOffset;
+                    const row = anchor.row + rowOffset;
+                    const key = `${column}:${row}`;
+
+                    if (
+                        column < 0
+                        || row < 0
+                        || occupied.has(key)
+                    ) {
+                        continue;
+                    }
+
+                    candidates.push({ column, row });
+                    occupied.add(key);
+
+                    if (
+                        candidates.length
+                            === deviceIds.length
+                    ) {
+                        break;
+                    }
+                }
+
+                if (
+                    candidates.length
+                        === deviceIds.length
+                ) {
+                    break;
+                }
+            }
+        }
+
+        deviceIds.forEach((deviceId, index) => {
+            layout.positions[deviceId] =
+                candidates[index];
+        });
     }
 
     serviceCard(service) {

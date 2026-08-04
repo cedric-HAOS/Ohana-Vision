@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ohana-vision"
-version = "1.10.5"
+version = "1.10.6"
 description = "Interface web et portail d'administration de l'écosystème Ohana"
 readme = "README.md"
 requires-python = ">=3.13"
