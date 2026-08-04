@@ -193,9 +193,18 @@
 .topology-link__path,
 .topology-link--zwave-bus.topology-link--visual-zwave
 .topology-link__path {
-    stroke-dasharray: none;
     stroke-width: 2.5;
     opacity: 0.72;
+}
+
+.topology-link--wifi-bus.topology-link--visual-wifi
+.topology-link__path {
+    stroke-dasharray: 2 12;
+}
+
+.topology-link--zwave-bus.topology-link--visual-zwave
+.topology-link__path {
+    stroke-dasharray: 2 10;
 }
 
 .topology-link--visual-fiber {

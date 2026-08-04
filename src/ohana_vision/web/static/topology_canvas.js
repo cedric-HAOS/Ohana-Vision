@@ -1321,13 +1321,51 @@ class TopologyCanvas {
         }
 
         return [...groups.entries()]
-            .filter(([, links]) => links.length >= 3)
-            .map(([gatewayId, links]) => ({
-                gatewayId,
-                kind,
-                links: links.map(({routedLink}) => routedLink),
-                entries: links,
-            }));
+            .map(([gatewayId, links]) => {
+                const sharedEntries = links.filter((entry) => {
+                    const gatewayPosition =
+                        entry.routedLink[
+                            `${entry.gatewayEndpoint}Position`
+                        ];
+                    const leafPosition = entry.routedLink[
+                        `${entry.leafEndpoint}Position`
+                    ];
+                    const side = this.relativeLinkSide(
+                        gatewayPosition,
+                        leafPosition,
+                    );
+
+                    return links.filter((candidate) => {
+                        const candidateGatewayPosition =
+                            candidate.routedLink[
+                                `${candidate.gatewayEndpoint}Position`
+                            ];
+                        const candidateLeafPosition =
+                            candidate.routedLink[
+                                `${candidate.leafEndpoint}Position`
+                            ];
+
+                        return this.relativeLinkSide(
+                            candidateGatewayPosition,
+                            candidateLeafPosition,
+                        ) === side;
+                    }).length >= 3;
+                });
+
+                if (sharedEntries.length < 3) {
+                    return null;
+                }
+
+                return {
+                    gatewayId,
+                    kind,
+                    links: sharedEntries.map(
+                        ({routedLink}) => routedLink,
+                    ),
+                    entries: sharedEntries,
+                };
+            })
+            .filter(Boolean);
     }
 
     renderRadioBusGroup(layer, group) {
@@ -3196,7 +3234,7 @@ class TopologyCanvas {
         group.setAttribute(
             "transform",
             compact
-                ? "translate(72 34)"
+                ? "translate(54 34)"
                 : "translate(151 104)",
         );
 

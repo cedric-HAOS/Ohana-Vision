@@ -623,12 +623,28 @@ def test_topology_canvas_uses_harmonized_radio_buses() -> None:
     assert "radioBusGroups(" in javascript.text
     assert "renderRadioBusGroup(" in javascript.text
     assert "createRadioBus(" in javascript.text
+    assert "const sharedEntries = links.filter" in javascript.text
+    assert "sharedEntries.length < 3" in javascript.text
     assert '"wifi",' in javascript.text
     assert '"zwave",' in javascript.text
     assert "COMPACT_DEVICE_LABEL_MAX_WIDTH = 104" in javascript.text
     assert 'text.setAttribute("text-anchor", "middle")' in javascript.text
     assert ".topology-link--wifi-bus" in stylesheet.text
     assert ".topology-link--zwave-bus" in stylesheet.text
+    assert "stroke-dasharray: none;" not in stylesheet.text
+    assert "stroke-dasharray: 2 12;" in stylesheet.text
+    assert "stroke-dasharray: 2 10;" in stylesheet.text
+
+
+def test_topology_canvas_keeps_compact_health_and_presence_indicators_apart() -> None:
+    """Compact radio devices must not overlay their health and presence states."""
+    client = make_client()
+
+    javascript = client.get("/ui/topology_canvas.js")
+
+    assert javascript.status_code == 200
+    assert '? "translate(54 34)"' in javascript.text
+    assert '? "translate(106 21)"' in javascript.text
 
 
 def test_topology_canvas_supports_the_zwave_module_kind() -> None:
@@ -644,10 +660,7 @@ def test_topology_canvas_supports_the_zwave_module_kind() -> None:
     assert utils.status_code == 200
     assert '<option value="zwave_module">Module Z-Wave</option>' in page.text
     assert 'zwave_module: "Module Z-Wave"' in canvas.text
-    assert (
-        'zwave_module: "/ui/assets/icons/protocols/zwave.svg"'
-        in utils.text
-    )
+    assert 'zwave_module: "/ui/assets/icons/protocols/zwave.svg"' in utils.text
     icon = client.get("/ui/assets/icons/protocols/zwave.svg")
     assert icon.status_code == 200
     assert '<path d="M8.5 8h7l-7 8h7"/>' in icon.text

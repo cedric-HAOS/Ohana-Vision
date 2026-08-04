@@ -6,6 +6,25 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.10.8] — Routage radio sans liaisons artificielles — 2026-08-04
+
+## Corrigé
+
+- Les troncs Wi-Fi et Z-Wave conservent leur rendu pointillé, y compris pour
+  leurs segments horizontaux et verticaux mutualisés.
+- Les cartes radio compactes séparent désormais le badge de santé du point de
+  présence afin que les deux indicateurs restent lisibles.
+- Le routage ne crée plus de tronc radio intermédiaire lorsqu’une ou deux
+  branches seulement partagent une direction après un déplacement de cartes.
+
+## Qualité
+
+- Tests ciblés du canvas topologique pour le rendu des troncs et le placement
+  des indicateurs.
+- Version du paquet alignée sur `1.10.8`.
+
+---
+
 # [1.10.7] — Modules et liaisons Z-Wave harmonisés — 2026-08-04
 
 ## Ajouté
