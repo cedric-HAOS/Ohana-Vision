@@ -1239,14 +1239,20 @@ class TopologyCanvas {
             });
         }
 
-        const zWaveBusGroups = this.zWaveBusGroups(
-            routedLinks,
-        );
-        const groupedZWaveLinks = new Set(
-            zWaveBusGroups.flatMap((group) => group.links),
+        const radioBusGroups = [
+            "wifi",
+            "zwave",
+        ].flatMap((kind) => {
+            return this.radioBusGroups(
+                routedLinks,
+                kind,
+            );
+        });
+        const groupedRadioLinks = new Set(
+            radioBusGroups.flatMap((group) => group.links),
         );
         const individualLinks = routedLinks.filter(
-            (routedLink) => !groupedZWaveLinks.has(routedLink),
+            (routedLink) => !groupedRadioLinks.has(routedLink),
         );
 
         this.distributeLinkAnchors(individualLinks);
@@ -1265,16 +1271,16 @@ class TopologyCanvas {
             );
         }
 
-        for (const group of zWaveBusGroups) {
-            this.renderZWaveBusGroup(layer, group);
+        for (const group of radioBusGroups) {
+            this.renderRadioBusGroup(layer, group);
         }
     }
 
-    zWaveBusGroups(routedLinks) {
+    radioBusGroups(routedLinks, kind) {
         const groups = new Map();
 
         for (const routedLink of routedLinks) {
-            if (this.linkVisualKind(routedLink.link) !== "zwave") {
+            if (this.linkVisualKind(routedLink.link) !== kind) {
                 continue;
             }
 
@@ -1286,13 +1292,13 @@ class TopologyCanvas {
             );
 
             if (
-                (sourceRadioKind === "zwave")
-                === (targetRadioKind === "zwave")
+                (sourceRadioKind === kind)
+                === (targetRadioKind === kind)
             ) {
                 continue;
             }
 
-            const gatewayId = sourceRadioKind === "zwave"
+            const gatewayId = sourceRadioKind === kind
                 ? routedLink.link.target_device_id
                 : routedLink.link.source_device_id;
             const gatewayEndpoint =
@@ -1318,12 +1324,13 @@ class TopologyCanvas {
             .filter(([, links]) => links.length >= 3)
             .map(([gatewayId, links]) => ({
                 gatewayId,
+                kind,
                 links: links.map(({routedLink}) => routedLink),
                 entries: links,
             }));
     }
 
-    renderZWaveBusGroup(layer, group) {
+    renderRadioBusGroup(layer, group) {
         const sideGroups = new Map();
 
         for (const entry of group.entries) {
@@ -1344,9 +1351,10 @@ class TopologyCanvas {
         }
 
         for (const [side, entries] of sideGroups) {
-            this.renderZWaveBusSide(
+            this.renderRadioBusSide(
                 layer,
                 group.gatewayId,
+                group.kind,
                 side,
                 entries,
             );
@@ -1373,9 +1381,10 @@ class TopologyCanvas {
         }[side] ?? "left";
     }
 
-    renderZWaveBusSide(
+    renderRadioBusSide(
         layer,
         gatewayId,
+        kind,
         side,
         entries,
     ) {
@@ -1464,8 +1473,9 @@ class TopologyCanvas {
             : {x: gatewayAnchor.x, y: busOrigin.y};
 
         layer.prepend(
-            this.createZWaveBus(
+            this.createRadioBus(
                 gatewayId,
+                kind,
                 [
                     this.roundedLinkPath([
                         gatewayAnchor,
@@ -1480,17 +1490,18 @@ class TopologyCanvas {
         );
     }
 
-    createZWaveBus(gatewayId, pathData) {
+    createRadioBus(gatewayId, kind, pathData) {
         const group = this.createSvgElement("g");
 
         group.classList.add(
             "topology-link",
-            "topology-link--zwave-bus",
-            "topology-link--visual-zwave",
+            "topology-link--radio-bus",
+            `topology-link--${kind}-bus`,
+            `topology-link--visual-${kind}`,
         );
         group.dataset.sourceDeviceId = gatewayId;
         group.dataset.targetDeviceId = gatewayId;
-        group.dataset.visualKind = "zwave";
+        group.dataset.visualKind = kind;
 
         const glow = this.createSvgElement("path");
 
@@ -3309,7 +3320,7 @@ class TopologyCanvas {
             smart_device:
                 "/ui/assets/icons/hardware/plug-zap.svg",
             zwave_module:
-                "/ui/assets/icons/protocols/radio-tower.svg",
+                "/ui/assets/icons/protocols/zwave.svg",
             solar:
                 "/ui/assets/icons/hardware/battery-charging.svg",
             computer:

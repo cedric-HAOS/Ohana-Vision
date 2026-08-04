@@ -180,15 +180,17 @@
     --link-width: 3.5;
 }
 
-.topology-link--zwave-bus {
+.topology-link--radio-bus {
     pointer-events: none;
 }
 
-.topology-link--zwave-bus .topology-link__glow {
+.topology-link--radio-bus .topology-link__glow {
     stroke-width: 9;
     opacity: 0.55;
 }
 
+.topology-link--wifi-bus.topology-link--visual-wifi
+.topology-link__path,
 .topology-link--zwave-bus.topology-link--visual-zwave
 .topology-link__path {
     stroke-dasharray: none;

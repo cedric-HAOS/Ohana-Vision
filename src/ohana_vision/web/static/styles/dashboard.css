@@ -891,13 +891,6 @@
         url("../assets/icons/infrastructure/network.svg");
 }
 
-.dashboard-kpi__icon--services::before {
-    mask-image:
-        url("../assets/icons/infrastructure/boxes.svg");
-    -webkit-mask-image:
-        url("../assets/icons/infrastructure/boxes.svg");
-}
-
 .dashboard-kpi__icon--capabilities::before {
     mask-image:
         url("../assets/icons/infrastructure/layers-3.svg");
@@ -910,13 +903,6 @@
         url("../assets/icons/observability/bell-ring.svg");
     -webkit-mask-image:
         url("../assets/icons/observability/bell-ring.svg");
-}
-
-.dashboard-kpi__icon--observations::before {
-    mask-image:
-        url("../assets/icons/observability/activity.svg");
-    -webkit-mask-image:
-        url("../assets/icons/observability/activity.svg");
 }
 
 .dashboard-header__refresh-button {
@@ -1057,7 +1043,7 @@
 }
 /* Compact overview approved for the v1.3 dashboard. */
 .dashboard-kpis {
-    grid-template-columns: repeat(8, minmax(7.5rem, 1fr));
+    grid-template-columns: repeat(4, minmax(10rem, 1fr));
 }
 
 .dashboard-kpi {
@@ -1161,4 +1147,3 @@
         18% 72%, 62% 72%, 62% 84%, 8% 84%
     );
 }
-

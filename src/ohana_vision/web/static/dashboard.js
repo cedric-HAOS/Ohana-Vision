@@ -3,9 +3,9 @@
 import {
     escapeHtml,
     hideError,
+    isDeviceSupervised,
     normalizeHealthStatus,
     showError,
-    uniqueValues,
 } from "./utils.js";
 
 const VIEW_HEADERS = Object.freeze({
@@ -103,26 +103,6 @@ export class DashboardController {
             healthyDevicesCount:
                 document.querySelector(
                     "#healthy-devices-count",
-                ),
-            servicesCount:
-                document.querySelector(
-                    "#services-count",
-                ),
-            incidentsCount:
-                document.querySelector(
-                    "#incidents-count",
-                ),
-            incidentsStatus:
-                document.querySelector(
-                    "#incidents-status",
-                ),
-            availabilitySummaryValue:
-                document.querySelector(
-                    "#availability-summary-value",
-                ),
-            globalHealthLabel:
-                document.querySelector(
-                    "#global-health-label",
                 ),
             capabilityDistributionRing:
                 document.querySelector(
@@ -265,19 +245,25 @@ export class DashboardController {
             health.total,
         );
 
+        const unsupervised =
+            health.total - health.supervised;
+        const equipmentSummary = [
+            `${health.healthy} sain${health.healthy === 1 ? "" : "s"}`,
+            `${health.supervised} supervisé${health.supervised === 1 ? "" : "s"}`,
+        ];
+
+        if (unsupervised > 0) {
+            equipmentSummary.push(
+                `${unsupervised} non supervisé${unsupervised === 1 ? "" : "s"}`,
+            );
+        }
+
         this.setText(
             this.elements.healthyDevicesCount,
-            `${health.healthy} sain`
-            + (
-                health.healthy > 1
-                    ? "s"
-                    : ""
-            ),
+            equipmentSummary.join(" · "),
         );
 
-        this.renderServiceCount();
         this.renderAlertsKpi(health);
-        this.renderIncidents(health);
         this.renderCapabilityDistribution();
     }
 
@@ -427,10 +413,6 @@ export class DashboardController {
             this.elements.topologyHealthLabel,
             label,
         );
-        this.setText(
-            this.elements.globalHealthLabel,
-            label,
-        );
     }
 
     renderAvailability(statistics) {
@@ -444,11 +426,6 @@ export class DashboardController {
                 this.elements.availabilityValue,
                 "—",
             );
-            this.updateAnimatedText(
-                this.elements.availabilitySummaryValue,
-                "—",
-            );
-
             if (
                 this.elements
                     .availabilityProgress
@@ -473,11 +450,6 @@ export class DashboardController {
             this.elements.availabilityValue,
             formattedAvailability,
         );
-        this.updateAnimatedText(
-            this.elements.availabilitySummaryValue,
-            formattedAvailability,
-        );
-
         if (
             this.elements
                 .availabilityProgress
@@ -488,55 +460,14 @@ export class DashboardController {
                 `${availability}%`;
         }
 
-        this.setText(
-            this.elements.availabilityTrend,
-            availability === 100
-                ? "Infrastructure saine"
-                : "Attention requise",
-        );
-    }
-
-    renderServiceCount() {
-        const observedServices =
-            uniqueValues(
-                (
-                    this.state.observations
-                    ?? []
-                ).map((observation) => {
-                    return observation.service_id;
-                }),
-            ).size;
-
-        const runtimeServices =
-            Number(
-                this.state.runtime
-                    ?.service_timelines
-                ?? 0,
-            );
-
-        this.updateAnimatedText(
-            this.elements.servicesCount,
-            Math.max(
-                observedServices,
-                runtimeServices,
-            ),
-        );
-    }
-
-    renderIncidents(statistics) {
-        const incidents =
-            statistics.degraded
+        const knownDevices =
+            statistics.healthy
+            + statistics.degraded
             + statistics.unhealthy;
 
-        this.updateAnimatedText(
-            this.elements.incidentsCount,
-            incidents,
-        );
         this.setText(
-            this.elements.incidentsStatus,
-            incidents === 0
-                ? "Aucun"
-                : `${incidents} détecté${incidents > 1 ? "s" : ""}`,
+            this.elements.availabilityTrend,
+            `${statistics.healthy}/${knownDevices} observés sains`,
         );
     }
 
@@ -661,7 +592,7 @@ export class DashboardController {
 
         this.setText(
             this.elements.alertsKpiStatus,
-            "Aucun incident",
+            "Aucune alerte",
         );
     }
 
@@ -1003,12 +934,12 @@ export class DashboardController {
             this.state.topology?.devices
             ?? [];
 
-        const supervisedDevices =
-            devices.filter((device) => {
-                return Boolean(
-                    device.node_id,
-                );
-            });
+        const supervisedDevices = devices.filter(
+            (device) => isDeviceSupervised(
+                device,
+                this.state.observations ?? [],
+            ),
+        );
 
         const effectiveHealth =
             this.effectiveDeviceHealth();

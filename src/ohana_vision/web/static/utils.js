@@ -10,7 +10,7 @@ const DEVICE_ICON_PATHS = Object.freeze({
     home_assistant: "/ui/assets/icons/hardware/house.svg",
     camera: "/ui/assets/icons/hardware/camera.svg",
     smart_device: "/ui/assets/icons/hardware/plug-zap.svg",
-    zwave_module: "/ui/assets/icons/protocols/radio-tower.svg",
+    zwave_module: "/ui/assets/icons/protocols/zwave.svg",
     solar: "/ui/assets/icons/hardware/battery-charging.svg",
     computer: "/ui/assets/icons/containers-cloud/monitor-cog.svg",
     storage: "/ui/assets/icons/hardware/hard-drive.svg",
@@ -30,6 +30,52 @@ export function deviceIconPath(kind) {
 
     return DEVICE_ICON_PATHS[normalizedKind]
         ?? DEVICE_ICON_PATHS.other;
+}
+
+/**
+ * Return whether Vision receives health for an equipment.
+ *
+ * Devices attached to an Agent node are supervised through that node. Radio
+ * modules discovered by the Z-Wave plugin have no node_id of their own, so
+ * their targeted health observations are also a supervision source.
+ *
+ * @param {object | null | undefined} device
+ * @param {Iterable<object>} observations
+ * @returns {boolean}
+ */
+export function isDeviceSupervised(device, observations = []) {
+    if (Boolean(device?.node_id)) {
+        return true;
+    }
+
+    if (
+        device?.metadata?.managed_by
+        === "zwave_discovery"
+    ) {
+        return true;
+    }
+
+    const deviceId = String(
+        device?.device_id ?? "",
+    );
+
+    return Array.from(observations).some(
+        (observation) => {
+            const metadata =
+                observation?.metadata ?? {};
+
+            return (
+                metadata.target_type === "device"
+                && metadata.contributes_to_device_health
+                    === true
+                && String(
+                    metadata.device_id
+                    ?? observation?.service_id
+                    ?? "",
+                ) === deviceId
+            );
+        },
+    );
 }
 
 /**

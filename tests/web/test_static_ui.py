@@ -169,12 +169,13 @@ def test_static_ui_contains_dashboard_kpis() -> None:
     assert response.status_code == 200
     assert 'id="availability-value"' in response.text
     assert 'id="devices-count"' in response.text
-    assert 'id="services-count"' in response.text
     assert 'id="alerts-count"' in response.text
-    assert 'id="incidents-count"' in response.text
-    assert 'id="availability-summary-value"' in response.text
-    assert 'id="global-health-label"' in response.text
     assert 'id="capability-distribution-total"' in response.text
+    assert "Capacités supervisées" in response.text
+    assert 'id="services-count"' not in response.text
+    assert 'id="incidents-count"' not in response.text
+    assert 'id="availability-summary-value"' not in response.text
+    assert 'id="global-health-label"' not in response.text
     assert 'id="capabilities-count"' not in response.text
     assert 'id="activity-count"' not in response.text
 
@@ -192,14 +193,13 @@ def test_static_ui_marks_topology_as_primary_content() -> None:
     assert "Topologie Ohana-House" in response.text
 
 
-def test_static_ui_contains_realtime_side_panel() -> None:
-    """The dashboard must expose its realtime side panel."""
+def test_static_ui_contains_capability_distribution() -> None:
+    """The overview must expose the supervised capability distribution."""
     client = make_client()
 
     response = client.get("/ui/")
 
     assert response.status_code == 200
-    assert 'id="global-health-label"' in response.text
     assert 'id="capability-distribution-ring"' in response.text
     assert 'id="capability-distribution-summary"' in response.text
 
@@ -1043,6 +1043,25 @@ def test_topology_uses_targeted_zwave_node_health() -> None:
     assert "buildTargetDeviceHealthIndex(" in response.text
     assert "contributes_to_device_health" in response.text
     assert "targetDeviceHealth[" in response.text
+
+
+def test_discovered_zwave_devices_are_supervised() -> None:
+    """Targeted Z-Wave health must count in details and dashboard KPIs."""
+    client = make_client()
+
+    utils = client.get("/ui/utils.js")
+    details = client.get("/ui/device_details.js")
+    dashboard = client.get("/ui/dashboard.js")
+
+    assert utils.status_code == 200
+    assert details.status_code == 200
+    assert dashboard.status_code == 200
+    assert "export function isDeviceSupervised(" in utils.text
+    assert '=== "zwave_discovery"' in utils.text
+    assert 'metadata.target_type === "device"' in utils.text
+    assert "metadata.contributes_to_device_health" in utils.text
+    assert "isDeviceSupervised(" in details.text
+    assert "isDeviceSupervised(" in dashboard.text
 
 
 def test_application_entry_point_is_minimal() -> None:
@@ -1986,9 +2005,7 @@ def test_dashboard_kpis_use_official_icons() -> None:
     expected_classes = [
         "dashboard-kpi__icon--availability",
         "dashboard-kpi__icon--devices",
-        "dashboard-kpi__icon--services",
         "dashboard-kpi__icon--alerts",
-        "dashboard-kpi__icon--observations",
     ]
 
     for class_name in expected_classes:
@@ -1997,9 +2014,7 @@ def test_dashboard_kpis_use_official_icons() -> None:
     expected_icons = [
         "../assets/icons/observability/gauge.svg",
         "../assets/icons/infrastructure/network.svg",
-        "../assets/icons/infrastructure/boxes.svg",
         "../assets/icons/observability/bell-ring.svg",
-        "../assets/icons/observability/activity.svg",
     ]
 
     for icon_path in expected_icons:

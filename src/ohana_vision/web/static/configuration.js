@@ -102,7 +102,7 @@ const PLUGIN_ICONS = Object.freeze({
     ntp: "/ui/assets/icons/network/clock-3.svg",
     mqtt: "/ui/assets/icons/services/radio.svg",
     network: "/ui/assets/icons/infrastructure/network.svg",
-    zwave: "/ui/assets/icons/protocols/radio-tower.svg",
+    zwave: "/ui/assets/icons/protocols/zwave.svg",
     wireguard: "/ui/assets/icons/network/shield-check.svg",
     home_assistant_telemetry: "/ui/assets/icons/observability/activity.svg",
     shelly_telemetry: "/ui/assets/icons/observability/activity.svg",

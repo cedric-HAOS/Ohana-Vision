@@ -6,6 +6,7 @@ import {
     formatDate,
     formatLatency,
     healthStatusLabel,
+    isDeviceSupervised,
 } from "./utils.js";
 
 /**
@@ -201,7 +202,10 @@ export class DeviceDetailsController {
 
         if (this.elements.supervision) {
             const isSupervised =
-                Boolean(device.node_id);
+                isDeviceSupervised(
+                    device,
+                    this.state.observations ?? [],
+                );
 
             this.elements.supervision.textContent =
                 isSupervised

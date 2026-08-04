@@ -611,8 +611,8 @@ def test_topology_canvas_supports_collapsible_radio_groups() -> None:
     assert ".topology-link--visual-zwave" in stylesheet.text
 
 
-def test_topology_canvas_uses_harmonized_zwave_buses() -> None:
-    """Z-Wave nodes must share subtle radio trunks around their gateway."""
+def test_topology_canvas_uses_harmonized_radio_buses() -> None:
+    """Wi-Fi and Z-Wave leaves must share trunks around their gateway."""
     client = make_client()
 
     javascript = client.get("/ui/topology_canvas.js")
@@ -620,16 +620,19 @@ def test_topology_canvas_uses_harmonized_zwave_buses() -> None:
 
     assert javascript.status_code == 200
     assert stylesheet.status_code == 200
-    assert "zWaveBusGroups(" in javascript.text
-    assert "renderZWaveBusGroup(" in javascript.text
-    assert "createZWaveBus(" in javascript.text
+    assert "radioBusGroups(" in javascript.text
+    assert "renderRadioBusGroup(" in javascript.text
+    assert "createRadioBus(" in javascript.text
+    assert '"wifi",' in javascript.text
+    assert '"zwave",' in javascript.text
     assert "COMPACT_DEVICE_LABEL_MAX_WIDTH = 104" in javascript.text
     assert 'text.setAttribute("text-anchor", "middle")' in javascript.text
+    assert ".topology-link--wifi-bus" in stylesheet.text
     assert ".topology-link--zwave-bus" in stylesheet.text
 
 
 def test_topology_canvas_supports_the_zwave_module_kind() -> None:
-    """Z-Wave modules must have their own label and official radio icon."""
+    """Z-Wave modules must have their own label and recognizable icon."""
     client = make_client()
 
     page = client.get("/ui/")
@@ -642,9 +645,12 @@ def test_topology_canvas_supports_the_zwave_module_kind() -> None:
     assert '<option value="zwave_module">Module Z-Wave</option>' in page.text
     assert 'zwave_module: "Module Z-Wave"' in canvas.text
     assert (
-        'zwave_module: "/ui/assets/icons/protocols/radio-tower.svg"'
+        'zwave_module: "/ui/assets/icons/protocols/zwave.svg"'
         in utils.text
     )
+    icon = client.get("/ui/assets/icons/protocols/zwave.svg")
+    assert icon.status_code == 200
+    assert '<path d="M8.5 8h7l-7 8h7"/>' in icon.text
 
 
 def test_topology_canvas_sizes_shared_link_anchors_from_their_device() -> None:

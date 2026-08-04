@@ -11,7 +11,8 @@ Le projet suit les principes de Semantic Versioning.
 ## Ajouté
 
 - Le type « Module Z-Wave » est disponible dans l’éditeur Architecture et
-  utilise une icône radio dédiée dans toutes les vues d’équipement.
+  utilise une icône dédiée, inspirée du « Z » et des ondes de la marque, dans
+  toutes les vues d’équipement et dans la configuration du plugin.
 
 ## Amélioré
 
@@ -20,12 +21,26 @@ Le projet suit les principes de Semantic Versioning.
   disponible dans l’infobulle et le libellé ne dépasse plus du cadre.
 - À partir de trois modules, les liaisons d’une passerelle Z-Wave partagent des
   troncs discrets par direction au lieu de superposer un éventail de chemins.
+- Les liaisons Wi-Fi partagent désormais les mêmes troncs radio harmonisés que
+  les modules Z-Wave, tout en conservant leur couleur propre.
+- Le bandeau de supervision est recentré sur quatre indicateurs complémentaires :
+  disponibilité, équipements, alertes actives et capacités supervisées.
+
+## Corrigé
+
+- Les modules Z-Wave découverts automatiquement sont reconnus comme supervisés
+  grâce à leurs observations de santé ciblées, même sans `node_id` propre ; leur
+  état contribue désormais au compteur des équipements sains.
+- Les cartes redondantes Infrastructure, Services, Incidents (24 h) et Santé
+  globale ont été retirées du bandeau principal.
 
 ## Qualité
 
 - Validation visuelle dans Chromium d’un scénario à 12 modules : noms bornés,
   icône dédiée, 12 branches regroupées en 3 troncs.
 - Tests statiques du type, de l’icône, du dimensionnement et du routage groupé.
+- Contrôle visuel local du bandeau à quatre indicateurs, sans erreur navigateur.
+- Suite complète : 813 tests réussis et Ruff sans erreur.
 - Version du paquet alignée sur `1.10.7`.
 
 ---
