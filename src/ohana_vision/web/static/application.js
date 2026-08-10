@@ -23,6 +23,10 @@ import {
 } from "./device_details.js";
 
 import {
+    HostController,
+} from "./host.js";
+
+import {
     NavigationController,
 } from "./navigation.js";
 
@@ -65,6 +69,7 @@ export class ApplicationController {
         this.configuration = null;
         this.deviceDetails = null;
         this.incidents = null;
+        this.host = null;
         this.navigation = null;
         this.observations = null;
         this.services = null;
@@ -238,6 +243,8 @@ export class ApplicationController {
                 state: this.state,
             });
 
+        this.host = new HostController();
+
         this.navigation =
             new NavigationController({
                 defaultView: "overview",
@@ -322,12 +329,17 @@ export class ApplicationController {
             void this.incidents.load();
         }
 
+        if (viewName === "host") {
+            void this.host.load();
+        }
+
         if (
             this.initialDataLoaded
             && new Set([
                 "overview",
                 "infrastructure",
                 "services",
+                "host",
                 "timeline",
                 "observations",
                 "incidents",
@@ -442,6 +454,10 @@ export class ApplicationController {
                 operations.push(
                     this.incidents.load(),
                 );
+            } else if (activeView === "host") {
+                operations.push(
+                    this.host.load(),
+                );
             } else if (activeView === "timeline") {
                 operations.push(
                     this.loadTimeline({
@@ -539,6 +555,15 @@ export class ApplicationController {
             ) {
                 dataOperations.push(
                     this.incidents.load(),
+                );
+            }
+
+            if (
+                this.navigation.activeView
+                    === "host"
+            ) {
+                dataOperations.push(
+                    this.host.load(),
                 );
             }
 

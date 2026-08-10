@@ -62,6 +62,10 @@
        Services
       </span>
      </button>
+     <button class="sidebar-navigation__item" data-navigation-target="host" type="button">
+      <span aria-hidden="true" class="sidebar-navigation__icon sidebar-navigation__icon--host"></span>
+      <span>Hôte</span>
+     </button>
      <button class="sidebar-navigation__item" data-navigation-target="timeline" type="button">
       <span
     aria-hidden="true"
@@ -555,6 +559,56 @@
          </aside>
         </div>
        </section>
+      </div>
+     </section>
+     <section aria-labelledby="host-heading" class="application-view" data-view="host" hidden="">
+      <div class="host-view" id="host-supervision">
+       <div class="panel-heading">
+        <div>
+         <p class="panel-heading__kicker">Supervision système</p>
+         <h2 id="host-heading">Santé de l’hôte Agent</h2>
+         <p class="panel-heading__description">
+          Ressources, disponibilité et diagnostic de la machine qui exécute Ohana-Agent.
+         </p>
+        </div>
+       </div>
+       <div class="alert alert--error hidden" id="host-error" role="alert"></div>
+       <div class="host-overview">
+        <article class="host-state-card" data-status="unknown" id="host-state">
+         <span aria-hidden="true" class="host-state-card__indicator"></span>
+         <span>État de santé</span>
+         <strong id="host-state-label">Inconnu</strong>
+        </article>
+        <article class="host-details-card">
+         <h3>Machine supervisée</h3>
+         <dl>
+          <dt>Nom d’hôte</dt><dd id="host-hostname">—</dd>
+          <dt>Système</dt><dd id="host-platform">—</dd>
+          <dt>Dernière mesure</dt><dd id="host-updated">—</dd>
+         </dl>
+        </article>
+       </div>
+       <div aria-label="Métriques de l’hôte" class="host-metrics">
+        <article class="host-metric-card"><span>CPU</span><strong data-host-metric="cpu">—</strong></article>
+        <article class="host-metric-card"><span>Charge normalisée</span><strong data-host-metric="load">—</strong></article>
+        <article class="host-metric-card"><span>Mémoire</span><strong data-host-metric="memory">—</strong></article>
+        <article class="host-metric-card"><span>Swap</span><strong data-host-metric="swap">—</strong></article>
+        <article class="host-metric-card"><span>Disque racine</span><strong data-host-metric="disk">—</strong></article>
+        <article class="host-metric-card"><span>Température CPU</span><strong data-host-metric="temperature">—</strong></article>
+        <article class="host-metric-card"><span>Uptime hôte</span><strong data-host-metric="host-uptime">—</strong></article>
+        <article class="host-metric-card"><span>Uptime Agent</span><strong data-host-metric="agent-uptime">—</strong></article>
+        <article class="host-metric-card"><span>Redémarrages Agent</span><strong data-host-metric="agent-restarts">—</strong></article>
+       </div>
+       <div class="host-diagnostics">
+        <article>
+         <h3>Alertes actives</h3>
+         <ul class="host-list" id="host-reasons"><li class="host-list__empty">Aucune donnée</li></ul>
+        </article>
+        <article>
+         <h3>Unités systemd en échec</h3>
+         <ul class="host-list" id="host-failed-units"><li class="host-list__empty">Aucune donnée</li></ul>
+        </article>
+       </div>
       </div>
      </section>
      <section aria-labelledby="timeline-heading" class="application-view" data-view="timeline" hidden="">

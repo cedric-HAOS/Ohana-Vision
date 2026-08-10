@@ -4,6 +4,7 @@ export const API = Object.freeze({
     version: "/api/version",
     runtime: "/api/runtime",
     observations: "/api/observations",
+    hostHealth: "/api/host-health",
     incidents: "/api/incidents",
     incidentAcknowledge(incidentId) {
         return `${this.incidents}/${encodeURIComponent(incidentId)}/acknowledge`;

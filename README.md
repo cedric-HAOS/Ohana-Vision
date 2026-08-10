@@ -77,6 +77,14 @@ La page propose une recherche et des filtres par état, type et criticité. Un
 inspecteur détaille le service sélectionné et permet de retrouver son
 équipement dans la carte Infrastructure.
 
+### Santé de l'hôte Agent
+
+La page **Supervision / Hôte** reprend le snapshot `host.health` produit par
+Agent. Elle présente l'état synthétique de la machine, CPU, charge normalisée,
+mémoire, swap, disque racine, température lorsqu'elle est disponible, uptimes
+hôte et Agent, redémarrages Agent et diagnostics systemd. Les durées sont
+affichées sous forme compacte, par exemple `8 j 19 h 29 min`.
+
 ### Timeline
 
 La timeline repose sur les périodes métier calculées par le backend.

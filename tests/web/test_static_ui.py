@@ -1140,6 +1140,7 @@ def test_static_ui_does_not_preserve_hidden_observations_table() -> None:
         "navigation.css",
         "dashboard.css",
         "topology.css",
+        "host.css",
         "device-details.css",
         "observations.css",
         "timeline.css",
@@ -1524,6 +1525,7 @@ def test_stylesheet_entrypoint_imports_all_responsibility_modules() -> None:
         '@import url("./styles/incidents.css");',
         '@import url("./styles/topology.css");',
         '@import url("./styles/services.css");',
+        '@import url("./styles/host.css");',
         '@import url("./styles/device-details.css");',
         '@import url("./styles/timeline.css");',
         '@import url("./styles/configuration.css");',
@@ -2636,6 +2638,54 @@ def test_application_wires_services_controller() -> None:
     assert 'viewName === "services"' in response.text
     assert "this.services.load({" in response.text
     assert "this.services.render();" in response.text
+
+
+def test_static_ui_exposes_host_health_page() -> None:
+    """The supervision sidebar must expose the Agent host health page."""
+    response = make_client().get("/ui/")
+
+    assert response.status_code == 200
+    assert 'data-navigation-target="host"' in response.text
+    assert 'data-view="host"' in response.text
+    assert 'id="host-state-label"' in response.text
+    assert 'data-host-metric="host-uptime"' in response.text
+    assert 'data-host-metric="agent-uptime"' in response.text
+
+
+def test_host_health_javascript_is_available() -> None:
+    """The host health controller must be packaged and served."""
+    response = make_client().get("/ui/host.js")
+
+    assert response.status_code == 200
+    assert "javascript" in response.headers["content-type"]
+    assert "class HostController" in response.text
+    assert "API.hostHealth" in response.text
+    assert "host_uptime" in response.text
+    assert "agent_uptime" in response.text
+
+
+def test_host_health_stylesheet_is_available() -> None:
+    """The host health page must use its own modular stylesheet."""
+    response = make_client().get("/ui/styles/host.css")
+
+    assert response.status_code == 200
+    assert "text/css" in response.headers["content-type"]
+    assert ".host-view" in response.text
+    assert ".host-metrics" in response.text
+
+
+def test_application_wires_host_health_controller() -> None:
+    """The frontend must load and refresh the latest host health snapshot."""
+    application = make_client().get("/ui/application.js")
+    api = make_client().get("/ui/api.js")
+
+    assert application.status_code == 200
+    assert 'from "./host.js"' in application.text
+    assert "new HostController" in application.text
+    assert 'viewName === "host"' in application.text
+    assert "this.host.load()" in application.text
+    assert api.status_code == 200
+    assert 'hostHealth: "/api/host-health"' in api.text
 
 
 def test_mqtt_plugin_form_configures_home_assistant_health_export() -> None:

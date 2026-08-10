@@ -387,3 +387,10 @@
     -webkit-mask-image:
         url("../assets/icons/services/braces.svg");
 }
+
+.sidebar-navigation__icon--host {
+    mask-image:
+        url("../assets/icons/hardware/cpu.svg");
+    -webkit-mask-image:
+        url("../assets/icons/hardware/cpu.svg");
+}

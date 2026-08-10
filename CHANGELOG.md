@@ -6,6 +6,25 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.11.1] — Supervision de l'hôte Agent — 2026-08-10
+
+## Ajouté
+
+- La page **Supervision / Hôte** présente l'état de santé de la machine qui
+  exécute Agent, son système, sa dernière mesure et ses ressources CPU,
+  mémoire, swap et disque.
+- La charge normalisée, la température disponible, les uptimes lisibles, les
+  redémarrages d'Agent, les raisons actives et les unités systemd en échec sont
+  affichés depuis la dernière observation `host.health`.
+- L'API `GET /api/host-health` expose le dernier snapshot hôte persisté.
+
+## Qualité
+
+- Tests du contrat API, du routage, de l'intégration de la navigation et des
+  ressources statiques, complétés par une validation visuelle locale.
+
+---
+
 # [1.11.0] — Persistance et centre d'incidents — 2026-08-10
 
 ## Ajouté

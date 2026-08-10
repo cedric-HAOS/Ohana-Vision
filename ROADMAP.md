@@ -12,12 +12,14 @@ les contrats publics et versionnés de l'Agent.
 
 ## État actuel
 
-**Version publiée : 1.11.0 — Persistance et centre d'incidents.**
+**Version préparée : 1.11.1 — Supervision de l'hôte Agent.**
 
 Le socle actuel couvre notamment :
 
 - la visualisation temps réel de l'infrastructure, des services et des
   capacités ;
+- la supervision des ressources, des uptimes et des diagnostics systemd de la
+  machine hôte d'Agent ;
 - l'administration graphique de l'infrastructure, du réseau, du DHCP et des
   plugins exposés par Agent ;
 - la présence réseau et les plages de surveillance ;
