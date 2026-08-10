@@ -2815,6 +2815,12 @@ export class ConfigurationController {
         this.updateHomeAssistantTelemetryServiceFields();
         this.updateTeleinformationServiceFields();
         this.updateServicePortField();
+        if (
+            this.value("architecture-service-type") === "dns"
+            && !this.value("architecture-service-availability-group")
+        ) {
+            this.setValue("architecture-service-availability-group", "dns");
+        }
     }
 
     editService(serviceId) {
@@ -2854,6 +2860,11 @@ export class ConfigurationController {
         this.setValue(
             "architecture-service-implementation",
             service.implementation ?? "",
+        );
+        this.setValue(
+            "architecture-service-availability-group",
+            service.metadata?.availability_group
+                ?? (service.type === "dns" ? "dns" : ""),
         );
         this.setChecked(
             "architecture-service-enabled",
@@ -2960,6 +2971,10 @@ export class ConfigurationController {
         );
         this.setValue(
             "architecture-service-implementation",
+            "",
+        );
+        this.setValue(
+            "architecture-service-availability-group",
             "",
         );
         this.setChecked(
@@ -3413,6 +3428,15 @@ export class ConfigurationController {
         const metadata = {
             ...(service?.metadata ?? {}),
         };
+        const availabilityGroup = this.value(
+            "architecture-service-availability-group",
+        );
+
+        if (availabilityGroup) {
+            metadata.availability_group = availabilityGroup;
+        } else {
+            delete metadata.availability_group;
+        }
 
         const teleinformationEntityFields = {
             apparent_power_entity_id:

@@ -17,6 +17,9 @@ Le projet suit les principes de Semantic Versioning.
   redémarrages d'Agent, les raisons actives et les unités systemd en échec sont
   affichés depuis la dernière observation `host.health`.
 - L'API `GET /api/host-health` expose le dernier snapshot hôte persisté.
+- L'éditeur de services expose le groupe de disponibilité utilisé pour agréger
+  les instances redondantes. Les services DNS proposent automatiquement le
+  groupe `dns` tout en laissant ce choix modifiable.
 
 ## Qualité
 

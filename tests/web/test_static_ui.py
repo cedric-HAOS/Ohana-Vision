@@ -2600,6 +2600,23 @@ def test_static_ui_exposes_services_map_page() -> None:
     assert 'id="services-critical-count"' in response.text
 
 
+def test_architecture_service_editor_exposes_availability_group() -> None:
+    """Redundant service instances must share an editable logical group."""
+    html_response = make_client().get("/ui/")
+    script_response = make_client().get("/ui/configuration.js")
+
+    assert html_response.status_code == 200
+    assert 'id="architecture-service-availability-group"' in html_response.text
+    assert "Groupe de disponibilité" in html_response.text
+    assert script_response.status_code == 200
+    assert "service.metadata?.availability_group" in script_response.text
+    assert "metadata.availability_group = availabilityGroup" in script_response.text
+    assert "delete metadata.availability_group" in script_response.text
+    assert 'this.setValue("architecture-service-availability-group", "dns")' in (
+        script_response.text
+    )
+
+
 def test_services_map_javascript_is_available() -> None:
     """The logical services controller must be packaged and served."""
     response = make_client().get("/ui/services.js")

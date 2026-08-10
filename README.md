@@ -77,6 +77,11 @@ La page propose une recherche et des filtres par état, type et criticité. Un
 inspecteur détaille le service sélectionné et permet de retrouver son
 équipement dans la carte Infrastructure.
 
+Dans l'éditeur d'architecture, le champ **Groupe de disponibilité** associe les
+instances redondantes d'un même service logique. Les DNS utilisent `dns` par
+défaut : une panne partielle est dégradée et l'indisponibilité n'est déclarée
+que lorsque toutes les instances du groupe sont en échec.
+
 ### Santé de l'hôte Agent
 
 La page **Supervision / Hôte** reprend le snapshot `host.health` produit par
