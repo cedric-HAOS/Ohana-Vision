@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from uuid import uuid4
 
 from ohana_vision.domain.health import HealthStatus
 from ohana_vision.domain.observation import Observation
@@ -104,3 +105,43 @@ def test_mapper_preserves_none_latency() -> None:
     observation = ObservationMapper.to_domain(request)
 
     assert observation.latency_ms is None
+
+
+def test_mapper_preserves_public_observation_identity_and_message() -> None:
+    observation_id = uuid4()
+    request = ObservationRequest(
+        capability_id="dns.resolve",
+        service_id="dns-primary",
+        node_id="infra-01",
+        status=HealthStatus.DEGRADED,
+        observed_at=datetime(2026, 8, 10, 10, 0, tzinfo=UTC),
+        observation_id=observation_id,
+        message="DNS latency is elevated.",
+    )
+
+    observation = ObservationMapper.to_domain(request)
+
+    assert observation.observation_id == observation_id
+    assert observation.message == "DNS latency is elevated."
+
+
+def test_mapper_recovers_identity_from_legacy_agent_metadata() -> None:
+    observation_id = uuid4()
+    request = ObservationRequest(
+        capability_id="dns.resolve",
+        service_id="dns-primary",
+        node_id="infra-01",
+        status=HealthStatus.DEGRADED,
+        observed_at=datetime(2026, 8, 10, 10, 0, tzinfo=UTC),
+        metadata={
+            "agent_observation": {
+                "id": str(observation_id),
+                "message": "Legacy payload.",
+            }
+        },
+    )
+
+    observation = ObservationMapper.to_domain(request)
+
+    assert observation.observation_id == observation_id
+    assert observation.message == "Legacy payload."

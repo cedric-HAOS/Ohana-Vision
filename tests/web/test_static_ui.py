@@ -245,6 +245,7 @@ def test_static_ui_exposes_only_functional_navigation_entries() -> None:
     assert 'data-navigation-target="services"' in content
     assert 'data-navigation-target="timeline"' in content
     assert 'data-navigation-target="observations"' in content
+    assert 'data-navigation-target="incidents"' in content
 
 
 def test_static_ui_does_not_expose_unimplemented_navigation_entries() -> None:
@@ -274,6 +275,24 @@ def test_static_ui_declares_all_navigation_views() -> None:
     assert 'data-view="services"' in content
     assert 'data-view="timeline"' in content
     assert 'data-view="observations"' in content
+    assert 'data-view="incidents"' in content
+    assert 'id="incidents-list"' in content
+    assert 'id="incidents-active-count"' in content
+
+
+def test_static_ui_exposes_incident_center() -> None:
+    """The incident center must be packaged with its operator actions."""
+    client = make_client()
+    script = client.get("/ui/incidents.js")
+    stylesheet = client.get("/ui/styles/incidents.css")
+
+    assert script.status_code == 200
+    assert stylesheet.status_code == 200
+    assert "IncidentsController" in script.text
+    assert "API.incidentAcknowledge" in script.text
+    assert "API.incidentSilence" in script.text
+    assert 'data-incident-action="acknowledge"' in script.text
+    assert 'data-incident-action="silence"' in script.text
 
 
 def test_static_ui_exposes_graphical_configuration_views() -> None:
@@ -297,6 +316,9 @@ def test_static_ui_exposes_graphical_configuration_views() -> None:
     assert 'id="architecture-board"' in response.text
     assert 'id="architecture-mode-move"' in response.text
     assert 'id="architecture-mode-link"' in response.text
+    assert 'id="architecture-zoom-in"' in response.text
+    assert 'id="architecture-zoom-out"' in response.text
+    assert 'id="architecture-zoom-reset"' in response.text
     assert 'id="architecture-add-service-to-device"' in response.text
     assert 'id="architecture-device-role"' in response.text
     assert 'id="architecture-device-network-presence"' in response.text
@@ -307,8 +329,8 @@ def test_static_ui_exposes_graphical_configuration_views() -> None:
     assert 'id="plugin-test"' in response.text
     assert '<option value="fiber">Fibre</option>' in response.text
     assert '<option value="10000">10Gbps</option>' in response.text
-    assert '<option value="8000">8Gbps</option>' in response.text
-    assert '<option value="5000">5Gbps</option>' in response.text
+    assert '<option value="8000">8Gbps</option>' not in response.text
+    assert '<option value="5000">5Gbps</option>' not in response.text
     assert '<option value="2500">2.5Gbps</option>' in response.text
     assert '<option value="1000">1Gbps</option>' in response.text
     assert '<option value="100">100Mbps</option>' in response.text
@@ -333,6 +355,11 @@ def test_static_ui_exposes_configuration_controller() -> None:
     assert "await this.refreshPlugins()" in response.text
     assert "structuredClone(this.dhcp)" in response.text
     assert "handleArchitectureDrop" in response.text
+    assert "handleArchitectureWheel" in response.text
+    assert "handleArchitecturePointerMove" in response.text
+    assert "fitArchitectureViewport" in response.text
+    assert "querySelectorAll(" in response.text
+    assert '".architecture-map-device"' in response.text
     assert "selectLinkEndpoint" in response.text
     assert "layout.positions[deviceId]" in response.text
     assert "ARCHITECTURE_MINIMUM_COLUMNS = 15" in response.text
@@ -340,11 +367,17 @@ def test_static_ui_exposes_configuration_controller() -> None:
     assert "compareIPAddresses(" in response.text
     assert "nodeStillUsed" in response.text
     assert 'metadata.medium = "fiber"' in response.text
-    assert 'return "ethernet-8g"' in response.text
-    assert 'return "ethernet-5g"' in response.text
+    assert 'return "ethernet-8g"' not in response.text
+    assert 'return "ethernet-5g"' not in response.text
     assert 'return "ethernet-100m"' in response.text
     assert "Enregistrer la " in response.text
     assert "DHCP de ${reservation.hostname} ?" in response.text
+    assert 'data-dhcp-add="${mac}"' in response.text
+    assert "this.openReservation({" in response.text
+    assert "}, {isNew: true});" in response.text
+    assert "reservation && !options.isNew" in response.text
+    assert "hostname: lease.hostname" in response.text
+    assert "mac_address: lease.mac_address" in response.text
 
 
 def test_architecture_exposes_discovered_devices_to_position() -> None:
@@ -489,7 +522,7 @@ def test_observations_and_configuration_use_full_height_layouts() -> None:
     assert 'data-active-view="observations"' in responsive.text
     assert 'data-active-view="configuration-architecture"' in responsive.text
     assert 'data-active-view="configuration-plugins"' in responsive.text
-    assert "grid-template-rows: auto auto minmax(0, 1fr)" in observations.text
+    assert "grid-template-rows: auto auto auto minmax(0, 1fr)" in observations.text
     assert "overflow-y: auto" in observations.text
     assert ".configuration-card--architecture-workspace" in configuration.text
     assert ".plugin-browser" in configuration.text
@@ -597,6 +630,14 @@ def test_static_ui_exposes_observations_module() -> None:
     assert "export class ObservationsController" in response.text
     assert "renderRecent(" in response.text
     assert "renderCount(" in response.text
+    assert "groupObservations(" in response.text
+    assert "filterObservations(" in response.text
+    assert "Voir les ${count} évaluations" in response.text
+
+    page = client.get("/ui/")
+    assert 'id="observation-status-filter"' in page.text
+    assert 'id="observation-node-filter"' in page.text
+    assert 'id="observation-service-filter"' in page.text
 
 
 def test_application_uses_observations_controller() -> None:
@@ -1480,6 +1521,7 @@ def test_stylesheet_entrypoint_imports_all_responsibility_modules() -> None:
         '@import url("./styles/navigation.css");',
         '@import url("./styles/dashboard.css");',
         '@import url("./styles/observations.css");',
+        '@import url("./styles/incidents.css");',
         '@import url("./styles/topology.css");',
         '@import url("./styles/services.css");',
         '@import url("./styles/device-details.css");',

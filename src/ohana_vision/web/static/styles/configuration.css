@@ -303,14 +303,44 @@
 }
 
 .architecture-board {
+    position: relative;
     min-height: 0;
-    overflow: auto;
+    overflow: hidden;
     border:
         var(--ohana-border-width-thin)
         solid
         var(--ohana-border-subtle);
     border-radius: var(--ohana-radius-md);
     background: var(--ohana-background-canvas);
+    cursor: grab;
+    touch-action: none;
+}
+
+.architecture-board.is-panning {
+    cursor: grabbing;
+    user-select: none;
+}
+
+.architecture-viewport-controls {
+    display: inline-flex;
+    gap: var(--ohana-space-1);
+}
+
+.architecture-viewport-controls button {
+    min-width: 2.5rem;
+}
+
+.architecture-viewport-controls
+    #architecture-zoom-reset {
+    min-width: auto;
+}
+
+.configuration-icon-button--add {
+    min-width: 2rem;
+    color: var(--ohana-text-on-accent);
+    background: var(--ohana-brand-primary);
+    font-size: var(--ohana-font-size-lg);
+    line-height: 1;
 }
 
 .configuration-card--architecture-workspace {
@@ -453,6 +483,8 @@
     background-size:
         calc(100% / var(--architecture-columns))
         calc(100% / var(--architecture-rows));
+    transform-origin: 0 0;
+    will-change: transform;
 }
 
 .architecture-map__grid {
@@ -512,16 +544,6 @@
 .architecture-map-link__line--ethernet-2-5g {
     stroke: #5ba8ff;
     stroke-width: 4;
-}
-
-.architecture-map-link__line--ethernet-5g {
-    stroke: #4f8cff;
-    stroke-width: 4.5;
-}
-
-.architecture-map-link__line--ethernet-8g {
-    stroke: #22b8cf;
-    stroke-width: 4.75;
 }
 
 .architecture-map-link__line--ethernet-10g {

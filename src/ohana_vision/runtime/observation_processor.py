@@ -8,7 +8,9 @@ from datetime import datetime, timedelta
 from time import monotonic
 from typing import Protocol
 
+from ohana_vision.domain.incident import IncidentTransition
 from ohana_vision.domain.observation import Observation
+from ohana_vision.domain.observation_store import DuplicateObservationError
 from ohana_vision.runtime.backend_runtime import BackendRuntime
 from ohana_vision.runtime.processing_result import ProcessingResult
 from ohana_vision.runtime.runtime_snapshot import RuntimeSnapshot
@@ -42,6 +44,13 @@ class TimelineEngineProtocol(Protocol):
         """Build the complete infrastructure timeline hierarchy."""
 
 
+class IncidentStoreProtocol(Protocol):
+    """Minimal incident store contract required by the processor."""
+
+    def process(self, observation: Observation) -> IncidentTransition | None:
+        """Apply one observation to the incident lifecycle."""
+
+
 @dataclass(slots=True)
 class ObservationProcessor:
     """Orchestrate observation storage and timeline reconstruction."""
@@ -49,6 +58,7 @@ class ObservationProcessor:
     runtime: BackendRuntime
     observation_store: ObservationStoreProtocol
     timeline_engine: TimelineEngineProtocol
+    incident_store: IncidentStoreProtocol | None = None
     timer: Callable[[], float] = monotonic
     infrastructure_timeline: InfrastructureTimeline = field(
         default_factory=InfrastructureTimeline,
@@ -83,6 +93,19 @@ class ObservationProcessor:
             )
 
             self.observation_store.add(observation)
+            incident_transition = (
+                self.incident_store.process(observation)
+                if self.incident_store is not None
+                else None
+            )
+        except DuplicateObservationError:
+            self.runtime.record_accepted()
+            return ProcessingResult.accepted_result(
+                observation_id=observation.observation_id,
+                snapshot=self._snapshot(),
+                duration=self._duration_since(started),
+                timeline_updated=False,
+            )
         except (TypeError, ValueError, KeyError) as exc:
             return self._reject(
                 observation=observation,
@@ -104,6 +127,12 @@ class ObservationProcessor:
             snapshot=self._snapshot(),
             duration=self._duration_since(started),
             timeline_updated=timeline_updated,
+            incident_updated=incident_transition is not None,
+            incident_id=(
+                incident_transition.incident.incident_id
+                if incident_transition is not None
+                else None
+            ),
         )
 
     def _reject(

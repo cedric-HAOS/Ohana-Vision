@@ -1,0 +1,217 @@
+.incidents-view {
+    min-height: 100%;
+    padding: 0 var(--ohana-space-6) var(--ohana-space-6);
+}
+
+.incidents-panel {
+    min-height: 100%;
+    overflow: hidden;
+    border: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+    border-radius: var(--ohana-radius-lg);
+    background: var(--ohana-background-surface);
+    box-shadow: var(--ohana-shadow-md);
+}
+
+.incidents-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--ohana-space-3);
+    padding: var(--ohana-space-4) var(--ohana-space-5);
+    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+}
+
+.incidents-summary-card {
+    display: grid;
+    gap: var(--ohana-space-1);
+    padding: var(--ohana-space-3) var(--ohana-space-4);
+    border: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+    border-radius: var(--ohana-radius-md);
+    background: var(--ohana-background-surface-raised);
+}
+
+.incidents-summary-card span,
+.incidents-summary-card small {
+    color: var(--ohana-text-muted);
+}
+
+.incidents-summary-card strong {
+    color: var(--ohana-text-primary);
+    font-family: var(--ohana-font-family-mono);
+    font-size: var(--ohana-font-size-xl);
+}
+
+.incidents-toolbar {
+    display: flex;
+    gap: var(--ohana-space-2);
+    padding: var(--ohana-space-4) var(--ohana-space-5);
+    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+}
+
+.incidents-filter {
+    padding: var(--ohana-space-2) var(--ohana-space-4);
+    border: var(--ohana-border-width-thin) solid var(--ohana-border-default);
+    border-radius: var(--ohana-radius-round);
+    color: var(--ohana-text-secondary);
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+}
+
+.incidents-filter.is-active {
+    border-color: var(--ohana-brand-primary);
+    color: var(--ohana-text-primary);
+    background: color-mix(in srgb, var(--ohana-brand-primary) 14%, transparent);
+}
+
+.incidents-list {
+    display: grid;
+    gap: var(--ohana-space-3);
+    padding: var(--ohana-space-5);
+}
+
+.incident-card {
+    --incident-color: var(--ohana-health-critical);
+    position: relative;
+    display: grid;
+    grid-template-columns: 0.28rem minmax(0, 1fr);
+    overflow: hidden;
+    border: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+    border-radius: var(--ohana-radius-md);
+    background: var(--ohana-background-surface-raised);
+}
+
+.incident-card--degraded,
+.incident-card--stale {
+    --incident-color: var(--ohana-health-degraded);
+}
+
+.incident-card.is-resolved {
+    --incident-color: var(--ohana-health-healthy);
+    opacity: 0.8;
+}
+
+.incident-card__accent {
+    background: var(--incident-color);
+}
+
+.incident-card__body {
+    display: grid;
+    gap: var(--ohana-space-3);
+    padding: var(--ohana-space-4);
+}
+
+.incident-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--ohana-space-4);
+}
+
+.incident-card__header h3,
+.incident-card__header p,
+.incident-card__message {
+    margin: 0;
+}
+
+.incident-card__header p,
+.incident-card__duration {
+    color: var(--ohana-text-muted);
+    font-size: var(--ohana-font-size-sm);
+}
+
+.incident-card__badges,
+.incident-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ohana-space-2);
+}
+
+.incident-status,
+.incident-badge {
+    display: inline-flex;
+    padding: var(--ohana-space-1) var(--ohana-space-2);
+    border-radius: var(--ohana-radius-round);
+    color: var(--ohana-text-secondary);
+    background: var(--ohana-background-canvas);
+    font-size: var(--ohana-font-size-xs);
+    font-weight: var(--ohana-font-weight-semibold);
+}
+
+.incident-status {
+    color: var(--incident-color);
+    background: color-mix(in srgb, var(--incident-color) 12%, transparent);
+}
+
+.incident-badge--silenced {
+    color: var(--ohana-health-degraded);
+}
+
+.incident-badge--resolved {
+    color: var(--ohana-health-healthy);
+}
+
+.incident-card__message {
+    padding: var(--ohana-space-3);
+    border-left: 0.2rem solid var(--incident-color);
+    color: var(--ohana-text-secondary);
+    background: var(--ohana-background-canvas);
+}
+
+.incident-card__details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ohana-space-4);
+    margin: 0;
+}
+
+.incident-card__details div {
+    display: grid;
+    gap: var(--ohana-space-1);
+}
+
+.incident-card__details dt {
+    color: var(--ohana-text-muted);
+    font-size: var(--ohana-font-size-xs);
+}
+
+.incident-card__details dd {
+    margin: 0;
+    color: var(--ohana-text-secondary);
+    font-family: var(--ohana-font-family-mono);
+    font-size: var(--ohana-font-size-xs);
+}
+
+.incidents-empty-state {
+    display: grid;
+    min-height: 16rem;
+    place-items: center;
+    align-content: center;
+    gap: var(--ohana-space-2);
+    color: var(--ohana-text-muted);
+    text-align: center;
+}
+
+.incidents-empty-state h3,
+.incidents-empty-state p {
+    margin: 0;
+}
+
+@media (max-width: 60rem) {
+    .incidents-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 42rem) {
+    .incidents-view {
+        padding-inline: var(--ohana-space-3);
+    }
+
+    .incidents-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .incident-card__header {
+        flex-direction: column;
+    }
+}

@@ -1,5 +1,6 @@
 """Tests for the Ohana-Vision application bootstrap."""
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -10,7 +11,7 @@ from ohana_vision.configuration import (
     ApplicationConfiguration,
     Environment,
 )
-from ohana_vision.domain import ObservationStore
+from ohana_vision.domain import HealthStatus, Observation, ObservationStore
 from ohana_vision.runtime import BackendRuntime
 from ohana_vision.timeline import TimelineEngine
 from ohana_vision.web.app import create_app
@@ -43,6 +44,28 @@ def test_build_application_context_contains_observation_store() -> None:
         context.observation_store,
         ObservationStore,
     )
+
+
+def test_build_application_context_restores_persistent_observations(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "vision.db"
+    first = build_application_context(database_path=database_path)
+    first.observation_store.add(
+        Observation(
+            capability_id="dns.resolve",
+            service_id="dns-primary",
+            node_id="infra-01",
+            status=HealthStatus.HEALTHY,
+            observed_at=datetime(2026, 8, 10, 10, 0, tzinfo=UTC),
+        )
+    )
+    first.observation_store.close()
+
+    restored = build_application_context(database_path=database_path)
+
+    assert restored.observation_store.observation_count == 1
+    restored.observation_store.close()
 
 
 def test_build_application_context_contains_timeline_engine() -> None:

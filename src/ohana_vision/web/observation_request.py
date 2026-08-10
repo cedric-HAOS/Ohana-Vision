@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -22,6 +23,8 @@ class ObservationRequest(BaseModel):
     status: HealthStatus
 
     observed_at: datetime
+    observation_id: UUID | None = None
+    message: str | None = None
 
     latency_ms: float | None = Field(default=None, ge=0)
 

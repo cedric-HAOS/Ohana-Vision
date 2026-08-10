@@ -140,22 +140,6 @@
     --flow-dasharray: 2 21;
 }
 
-.topology-link--visual-ethernet-5g {
-    --link-color: #55d68b;
-    --link-glow: rgb(85 214 139 / 15%);
-    --link-width: 4.5;
-    --flow-duration: 2.8s;
-    --flow-dasharray: 2 17;
-}
-
-.topology-link--visual-ethernet-8g {
-    --link-color: #38d9c5;
-    --link-glow: rgb(56 217 197 / 15%);
-    --link-width: 4.75;
-    --flow-duration: 2.1s;
-    --flow-dasharray: 2 14;
-}
-
 .topology-link--visual-ethernet-10g {
     --link-color: #4debff;
     --link-glow: rgb(77 235 255 / 16%);
@@ -1401,14 +1385,6 @@
 
 .topology-tools-panel__speed--2-5g {
     --speed-color: #ffd166;
-}
-
-.topology-tools-panel__speed--5g {
-    --speed-color: #55d68b;
-}
-
-.topology-tools-panel__speed--8g {
-    --speed-color: #38d9c5;
 }
 
 .topology-tools-panel__speed--10g {

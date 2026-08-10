@@ -6,6 +6,7 @@ from ohana_vision.configuration.agent import AgentConfiguration
 from ohana_vision.configuration.base import ConfigurationModel
 from ohana_vision.configuration.environment import Environment
 from ohana_vision.configuration.server import ServerConfiguration
+from ohana_vision.configuration.storage import StorageConfiguration
 from ohana_vision.configuration.web import WebConfiguration
 
 
@@ -18,6 +19,7 @@ class ApplicationConfiguration(ConfigurationModel):
     server: ServerConfiguration = ServerConfiguration()
     web: WebConfiguration = WebConfiguration()
     agent: AgentConfiguration = AgentConfiguration()
+    storage: StorageConfiguration = StorageConfiguration()
 
     @model_validator(mode="after")
     def validate_production_configuration(

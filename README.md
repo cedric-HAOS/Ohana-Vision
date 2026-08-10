@@ -85,7 +85,8 @@ Le navigateur ne regroupe jamais les observations. Chaque ligne représente un n
 
 ### Observations
 
-Les observations reçues en temps réel présentent notamment :
+Les observations reçues en temps réel sont persistées dans SQLite et restaurées
+au redémarrage. Elles présentent notamment :
 
 - la date ;
 - la capacité ;
@@ -94,6 +95,18 @@ Les observations reçues en temps réel présentent notamment :
 - l'état ;
 - la latence ;
 - les métadonnées.
+
+### Centre d'incidents
+
+La page **Incidents** suit chaque dégradation continue d'une capacité jusqu'à
+sa résolution. Elle regroupe le contexte de l'équipement et du service, le
+statut, le message, les dates et le nombre d'occurrences. Un opérateur peut
+acquitter un incident ou rendre ses notifications silencieuses pendant une
+heure ; ces décisions restent persistantes après un redémarrage.
+
+En production, observations et incidents utilisent par défaut
+`/var/lib/ohana-vision/vision.db`, configurable avec
+`storage.database_path` dans `vision.yaml`.
 
 ### Configuration graphique
 
@@ -207,6 +220,7 @@ ApplicationController
         ├── ServicesController
         ├── TimelineController
         ├── ObservationsController
+        ├── IncidentsController
         ├── ConfigurationController
         ├── DeviceDetailsController
         └── WebSocketController
@@ -224,6 +238,9 @@ Le frontend reste un moteur de rendu. La validation, les projections, la santé 
 |---|---|---|
 | `PUT` | `/api/infrastructure` | Remplacer le snapshot courant |
 | `POST` | `/api/observations` | Ingérer une observation |
+| `GET` | `/api/incidents` | Lire les incidents actifs ou résolus |
+| `POST` | `/api/incidents/{id}/acknowledge` | Acquitter un incident |
+| `POST/DELETE` | `/api/incidents/{id}/silence` | Suspendre ou réactiver ses notifications |
 | `GET` | `/api/topology` | Lire la topologie projetée |
 | `GET` | `/api/timeline` | Lire les périodes métier |
 | `GET` | `/api/runtime` | Lire l'état du runtime |

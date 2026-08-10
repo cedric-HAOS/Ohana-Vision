@@ -4,6 +4,13 @@ export const API = Object.freeze({
     version: "/api/version",
     runtime: "/api/runtime",
     observations: "/api/observations",
+    incidents: "/api/incidents",
+    incidentAcknowledge(incidentId) {
+        return `${this.incidents}/${encodeURIComponent(incidentId)}/acknowledge`;
+    },
+    incidentSilence(incidentId) {
+        return `${this.incidents}/${encodeURIComponent(incidentId)}/silence`;
+    },
     timeline: "/api/timeline",
     topology: "/api/topology",
     administrationCapabilities:

@@ -6,6 +6,7 @@ from typing import Annotated, cast
 
 from fastapi import Depends, HTTPException, Request, WebSocket, status
 
+from ohana_vision.domain.incident_store import IncidentStore
 from ohana_vision.domain.observation_store import ObservationStore
 from ohana_vision.runtime import BackendRuntime, ObservationProcessor
 from ohana_vision.timeline import TimelineEngine
@@ -68,6 +69,13 @@ def get_observation_store(
     return context.observation_store
 
 
+def get_incident_store(
+    context: ApplicationContextDependency,
+) -> IncidentStore:
+    """Return the persistent incident store from the application context."""
+    return context.incident_store
+
+
 def get_timeline_engine(
     context: ApplicationContextDependency,
 ) -> TimelineEngine:
@@ -83,6 +91,11 @@ RuntimeDependency = Annotated[
 ObservationStoreDependency = Annotated[
     ObservationStore,
     Depends(get_observation_store),
+]
+
+IncidentStoreDependency = Annotated[
+    IncidentStore,
+    Depends(get_incident_store),
 ]
 
 TimelineEngineDependency = Annotated[
@@ -135,6 +148,10 @@ def get_observation_processor(
         ObservationStore,
         Depends(get_observation_store),
     ],
+    incident_store: Annotated[
+        IncidentStore,
+        Depends(get_incident_store),
+    ],
     timeline_engine: Annotated[
         TimelineEngine,
         Depends(get_timeline_engine),
@@ -145,6 +162,7 @@ def get_observation_processor(
     return ObservationProcessor(
         runtime=runtime,
         observation_store=observation_store,
+        incident_store=incident_store,
         timeline_engine=timeline_engine,
         timer=timer,
     )

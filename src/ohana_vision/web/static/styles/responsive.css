@@ -68,6 +68,9 @@
         data-active-view="observations"
     ],
     .application-views[
+        data-active-view="incidents"
+    ],
+    .application-views[
         data-active-view="services"
     ],
     .application-views[
@@ -108,6 +111,9 @@
         data-active-view="observations"
     ] .application-view.is-active,
     .application-views[
+        data-active-view="incidents"
+    ] .application-view.is-active,
+    .application-views[
         data-active-view="services"
     ] .application-view.is-active,
     .application-views[
@@ -142,6 +148,12 @@
     .application-views[
         data-active-view="observations"
     ] .side-panel-card--observations,
+    .application-views[
+        data-active-view="incidents"
+    ] .incidents-view,
+    .application-views[
+        data-active-view="incidents"
+    ] .incidents-panel,
     .application-views[
         data-active-view^="configuration-"
     ] .configuration-view,

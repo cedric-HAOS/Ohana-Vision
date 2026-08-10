@@ -27,6 +27,10 @@ import {
 } from "./navigation.js";
 
 import {
+    IncidentsController,
+} from "./incidents.js";
+
+import {
     ObservationsController,
 } from "./observations.js";
 
@@ -60,6 +64,7 @@ export class ApplicationController {
         this.dashboard = null;
         this.configuration = null;
         this.deviceDetails = null;
+        this.incidents = null;
         this.navigation = null;
         this.observations = null;
         this.services = null;
@@ -228,6 +233,11 @@ export class ApplicationController {
                 },
             });
 
+        this.incidents =
+            new IncidentsController({
+                state: this.state,
+            });
+
         this.navigation =
             new NavigationController({
                 defaultView: "overview",
@@ -264,6 +274,7 @@ export class ApplicationController {
     initializeControllers() {
         this.deviceDetails.initialize();
         this.configuration.initialize();
+        this.incidents.initialize();
         this.services.initialize();
         this.topology.initialize();
         this.timeline.initialize();
@@ -307,6 +318,10 @@ export class ApplicationController {
             void this.services.load();
         }
 
+        if (viewName === "incidents") {
+            void this.incidents.load();
+        }
+
         if (
             this.initialDataLoaded
             && new Set([
@@ -315,6 +330,7 @@ export class ApplicationController {
                 "services",
                 "timeline",
                 "observations",
+                "incidents",
             ]).has(viewName)
         ) {
             this.scheduleObservationRefresh();
@@ -422,6 +438,10 @@ export class ApplicationController {
                 operations.push(
                     this.loadObservations(),
                 );
+            } else if (activeView === "incidents") {
+                operations.push(
+                    this.incidents.load(),
+                );
             } else if (activeView === "timeline") {
                 operations.push(
                     this.loadTimeline({
@@ -510,6 +530,15 @@ export class ApplicationController {
                     this.services.load({
                         force: true,
                     }),
+                );
+            }
+
+            if (
+                this.navigation.activeView
+                    === "incidents"
+            ) {
+                dataOperations.push(
+                    this.incidents.load(),
                 );
             }
 

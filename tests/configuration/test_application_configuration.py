@@ -20,6 +20,7 @@ def test_application_configuration_has_safe_defaults() -> None:
     assert configuration.server.port == 8000
     assert configuration.server.log_level == "info"
     assert configuration.web.documentation_enabled is True
+    assert configuration.storage.database_path is None
 
 
 def test_application_configuration_is_immutable() -> None:

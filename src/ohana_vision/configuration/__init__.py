@@ -12,6 +12,7 @@ from ohana_vision.configuration.loader import (
 from ohana_vision.configuration.server import (
     ServerConfiguration,
 )
+from ohana_vision.configuration.storage import StorageConfiguration
 from ohana_vision.configuration.web import WebConfiguration
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     "ConfigurationLoader",
     "Environment",
     "ServerConfiguration",
+    "StorageConfiguration",
     "WebConfiguration",
 ]

@@ -81,6 +81,10 @@ async def ingest_observation(
                 "service_id": observation.service_id,
                 "node_id": observation.node_id,
                 "status": observation.status.value,
+                "incident_updated": result.incident_updated,
+                "incident_id": (
+                    str(result.incident_id) if result.incident_id is not None else None
+                ),
             }
         )
 

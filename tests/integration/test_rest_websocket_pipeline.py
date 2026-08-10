@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import cast
+from uuid import UUID
 
 from fastapi.testclient import TestClient
 
@@ -18,6 +19,8 @@ class FakeProcessingResult:
     """Minimal successful processing result."""
 
     accepted: bool = True
+    incident_updated: bool = False
+    incident_id: UUID | None = None
 
 
 class FakeObservationProcessor:
@@ -88,4 +91,6 @@ def test_post_observation_is_received_by_websocket_client() -> None:
         "service_id": "dns-primary",
         "node_id": "infra-01",
         "status": "healthy",
+        "incident_updated": False,
+        "incident_id": None,
     }

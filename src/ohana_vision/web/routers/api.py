@@ -6,6 +6,7 @@ from ohana_vision import __version__
 from ohana_vision.web.routers.administration import (
     router as administration_router,
 )
+from ohana_vision.web.routers.incidents import router as incidents_router
 from ohana_vision.web.routers.infrastructure import (
     router as infrastructure_router,
 )
@@ -53,4 +54,5 @@ router.include_router(runtime_router)
 router.include_router(observations_router)
 router.include_router(timeline_router)
 router.include_router(infrastructure_router)
+router.include_router(incidents_router)
 router.include_router(administration_router)

@@ -18,6 +18,8 @@ class ProcessingResult:
     snapshot: RuntimeSnapshot
     duration: timedelta
     timeline_updated: bool = False
+    incident_updated: bool = False
+    incident_id: UUID | None = None
     reason: str | None = None
 
     def __post_init__(self) -> None:
@@ -36,6 +38,9 @@ class ProcessingResult:
 
         if not self.accepted and self.timeline_updated:
             raise ValueError("A rejected observation cannot update a timeline")
+
+        if not self.accepted and self.incident_updated:
+            raise ValueError("A rejected observation cannot update an incident")
 
     @property
     def rejected(self) -> bool:
@@ -57,6 +62,8 @@ class ProcessingResult:
         snapshot: RuntimeSnapshot,
         duration: timedelta,
         timeline_updated: bool,
+        incident_updated: bool = False,
+        incident_id: UUID | None = None,
     ) -> ProcessingResult:
         """Create a successful processing result."""
 
@@ -66,6 +73,8 @@ class ProcessingResult:
             snapshot=snapshot,
             duration=duration,
             timeline_updated=timeline_updated,
+            incident_updated=incident_updated,
+            incident_id=incident_id,
         )
 
     @classmethod

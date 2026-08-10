@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -161,3 +162,53 @@ def test_history_window_keeps_only_latest_state_before_since() -> None:
         latency_before,
         resolve_in_window,
     )
+
+
+def test_sqlite_store_restores_observations_after_restart(tmp_path: Path) -> None:
+    database_path = tmp_path / "vision.db"
+    original = Observation(
+        capability_id="dns.resolve",
+        service_id="dns-primary",
+        node_id="infra-01",
+        status=HealthStatus.DEGRADED,
+        observed_at=datetime(2026, 8, 10, 10, 0, tzinfo=UTC),
+        message="DNS latency is elevated.",
+        latency_ms=42.5,
+        metadata={"server": "192.168.1.10"},
+    )
+    first_store = ObservationStore(database_path)
+    first_store.add(original)
+    first_store.close()
+
+    restored_store = ObservationStore(database_path)
+
+    assert restored_store.observations == (original,)
+    assert restored_store.history(capability_id="dns.resolve") == (original,)
+    restored_store.close()
+
+
+def test_sqlite_store_rejects_duplicate_after_restart(tmp_path: Path) -> None:
+    database_path = tmp_path / "vision.db"
+    observation = make_observation()
+    first_store = ObservationStore(database_path)
+    first_store.add(observation)
+    first_store.close()
+    restored_store = ObservationStore(database_path)
+
+    with pytest.raises(DuplicateObservationError):
+        restored_store.add(observation)
+
+    restored_store.close()
+
+
+def test_sqlite_store_clear_is_durable(tmp_path: Path) -> None:
+    database_path = tmp_path / "vision.db"
+    store = ObservationStore(database_path)
+    store.add(make_observation())
+    store.clear()
+    store.close()
+
+    restored_store = ObservationStore(database_path)
+
+    assert restored_store.observations == ()
+    restored_store.close()

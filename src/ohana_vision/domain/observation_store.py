@@ -1,10 +1,15 @@
-"""In-memory storage for immutable observations."""
+"""In-memory and SQLite-backed storage for immutable observations."""
 
+import json
+import sqlite3
 from collections.abc import Iterable
 from datetime import datetime
 from heapq import nlargest
+from pathlib import Path
+from threading import RLock
 from uuid import UUID
 
+from ohana_vision.domain.health import HealthStatus
 from ohana_vision.domain.observation import Observation
 
 
@@ -15,34 +20,47 @@ class DuplicateObservationError(ValueError):
 class ObservationStore:
     """Store immutable observations without projecting domain state."""
 
-    def __init__(self) -> None:
-        """Initialize an empty observation store."""
+    _SCHEMA_VERSION = 1
+
+    def __init__(self, database_path: Path | str | None = None) -> None:
+        """Initialize a memory store with optional durable SQLite storage."""
 
         self._observations: list[Observation] = []
         self._observation_ids: set[UUID] = set()
+        self._lock = RLock()
+        self._database_path = Path(database_path) if database_path is not None else None
+        self._connection: sqlite3.Connection | None = None
+
+        if self._database_path is not None:
+            self._open_database()
+            self._load_observations()
 
     @property
     def observation_count(self) -> int:
         """Return the number of stored observations."""
 
-        return len(self._observations)
+        with self._lock:
+            return len(self._observations)
 
     @property
     def observations(self) -> tuple[Observation, ...]:
         """Return observations in ingestion order."""
 
-        return tuple(self._observations)
+        with self._lock:
+            return tuple(self._observations)
 
     def add(self, observation: Observation) -> Observation:
         """Store and return an observation."""
 
-        if observation.observation_id in self._observation_ids:
-            raise DuplicateObservationError(
-                f"Observation {observation.observation_id} already exists."
-            )
+        with self._lock:
+            if observation.observation_id in self._observation_ids:
+                raise DuplicateObservationError(
+                    f"Observation {observation.observation_id} already exists."
+                )
 
-        self._observations.append(observation)
-        self._observation_ids.add(observation.observation_id)
+            self._persist(observation)
+            self._observations.append(observation)
+            self._observation_ids.add(observation.observation_id)
 
         return observation
 
@@ -69,9 +87,12 @@ class ObservationStore:
         self._validate_dates(since=since, until=until)
         self._validate_limit(limit)
 
+        with self._lock:
+            stored = tuple(self._observations)
+
         observations = (
             observation
-            for observation in self._observations
+            for observation in stored
             if node_id is None or observation.node_id == node_id
         )
         observations = (
@@ -137,7 +158,10 @@ class ObservationStore:
         ] = {}
         visible: list[Observation] = []
 
-        for observation in self._observations:
+        with self._lock:
+            stored = tuple(self._observations)
+
+        for observation in stored:
             if until is not None and observation.observed_at > until:
                 continue
 
@@ -168,8 +192,133 @@ class ObservationStore:
     def clear(self) -> None:
         """Remove every stored observation."""
 
-        self._observations.clear()
-        self._observation_ids.clear()
+        with self._lock:
+            if self._connection is not None:
+                self._connection.execute("DELETE FROM observations")
+                self._connection.commit()
+
+            self._observations.clear()
+            self._observation_ids.clear()
+
+    def close(self) -> None:
+        """Close the optional SQLite connection."""
+        with self._lock:
+            if self._connection is not None:
+                self._connection.close()
+                self._connection = None
+
+    def _open_database(self) -> None:
+        """Create or open the durable observation database."""
+        if self._database_path is None:
+            return
+
+        self._database_path.parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(
+            self._database_path,
+            check_same_thread=False,
+        )
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA journal_mode=WAL")
+        connection.execute("PRAGMA synchronous=NORMAL")
+        connection.execute("PRAGMA busy_timeout=5000")
+
+        version = int(connection.execute("PRAGMA user_version").fetchone()[0])
+        if version > self._SCHEMA_VERSION:
+            connection.close()
+            raise RuntimeError(
+                "Observation database schema is newer than this Vision version."
+            )
+
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS observations (
+                sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+                observation_id TEXT NOT NULL UNIQUE,
+                capability_id TEXT NOT NULL,
+                service_id TEXT NOT NULL,
+                node_id TEXT NOT NULL,
+                status TEXT NOT NULL,
+                observed_at TEXT NOT NULL,
+                message TEXT,
+                latency_ms REAL,
+                metadata_json TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE INDEX IF NOT EXISTS observations_lookup
+            ON observations(node_id, service_id, capability_id, observed_at)
+            """
+        )
+        connection.execute(f"PRAGMA user_version={self._SCHEMA_VERSION}")
+        connection.commit()
+        self._connection = connection
+
+    def _load_observations(self) -> None:
+        """Restore observations from SQLite in ingestion order."""
+        if self._connection is None:
+            return
+
+        rows = self._connection.execute(
+            """
+            SELECT observation_id, capability_id, service_id, node_id, status,
+                   observed_at, message, latency_ms, metadata_json
+            FROM observations
+            ORDER BY sequence
+            """
+        ).fetchall()
+
+        for row in rows:
+            observation = Observation(
+                observation_id=UUID(row["observation_id"]),
+                capability_id=row["capability_id"],
+                service_id=row["service_id"],
+                node_id=row["node_id"],
+                status=HealthStatus(row["status"]),
+                observed_at=datetime.fromisoformat(row["observed_at"]),
+                message=row["message"],
+                latency_ms=row["latency_ms"],
+                metadata=json.loads(row["metadata_json"]),
+            )
+            self._observations.append(observation)
+            self._observation_ids.add(observation.observation_id)
+
+    def _persist(self, observation: Observation) -> None:
+        """Persist one observation before exposing it in memory."""
+        if self._connection is None:
+            return
+
+        try:
+            self._connection.execute(
+                """
+                INSERT INTO observations (
+                    observation_id, capability_id, service_id, node_id, status,
+                    observed_at, message, latency_ms, metadata_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(observation.observation_id),
+                    observation.capability_id,
+                    observation.service_id,
+                    observation.node_id,
+                    observation.status.value,
+                    observation.observed_at.isoformat(),
+                    observation.message,
+                    observation.latency_ms,
+                    json.dumps(
+                        dict(observation.metadata),
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                        sort_keys=True,
+                    ),
+                ),
+            )
+            self._connection.commit()
+        except sqlite3.IntegrityError as error:
+            raise DuplicateObservationError(
+                f"Observation {observation.observation_id} already exists."
+            ) from error
 
     @staticmethod
     def _validate_limit(limit: int | None) -> None:

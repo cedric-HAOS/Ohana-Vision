@@ -131,6 +131,15 @@ export class ConfigurationController {
         this.architectureInteractionMode = "move";
         this.pendingLinkSource = null;
         this.draggedArchitectureDevice = null;
+        this.architectureViewport = {
+            scale: 1,
+            x: 0,
+            y: 0,
+        };
+        this.architectureViewportInitialized = false;
+        this.architecturePanning = false;
+        this.architecturePanStart = null;
+        this.architecturePanMoved = false;
 
         this.elements = this.findElements();
     }
@@ -203,6 +212,12 @@ export class ConfigurationController {
                 byId("architecture-mode-link"),
             architectureModeStatus:
                 byId("architecture-mode-status"),
+            architectureZoomIn:
+                byId("architecture-zoom-in"),
+            architectureZoomOut:
+                byId("architecture-zoom-out"),
+            architectureZoomReset:
+                byId("architecture-zoom-reset"),
             architectureDeviceServices:
                 byId("architecture-device-services"),
             architectureAddServiceToDevice:
@@ -332,6 +347,50 @@ export class ConfigurationController {
             );
         this.elements.architectureBoard
             ?.addEventListener(
+                "wheel",
+                (event) => {
+                    this.handleArchitectureWheel(event);
+                },
+                {passive: false},
+            );
+        this.elements.architectureBoard
+            ?.addEventListener(
+                "pointerdown",
+                (event) => {
+                    this.handleArchitecturePointerDown(
+                        event,
+                    );
+                },
+            );
+        this.elements.architectureBoard
+            ?.addEventListener(
+                "pointermove",
+                (event) => {
+                    this.handleArchitecturePointerMove(
+                        event,
+                    );
+                },
+            );
+        this.elements.architectureBoard
+            ?.addEventListener(
+                "pointerup",
+                (event) => {
+                    this.handleArchitecturePointerUp(
+                        event,
+                    );
+                },
+            );
+        this.elements.architectureBoard
+            ?.addEventListener(
+                "pointercancel",
+                (event) => {
+                    this.handleArchitecturePointerUp(
+                        event,
+                    );
+                },
+            );
+        this.elements.architectureBoard
+            ?.addEventListener(
                 "dragstart",
                 (event) => {
                     this.handleArchitectureDragStart(
@@ -410,6 +469,21 @@ export class ConfigurationController {
                 () => this.setArchitectureMode(
                     "link",
                 ),
+            );
+        this.elements.architectureZoomIn
+            ?.addEventListener(
+                "click",
+                () => this.zoomArchitecture(1.2),
+            );
+        this.elements.architectureZoomOut
+            ?.addEventListener(
+                "click",
+                () => this.zoomArchitecture(1 / 1.2),
+            );
+        this.elements.architectureZoomReset
+            ?.addEventListener(
+                "click",
+                () => this.fitArchitectureViewport(),
             );
         this.elements.architectureAddServiceToDevice
             ?.addEventListener(
@@ -539,6 +613,7 @@ export class ConfigurationController {
             this.infrastructure = await fetchJson(
                 API.administrationInfrastructure,
             );
+            this.architectureViewportInitialized = false;
             this.liveTopology = null;
 
             try {
@@ -669,6 +744,16 @@ export class ConfigurationController {
                 panel.dataset.configurationPanel
                 !== sectionName;
         });
+
+        if (sectionName === "architecture") {
+            window.requestAnimationFrame(() => {
+                if (!this.architectureViewportInitialized) {
+                    this.fitArchitectureViewport();
+                } else {
+                    this.applyArchitectureViewport();
+                }
+            });
+        }
 
         if (
             sectionName === "network"
@@ -1109,19 +1194,27 @@ export class ConfigurationController {
     }
 
     dynamicLeaseRow(lease) {
+        const mac = escapeHtml(lease.mac_address);
+        const hostname = lease.hostname
+            ?? "Client sans nom";
+
         return `
             <tr>
                 <td>
                     <span class="configuration-table__device">
-                        <strong>${escapeHtml(lease.hostname ?? "Client sans nom")}</strong>
+                        <strong>${escapeHtml(hostname)}</strong>
                         <small>Bail dynamique</small>
                     </span>
                 </td>
                 <td>${escapeHtml(lease.address)}</td>
-                <td><code>${escapeHtml(lease.mac_address)}</code></td>
+                <td><code>${mac}</code></td>
                 <td>Dynamique</td>
                 <td><span class="status-badge status-badge--healthy">Actif</span></td>
-                <td></td>
+                <td>
+                    <span class="configuration-table__actions">
+                        <button aria-label="Ajouter ${escapeHtml(hostname)} comme réservation" class="configuration-icon-button configuration-icon-button--add" data-dhcp-add="${mac}" title="Ajouter comme réservation" type="button">+</button>
+                    </span>
+                </td>
             </tr>
         `;
     }
@@ -1220,7 +1313,7 @@ export class ConfigurationController {
         );
     }
 
-    openReservation(reservation = null) {
+    openReservation(reservation = null, options = {}) {
         const dialog =
             this.elements.dhcpReservationDialog;
 
@@ -1228,15 +1321,21 @@ export class ConfigurationController {
             return;
         }
 
+        const editing = Boolean(
+            reservation && !options.isNew,
+        );
+
         this.elements
             .dhcpReservationDialogTitle
-            .textContent = reservation
+            .textContent = editing
                 ? "Modifier la réservation"
                 : "Ajouter une réservation";
 
         this.setValue(
             "dhcp-reservation-original-mac",
-            reservation?.mac_address ?? "",
+            editing
+                ? reservation.mac_address
+                : "",
         );
         this.setValue(
             "dhcp-reservation-hostname",
@@ -1394,7 +1493,8 @@ export class ConfigurationController {
 
     handleDHCPTableClick(event) {
         const button = event.target.closest(
-            "[data-dhcp-edit], [data-dhcp-delete]",
+            "[data-dhcp-edit], [data-dhcp-delete], "
+            + "[data-dhcp-add]",
         );
 
         if (!button || !this.dhcp) {
@@ -1405,6 +1505,27 @@ export class ConfigurationController {
             button.dataset.dhcpEdit;
         const deleteMac =
             button.dataset.dhcpDelete;
+        const addMac =
+            button.dataset.dhcpAdd;
+
+        if (addMac) {
+            const lease = (this.dhcp.leases ?? [])
+                .find((item) =>
+                    item.mac_address.toUpperCase()
+                    === addMac.toUpperCase(),
+                );
+
+            if (lease) {
+                this.openReservation({
+                    hostname: lease.hostname ?? "",
+                    address: lease.address,
+                    mac_address: lease.mac_address,
+                    category: "infrastructure",
+                }, {isNew: true});
+            }
+            return;
+        }
+
         const mac = editMac ?? deleteMac;
         const reservation =
             this.dhcp.reservations.find(
@@ -1667,6 +1788,13 @@ export class ConfigurationController {
                 </div>
             `;
 
+        this.applyArchitectureViewport();
+        if (!this.architectureViewportInitialized) {
+            window.requestAnimationFrame(() => {
+                this.fitArchitectureViewport();
+            });
+        }
+
         this.updateArchitectureModeControls();
         this.populateNodeOptions();
         this.populateDeviceOptions();
@@ -1900,6 +2028,11 @@ export class ConfigurationController {
     }
 
     handleArchitectureClick(event) {
+        if (this.architecturePanMoved) {
+            this.architecturePanMoved = false;
+            return;
+        }
+
         const element = event.target.closest(
             "[data-architecture-device], "
             + "[data-architecture-service], "
@@ -1936,6 +2069,236 @@ export class ConfigurationController {
                 element.dataset.architectureLink,
             );
         }
+    }
+
+    applyArchitectureViewport() {
+        const map = this.elements.architectureBoard
+            ?.querySelector(".architecture-map");
+
+        if (!map) {
+            return;
+        }
+
+        const {scale, x, y} =
+            this.architectureViewport;
+        map.style.transform =
+            `translate(${x}px, ${y}px) scale(${scale})`;
+    }
+
+    fitArchitectureViewport() {
+        const board = this.elements.architectureBoard;
+        const map = board?.querySelector(
+            ".architecture-map",
+        );
+
+        if (!board || !map) {
+            return;
+        }
+
+        map.style.transform = "none";
+        const boardBounds = board.getBoundingClientRect();
+        const mapWidth = map.offsetWidth;
+        const mapHeight = map.offsetHeight;
+        const devices = [
+            ...map.querySelectorAll(
+                ".architecture-map-device",
+            ),
+        ];
+
+        if (
+            boardBounds.width <= 0
+            || boardBounds.height <= 0
+            || mapWidth <= 0
+            || mapHeight <= 0
+        ) {
+            this.applyArchitectureViewport();
+            return;
+        }
+
+        const content = devices.length
+            ? {
+                x: Math.min(
+                    ...devices.map((device) =>
+                        device.offsetLeft,
+                    ),
+                ),
+                y: Math.min(
+                    ...devices.map((device) =>
+                        device.offsetTop,
+                    ),
+                ),
+                right: Math.max(
+                    ...devices.map((device) =>
+                        device.offsetLeft
+                        + device.offsetWidth,
+                    ),
+                ),
+                bottom: Math.max(
+                    ...devices.map((device) =>
+                        device.offsetTop
+                        + device.offsetHeight,
+                    ),
+                ),
+            }
+            : {
+                x: 0,
+                y: 0,
+                right: mapWidth,
+                bottom: mapHeight,
+            };
+        const contentWidth =
+            content.right - content.x;
+        const contentHeight =
+            content.bottom - content.y;
+        const padding = 48;
+        const scale = Math.min(
+            (boardBounds.width - padding * 2)
+                / contentWidth,
+            (boardBounds.height - padding * 2)
+                / contentHeight,
+            1,
+        );
+        const boundedScale = Math.max(0.35, scale);
+
+        this.architectureViewport = {
+            scale: boundedScale,
+            x: (
+                boardBounds.width
+                - contentWidth * boundedScale
+            ) / 2
+                - content.x * boundedScale,
+            y: (
+                boardBounds.height
+                - contentHeight * boundedScale
+            ) / 2
+                - content.y * boundedScale,
+        };
+        this.architectureViewportInitialized = true;
+        this.applyArchitectureViewport();
+    }
+
+    zoomArchitecture(factor, clientPoint = null) {
+        const board = this.elements.architectureBoard;
+
+        if (!board) {
+            return;
+        }
+
+        const bounds = board.getBoundingClientRect();
+        const point = clientPoint ?? {
+            x: bounds.left + bounds.width / 2,
+            y: bounds.top + bounds.height / 2,
+        };
+        const localX = point.x - bounds.left;
+        const localY = point.y - bounds.top;
+        const previous = this.architectureViewport;
+        const scale = Math.min(
+            3,
+            Math.max(0.35, previous.scale * factor),
+        );
+        const appliedFactor = scale / previous.scale;
+
+        this.architectureViewport = {
+            scale,
+            x: localX
+                - (localX - previous.x)
+                * appliedFactor,
+            y: localY
+                - (localY - previous.y)
+                * appliedFactor,
+        };
+        this.architectureViewportInitialized = true;
+        this.applyArchitectureViewport();
+    }
+
+    handleArchitectureWheel(event) {
+        if (
+            !this.elements.architectureBoard
+                ?.querySelector(".architecture-map")
+        ) {
+            return;
+        }
+
+        event.preventDefault();
+        this.zoomArchitecture(
+            event.deltaY < 0 ? 1.2 : 1 / 1.2,
+            {
+                x: event.clientX,
+                y: event.clientY,
+            },
+        );
+    }
+
+    handleArchitecturePointerDown(event) {
+        if (
+            event.button !== 0
+            || event.target.closest(
+                "[data-architecture-device], "
+                + "[data-architecture-service], "
+                + "[data-architecture-link], button, input, select",
+            )
+        ) {
+            return;
+        }
+
+        this.architecturePanning = true;
+        this.architecturePanMoved = false;
+        this.architecturePanStart = {
+            clientX: event.clientX,
+            clientY: event.clientY,
+            x: this.architectureViewport.x,
+            y: this.architectureViewport.y,
+        };
+        this.elements.architectureBoard
+            .setPointerCapture(event.pointerId);
+        this.elements.architectureBoard
+            .classList.add("is-panning");
+    }
+
+    handleArchitecturePointerMove(event) {
+        if (
+            !this.architecturePanning
+            || !this.architecturePanStart
+        ) {
+            return;
+        }
+
+        const deltaX =
+            event.clientX
+            - this.architecturePanStart.clientX;
+        const deltaY =
+            event.clientY
+            - this.architecturePanStart.clientY;
+
+        if (Math.hypot(deltaX, deltaY) > 3) {
+            this.architecturePanMoved = true;
+        }
+
+        this.architectureViewport = {
+            ...this.architectureViewport,
+            x: this.architecturePanStart.x + deltaX,
+            y: this.architecturePanStart.y + deltaY,
+        };
+        this.architectureViewportInitialized = true;
+        this.applyArchitectureViewport();
+    }
+
+    handleArchitecturePointerUp(event) {
+        if (!this.architecturePanning) {
+            return;
+        }
+
+        this.architecturePanning = false;
+        this.architecturePanStart = null;
+        if (
+            this.elements.architectureBoard
+                .hasPointerCapture(event.pointerId)
+        ) {
+            this.elements.architectureBoard
+                .releasePointerCapture(event.pointerId);
+        }
+        this.elements.architectureBoard
+            .classList.remove("is-panning");
     }
 
     setArchitectureMode(mode) {
@@ -3380,14 +3743,6 @@ export class ConfigurationController {
 
         if (bandwidth >= 10000) {
             return "ethernet-10g";
-        }
-
-        if (bandwidth >= 8000) {
-            return "ethernet-8g";
-        }
-
-        if (bandwidth >= 5000) {
-            return "ethernet-5g";
         }
 
         if (bandwidth >= 2500) {

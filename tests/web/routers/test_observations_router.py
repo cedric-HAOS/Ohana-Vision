@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import cast
+from uuid import UUID
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -23,6 +24,8 @@ class FakeProcessingResult:
     """Minimal processing result used by endpoint tests."""
 
     accepted: bool
+    incident_updated: bool = False
+    incident_id: UUID | None = None
 
 
 class FakeObservationStore:
@@ -415,6 +418,8 @@ def test_post_observation_broadcasts_after_success() -> None:
     assert message["service_id"] == "dns-primary"
     assert message["node_id"] == "infra-01"
     assert message["status"] == "healthy"
+    assert message["incident_updated"] is False
+    assert message["incident_id"] is None
 
 
 def test_post_observation_does_not_broadcast_after_rejection() -> None:

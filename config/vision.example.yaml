@@ -10,6 +10,9 @@ server:
 web:
   documentation_enabled: false
 
+storage:
+  database_path: /var/lib/ohana-vision/vision.db
+
 agent:
   administration_enabled: true
   administration_url: http://127.0.0.1:8765

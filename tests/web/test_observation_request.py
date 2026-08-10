@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
@@ -24,12 +25,18 @@ def make_payload() -> dict:
 
 
 def test_request_accepts_valid_payload() -> None:
-    request = ObservationRequest(**make_payload())
+    observation_id = uuid4()
+    payload = make_payload()
+    payload["observation_id"] = observation_id
+    payload["message"] = "DNS is healthy."
+    request = ObservationRequest(**payload)
 
     assert request.capability_id == "dns"
     assert request.status is HealthStatus.HEALTHY
     assert request.latency_ms == 12.5
     assert request.metadata["server"] == "1.1.1.1"
+    assert request.observation_id == observation_id
+    assert request.message == "DNS is healthy."
 
 
 def test_request_defaults_metadata() -> None:

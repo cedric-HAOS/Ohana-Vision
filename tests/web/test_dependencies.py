@@ -6,6 +6,7 @@ from typing import cast
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from ohana_vision.domain.incident_store import IncidentStore
 from ohana_vision.domain.observation_store import ObservationStore
 from ohana_vision.runtime import (
     BackendRuntime,
@@ -184,6 +185,7 @@ def test_observation_processor_dependency_builds_processor() -> None:
     runtime = BackendRuntime()
     observation_store = ObservationStore()
     timeline_engine = TimelineEngine()
+    incident_store = IncidentStore()
     observed_at = datetime(
         2026,
         7,
@@ -196,11 +198,13 @@ def test_observation_processor_dependency_builds_processor() -> None:
     processor = get_observation_processor(
         runtime=runtime,
         observation_store=observation_store,
+        incident_store=incident_store,
         timeline_engine=timeline_engine,
         timer=lambda: observed_at.timestamp(),
     )
 
     assert isinstance(processor, ObservationProcessor)
+    incident_store.close()
 
 
 def test_observation_processor_dependency_can_be_overridden() -> None:

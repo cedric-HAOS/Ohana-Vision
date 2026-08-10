@@ -243,8 +243,6 @@ class TopologyCanvas {
                             <span class="topology-tools-panel__speed topology-tools-panel__speed--100m">100M</span>
                             <span class="topology-tools-panel__speed topology-tools-panel__speed--1g">1G</span>
                             <span class="topology-tools-panel__speed topology-tools-panel__speed--2-5g">2,5G</span>
-                            <span class="topology-tools-panel__speed topology-tools-panel__speed--5g">5G</span>
-                            <span class="topology-tools-panel__speed topology-tools-panel__speed--8g">8G</span>
                             <span class="topology-tools-panel__speed topology-tools-panel__speed--10g">10G</span>
                         </div>
                         <span class="topology-tools-panel__cadence-caption">
@@ -1939,14 +1937,6 @@ class TopologyCanvas {
 
             if (bandwidth >= 10000) {
                 return "ethernet-10g";
-            }
-
-            if (bandwidth >= 8000) {
-                return "ethernet-8g";
-            }
-
-            if (bandwidth >= 5000) {
-                return "ethernet-5g";
             }
 
             if (bandwidth >= 2500) {

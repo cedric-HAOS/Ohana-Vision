@@ -339,6 +339,13 @@
         url("../assets/icons/navigation/eye.svg");
 }
 
+.sidebar-navigation__icon--incidents {
+    mask-image:
+        url("../assets/icons/navigation/activity.svg");
+    -webkit-mask-image:
+        url("../assets/icons/navigation/activity.svg");
+}
+
 .sidebar-navigation__icon--configuration {
     mask-image:
         url("../assets/icons/navigation/settings.svg");

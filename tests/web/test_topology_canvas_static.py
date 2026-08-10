@@ -331,8 +331,8 @@ def test_topology_canvas_styles_link_kinds() -> None:
     assert ".topology-link--visual-ethernet-100m" in response.text
     assert ".topology-link--visual-ethernet-1g" in response.text
     assert ".topology-link--visual-ethernet-2-5g" in response.text
-    assert ".topology-link--visual-ethernet-5g" in response.text
-    assert ".topology-link--visual-ethernet-8g" in response.text
+    assert ".topology-link--visual-ethernet-5g" not in response.text
+    assert ".topology-link--visual-ethernet-8g" not in response.text
     assert ".topology-link--visual-ethernet-10g" in response.text
     assert ".topology-link--visual-wifi" in response.text
     assert ".topology-link--visual-fiber" in response.text
@@ -355,8 +355,8 @@ def test_topology_canvas_derives_fiber_and_bandwidth_styles() -> None:
     assert 'return "ethernet-100m"' in response.text
     assert 'return "ethernet-1g"' in response.text
     assert 'return "ethernet-2-5g"' in response.text
-    assert 'return "ethernet-5g"' in response.text
-    assert 'return "ethernet-8g"' in response.text
+    assert 'return "ethernet-5g"' not in response.text
+    assert 'return "ethernet-8g"' not in response.text
     assert 'return "ethernet-10g"' in response.text
     assert "`topology-link--visual-${normalizedVisualKind}`" in response.text
     assert "group.dataset.visualKind" in response.text
@@ -380,10 +380,10 @@ def test_topology_links_use_capacity_colours() -> None:
     assert "--link-color: #ff9f43;" in response.text
     assert ".topology-link--visual-ethernet-2-5g" in response.text
     assert "--link-color: #ffd166;" in response.text
-    assert ".topology-link--visual-ethernet-5g" in response.text
-    assert "--link-color: #55d68b;" in response.text
-    assert ".topology-link--visual-ethernet-8g" in response.text
-    assert "--link-color: #38d9c5;" in response.text
+    assert ".topology-link--visual-ethernet-5g" not in response.text
+    assert "--link-color: #55d68b;" not in response.text
+    assert ".topology-link--visual-ethernet-8g" not in response.text
+    assert "--link-color: #38d9c5;" not in response.text
     assert ".topology-link--visual-ethernet-10g" in response.text
     assert "--link-color: #4debff;" in response.text
     assert ".topology-link--health-healthy {" not in response.text
@@ -745,8 +745,8 @@ def test_topology_canvas_renders_unified_tools_panel() -> None:
     assert ">100M<" in response.text
     assert ">1G<" in response.text
     assert ">2,5G<" in response.text
-    assert ">5G<" in response.text
-    assert ">8G<" in response.text
+    assert ">5G<" not in response.text
+    assert ">8G<" not in response.text
     assert ">10G<" in response.text
     assert "Saturation" not in response.text
     assert "WAN" not in response.text
@@ -790,8 +790,8 @@ def test_topology_tools_panel_is_fixed_and_responsive() -> None:
     assert ".topology-tools-panel__speed--100m" in response.text
     assert ".topology-tools-panel__speed--1g" in response.text
     assert ".topology-tools-panel__speed--2-5g" in response.text
-    assert ".topology-tools-panel__speed--5g" in response.text
-    assert ".topology-tools-panel__speed--8g" in response.text
+    assert ".topology-tools-panel__speed--5g" not in response.text
+    assert ".topology-tools-panel__speed--8g" not in response.text
     assert ".topology-tools-panel__speed--10g" in response.text
     assert "background: #a78bfa;" in response.text
     assert "border-top: 3px dotted #38bdf8;" in response.text
@@ -832,8 +832,8 @@ def test_ethernet_capacity_controls_permanent_animation_cadence() -> None:
     assert "--flow-duration: 5.6s;" in response.text
     assert "--flow-duration: 4.4s;" in response.text
     assert "--flow-duration: 3.6s;" in response.text
-    assert "--flow-duration: 2.8s;" in response.text
-    assert "--flow-duration: 2.1s;" in response.text
+    assert "--flow-duration: 2.8s;" not in response.text
+    assert "--flow-duration: 2.1s;" not in response.text
     assert "--flow-duration: 1.6s;" in response.text
     assert "animation:" in response.text
     assert "var(--flow-duration)" in response.text

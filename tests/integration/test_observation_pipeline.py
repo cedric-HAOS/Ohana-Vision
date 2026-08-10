@@ -174,7 +174,7 @@ def test_pipeline_accepts_redundant_observation_without_timeline_change() -> Non
     assert runtime.statistics.observations_accepted == 2
 
 
-def test_pipeline_rejects_duplicate_without_changing_state() -> None:
+def test_pipeline_accepts_duplicate_idempotently_without_changing_state() -> None:
     processor, runtime, store = make_processor()
 
     observation = make_observation(
@@ -182,20 +182,21 @@ def test_pipeline_rejects_duplicate_without_changing_state() -> None:
     )
 
     accepted = processor.process(observation)
-    timeline_before_rejection = processor.infrastructure_timeline
+    timeline_before_replay = processor.infrastructure_timeline
 
-    rejected = processor.process(observation)
+    replayed = processor.process(observation)
 
     assert accepted.accepted is True
-    assert rejected.accepted is False
-    assert "already exists" in rejected.reason
+    assert replayed.accepted is True
+    assert replayed.reason is None
+    assert replayed.timeline_updated is False
 
     assert store.observations == (observation,)
-    assert processor.infrastructure_timeline == (timeline_before_rejection)
+    assert processor.infrastructure_timeline == timeline_before_replay
 
     assert runtime.statistics.observations_received == 2
-    assert runtime.statistics.observations_accepted == 1
-    assert runtime.statistics.observations_rejected == 1
+    assert runtime.statistics.observations_accepted == 2
+    assert runtime.statistics.observations_rejected == 0
 
 
 def test_pipeline_rejects_conflict_without_polluting_store() -> None:

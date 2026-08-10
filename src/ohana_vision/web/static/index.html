@@ -80,6 +80,10 @@
        Observations
       </span>
      </button>
+     <button class="sidebar-navigation__item" data-navigation-target="incidents" type="button">
+      <span aria-hidden="true" class="sidebar-navigation__icon sidebar-navigation__icon--incidents"></span>
+      <span>Incidents</span>
+     </button>
      <p class="sidebar-navigation__title">
       Configuration
      </p>
@@ -629,10 +633,81 @@
         </div>
         <div class="alert alert--error hidden" id="observations-error" role="alert">
         </div>
+        <div aria-label="Filtres des observations" class="observation-filters">
+         <label>
+          Statut
+          <select id="observation-status-filter">
+           <option value="all">Tous</option>
+           <option value="anomalies">Anomalies seulement</option>
+           <option value="healthy">Sain</option>
+           <option value="degraded">Dégradé</option>
+           <option value="unhealthy">Critique</option>
+           <option value="unknown">Inconnu</option>
+          </select>
+         </label>
+         <label>
+          Équipement
+          <select id="observation-node-filter">
+           <option value="all">Tous</option>
+          </select>
+         </label>
+         <label>
+          Service
+          <select id="observation-service-filter">
+           <option value="all">Tous</option>
+          </select>
+         </label>
+        </div>
         <div aria-live="polite" class="recent-observations" id="recent-observations-list">
          <p class="side-panel-placeholder">
           Aucune observation reçue.
          </p>
+        </div>
+       </section>
+      </div>
+     </section>
+     <section aria-labelledby="incidents-heading" class="application-view" data-view="incidents" hidden="">
+      <div class="incidents-view">
+       <section class="incidents-panel">
+        <div class="panel-heading">
+         <div>
+          <p class="panel-heading__kicker">Exploitation</p>
+          <h2 id="incidents-heading">Centre d’incidents</h2>
+          <p>Suivez chaque dégradation jusqu’à sa résolution et maîtrisez ses notifications.</p>
+         </div>
+        </div>
+        <div class="incidents-summary" aria-label="Synthèse des incidents">
+         <article class="incidents-summary-card">
+          <span>Actifs</span>
+          <strong id="incidents-active-count">0</strong>
+          <small>dégradations en cours</small>
+         </article>
+         <article class="incidents-summary-card">
+          <span>À acquitter</span>
+          <strong id="incidents-unacknowledged-count">0</strong>
+          <small>non encore examinés</small>
+         </article>
+         <article class="incidents-summary-card">
+          <span>Silencieux</span>
+          <strong id="incidents-silenced-count">0</strong>
+          <small>notifications suspendues</small>
+         </article>
+         <article class="incidents-summary-card">
+          <span>Résolus</span>
+          <strong id="incidents-resolved-count">0</strong>
+          <small>dans l’historique chargé</small>
+         </article>
+        </div>
+        <div class="incidents-toolbar" aria-label="Filtrer les incidents">
+         <button aria-pressed="true" class="incidents-filter is-active" data-incidents-filter="active" type="button">Actifs</button>
+         <button aria-pressed="false" class="incidents-filter" data-incidents-filter="resolved" type="button">Résolus</button>
+         <button aria-pressed="false" class="incidents-filter" data-incidents-filter="all" type="button">Tous</button>
+        </div>
+        <div class="alert alert--error hidden" id="incidents-error" role="alert"></div>
+        <div aria-live="polite" class="incidents-list" id="incidents-list">
+         <div class="incidents-empty-state">
+          <h3>Chargement des incidents…</h3>
+         </div>
         </div>
        </section>
       </div>
@@ -901,6 +976,11 @@
             <p>Déplacez les équipements sur la grille ou reliez-les en sélectionnant deux extrémités.</p>
             </div>
             <div class="configuration-toolbar">
+             <div aria-label="Navigation de la carte" class="architecture-viewport-controls" role="group">
+              <button aria-label="Dézoomer" class="configuration-secondary-button" id="architecture-zoom-out" type="button">−</button>
+              <button class="configuration-secondary-button" id="architecture-zoom-reset" type="button">Recentrer</button>
+              <button aria-label="Zoomer" class="configuration-secondary-button" id="architecture-zoom-in" type="button">+</button>
+             </div>
              <div aria-label="Mode d’édition de la cartographie" class="architecture-mode-switch" role="group">
               <button aria-pressed="true" class="button configuration-button is-active" id="architecture-mode-move" type="button">Déplacer</button>
               <button aria-pressed="false" class="configuration-secondary-button" id="architecture-mode-link" type="button">Relier</button>
@@ -1146,8 +1226,6 @@
              Débit
              <select id="architecture-link-bandwidth">
               <option value="10000">10Gbps</option>
-              <option value="8000">8Gbps</option>
-              <option value="5000">5Gbps</option>
               <option value="2500">2.5Gbps</option>
               <option value="1000">1Gbps</option>
               <option value="100">100Mbps</option>

@@ -41,6 +41,9 @@ server:
 
 web:
   documentation_enabled: false
+
+storage:
+  database_path: /var/lib/ohana-vision/vision.db
 """,
     )
 
@@ -53,6 +56,9 @@ web:
     assert configuration.server.port == 8080
     assert configuration.server.log_level == "warning"
     assert configuration.web.documentation_enabled is False
+    assert configuration.storage.database_path == Path(
+        "/var/lib/ohana-vision/vision.db"
+    )
 
 
 def test_loader_reads_development_administration_profile() -> None:

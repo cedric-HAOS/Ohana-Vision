@@ -6,6 +6,47 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.11.0] — Persistance et centre d'incidents — 2026-08-10
+
+## Ajouté
+
+- Les observations, leurs identifiants immuables et leurs messages sont
+  persistés dans SQLite et restaurés au redémarrage.
+- Un Centre d'incidents ouvre, actualise et résout une dégradation continue par
+  équipement, service et capacité. Il conserve l'historique, le nombre
+  d'occurrences, les acquittements et les silences temporaires.
+- Les opérateurs peuvent filtrer les incidents actifs ou résolus, acquitter un
+  incident, suspendre ses notifications pendant une heure puis les réactiver.
+- Le démarrage réconcilie les observations durables qui n'auraient pas encore
+  été projetées en incident lors d'une interruption, sans doublon ni perte des
+  acquittements.
+- La vue Observations regroupe les évaluations identiques par équipement,
+  service, capacité et statut, indique leur nombre et leur plage temporelle,
+  et permet de déplier les événements bruts.
+- Des filtres par statut, équipement et service facilitent l'affichage des
+  seules anomalies.
+- La carte Configuration / Architecture accepte désormais le zoom à la
+  molette, le déplacement par glisser du fond et des commandes de zoom et de
+  recentrage, sans modifier le glisser-déposer des équipements.
+- Un bouton « + » permet de transformer un bail DHCP dynamique en
+  réservation avec le nom, l'adresse IP et l'adresse MAC préremplis.
+
+## Modifié
+
+- Les replays Agent sont acceptés de manière idempotente grâce à
+  `observation_id`.
+- Les paliers Ethernet 5 et 8 Gbit/s sont retirés de l'éditeur de liaisons,
+  de la carte Infrastructure et de sa légende ; les paliers conservés sont
+  100 Mbit/s, 1, 2,5 et 10 Gbit/s.
+
+## Qualité
+
+- Validation visuelle du Centre d'incidents en vue bureau, incluant ouverture,
+  acquittement, silence, réactivation et résolution temps réel.
+- 834 tests, lint et formatage validés avant publication.
+
+---
+
 # [1.10.9] — Suppression des troncs radio artificiels — 2026-08-04
 
 ## Corrigé
