@@ -573,41 +573,85 @@
         </div>
        </div>
        <div class="alert alert--error hidden" id="host-error" role="alert"></div>
-       <div class="host-overview">
-        <article class="host-state-card" data-status="unknown" id="host-state">
-         <span aria-hidden="true" class="host-state-card__indicator"></span>
-         <span>État de santé</span>
-         <strong id="host-state-label">Inconnu</strong>
-        </article>
-        <article class="host-details-card">
-         <h3>Machine supervisée</h3>
-         <dl>
-          <dt>Nom d’hôte</dt><dd id="host-hostname">—</dd>
-          <dt>Système</dt><dd id="host-platform">—</dd>
-          <dt>Dernière mesure</dt><dd id="host-updated">—</dd>
-         </dl>
-        </article>
-       </div>
-       <div aria-label="Métriques de l’hôte" class="host-metrics">
-        <article class="host-metric-card"><span>CPU</span><strong data-host-metric="cpu">—</strong></article>
-        <article class="host-metric-card"><span>Charge normalisée</span><strong data-host-metric="load">—</strong></article>
-        <article class="host-metric-card"><span>Mémoire</span><strong data-host-metric="memory">—</strong></article>
-        <article class="host-metric-card"><span>Swap</span><strong data-host-metric="swap">—</strong></article>
-        <article class="host-metric-card"><span>Disque racine</span><strong data-host-metric="disk">—</strong></article>
-        <article class="host-metric-card"><span>Température CPU</span><strong data-host-metric="temperature">—</strong></article>
-        <article class="host-metric-card"><span>Uptime hôte</span><strong data-host-metric="host-uptime">—</strong></article>
-        <article class="host-metric-card"><span>Uptime Agent</span><strong data-host-metric="agent-uptime">—</strong></article>
-        <article class="host-metric-card"><span>Redémarrages Agent</span><strong data-host-metric="agent-restarts">—</strong></article>
-       </div>
-       <div class="host-diagnostics">
-        <article>
-         <h3>Alertes actives</h3>
-         <ul class="host-list" id="host-reasons"><li class="host-list__empty">Aucune donnée</li></ul>
-        </article>
-        <article>
-         <h3>Unités systemd en échec</h3>
-         <ul class="host-list" id="host-failed-units"><li class="host-list__empty">Aucune donnée</li></ul>
-        </article>
+       <div class="host-cockpit" data-status="unknown" id="host-state">
+        <section class="host-hero">
+         <article class="host-health-card">
+          <div aria-label="État de santé inconnu" class="host-health-visual" id="host-state-visual" role="img">
+           <img alt="" class="host-health-icon" data-host-health-icon="healthy" src="/ui/assets/icons/health/host-health-healthy.png">
+           <img alt="" class="host-health-icon" data-host-health-icon="degraded" src="/ui/assets/icons/health/host-health-degraded.png">
+           <img alt="" class="host-health-icon" data-host-health-icon="critical" src="/ui/assets/icons/health/host-health-critical.png">
+           <span aria-hidden="true" class="host-health-icon host-health-icon--unknown">?</span>
+          </div>
+          <div class="host-health-card__copy">
+           <span class="host-overline">État de santé</span>
+           <strong class="host-state-label" id="host-state-label">Inconnu</strong>
+           <p class="host-status-message"><span aria-hidden="true" class="host-status-dot"></span><span id="host-state-message">En attente d’une mesure de l’Agent</span></p>
+           <p class="host-machine-line"><strong id="host-hostname">—</strong><span id="host-platform">—</span><span id="host-updated">—</span></p>
+          </div>
+         </article>
+         <article class="host-availability-card">
+          <div>
+           <span class="host-overline">Disponibilité</span>
+           <h3 id="host-availability-label">En attente des données d’uptime</h3>
+          </div>
+          <div class="host-uptimes">
+           <div><span>Hôte</span><strong data-host-metric="host-uptime">—</strong></div>
+           <div><span>Agent</span><strong data-host-metric="agent-uptime">—</strong></div>
+          </div>
+          <div aria-hidden="true" class="host-availability-line"></div>
+          <p class="host-availability-note"><strong data-host-metric="agent-restarts">—</strong> redémarrage(s) Agent depuis le démarrage</p>
+         </article>
+        </section>
+        <section aria-label="Ressources principales de l’hôte" class="host-primary-metrics">
+         <article class="host-metric-card" data-host-metric-card="cpu">
+          <div class="host-metric-card__heading"><span>CPU</span><i aria-hidden="true" data-lucide="cpu"></i></div>
+          <strong data-host-metric="cpu">—</strong>
+          <div aria-hidden="true" class="host-meter"><span data-host-meter="cpu"></span></div>
+          <small data-host-context="cpu">Utilisation actuelle</small>
+         </article>
+         <article class="host-metric-card" data-host-metric-card="memory">
+          <div class="host-metric-card__heading"><span>Mémoire</span><i aria-hidden="true" data-lucide="memory-stick"></i></div>
+          <strong data-host-metric="memory">—</strong>
+          <div aria-hidden="true" class="host-meter"><span data-host-meter="memory"></span></div>
+          <small data-host-context="memory">Mémoire disponible inconnue</small>
+         </article>
+         <article class="host-metric-card" data-host-metric-card="disk">
+          <div class="host-metric-card__heading"><span>Disque racine</span><i aria-hidden="true" data-lucide="hard-drive"></i></div>
+          <strong data-host-metric="disk">—</strong>
+          <div aria-hidden="true" class="host-meter"><span data-host-meter="disk"></span></div>
+          <small data-host-context="disk">Espace disponible inconnu</small>
+         </article>
+         <article class="host-metric-card" data-host-metric-card="temperature">
+          <div class="host-metric-card__heading"><span>Température CPU</span><i aria-hidden="true" data-lucide="thermometer"></i></div>
+          <strong data-host-metric="temperature">—</strong>
+          <div aria-hidden="true" class="host-meter"><span data-host-meter="temperature"></span></div>
+          <small data-host-context="temperature">Sonde non renseignée</small>
+         </article>
+        </section>
+        <section class="host-lower-grid">
+         <div class="host-secondary-metrics">
+          <article class="host-metric-card host-metric-card--compact">
+           <span>Charge normalisée</span><strong data-host-metric="load">—</strong><small>Charge moyenne par cœur</small>
+          </article>
+          <article class="host-metric-card host-metric-card--compact">
+           <span>Swap</span><strong data-host-metric="swap">—</strong><small data-host-context="swap">Utilisation actuelle</small>
+          </article>
+          <article class="host-metric-card host-metric-card--compact">
+           <span>Redémarrages Agent</span><strong data-host-metric="agent-restarts-summary">—</strong><small data-host-context="agent-restarts">Depuis le démarrage</small>
+          </article>
+         </div>
+         <article class="host-diagnostic-card">
+          <div class="host-diagnostic-card__heading"><h3>Diagnostic</h3><strong id="host-diagnostic-state">En attente</strong></div>
+          <div class="host-diagnostic-group">
+           <span>Alertes actives</span>
+           <ul class="host-list" id="host-reasons"><li class="host-list__empty">Aucune donnée</li></ul>
+          </div>
+          <div class="host-diagnostic-group">
+           <span>Unités systemd en échec</span>
+           <ul class="host-list" id="host-failed-units"><li class="host-list__empty">Aucune donnée</li></ul>
+          </div>
+         </article>
+        </section>
        </div>
       </div>
      </section>

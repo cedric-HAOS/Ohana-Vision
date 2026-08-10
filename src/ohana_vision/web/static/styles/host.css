@@ -3,124 +3,324 @@
     gap: var(--ohana-space-5);
 }
 
-.host-overview {
+.host-cockpit {
+    --host-state-color: var(--ohana-health-unknown);
+    --host-state-soft: var(--ohana-health-unknown-soft);
     display: grid;
-    grid-template-columns: minmax(16rem, 1.1fr) minmax(16rem, 2fr);
     gap: var(--ohana-space-5);
 }
 
-.host-state-card,
-.host-details-card,
-.host-metric-card {
+.host-cockpit[data-status="healthy"] {
+    --host-state-color: var(--ohana-health-healthy);
+    --host-state-soft: var(--ohana-health-healthy-soft);
+}
+
+.host-cockpit[data-status="degraded"] {
+    --host-state-color: var(--ohana-health-degraded);
+    --host-state-soft: var(--ohana-health-degraded-soft);
+}
+
+.host-cockpit[data-status="critical"] {
+    --host-state-color: var(--ohana-health-critical);
+    --host-state-soft: var(--ohana-health-critical-soft);
+}
+
+.host-hero,
+.host-lower-grid {
+    display: grid;
+    grid-template-columns: minmax(24rem, 1.2fr) minmax(20rem, 0.8fr);
+    gap: var(--ohana-space-5);
+}
+
+.host-health-card,
+.host-availability-card,
+.host-metric-card,
+.host-diagnostic-card {
     border: var(--ohana-border-width-thin) solid var(--ohana-border-default);
     border-radius: var(--ohana-radius-xl);
     background: var(--ohana-background-surface);
     box-shadow: var(--ohana-shadow-sm);
 }
 
-.host-state-card,
-.host-details-card {
-    padding: var(--ohana-space-6);
-}
-
-.host-state-card {
-    display: grid;
-    align-content: center;
-    justify-items: start;
-    gap: var(--ohana-space-3);
-}
-
-.host-state-card__indicator {
-    width: 1rem;
-    height: 1rem;
-    border-radius: 50%;
-    background: var(--ohana-health-unknown);
-    box-shadow: 0 0 0 0.35rem var(--ohana-health-unknown-soft);
-}
-
-.host-state-card[data-status="healthy"] .host-state-card__indicator {
-    background: var(--ohana-health-healthy);
-    box-shadow: 0 0 0 0.35rem var(--ohana-health-healthy-soft);
-}
-
-.host-state-card[data-status="degraded"] .host-state-card__indicator {
-    background: var(--ohana-health-degraded);
-    box-shadow: 0 0 0 0.35rem var(--ohana-health-degraded-soft);
-}
-
-.host-state-card[data-status="critical"] .host-state-card__indicator {
-    background: var(--ohana-health-unavailable);
-    box-shadow: 0 0 0 0.35rem var(--ohana-health-unavailable-soft);
-}
-
-.host-state-card strong {
-    font-size: var(--ohana-font-size-2xl);
-}
-
-.host-state-card p,
-.host-details-card p {
-    margin: 0;
-    color: var(--ohana-text-muted);
-}
-
-.host-details-card {
-    display: grid;
-    gap: var(--ohana-space-4);
-}
-
-.host-details-card dl {
+.host-health-card {
     display: grid;
     grid-template-columns: auto 1fr;
-    gap: var(--ohana-space-3) var(--ohana-space-5);
-    margin: 0;
+    gap: var(--ohana-space-6);
+    align-items: center;
+    min-height: 13rem;
+    padding: var(--ohana-space-6);
+    background:
+        radial-gradient(
+            circle at 12% 50%,
+            var(--host-state-soft),
+            transparent 48%
+        ),
+        var(--ohana-background-surface);
 }
 
-.host-details-card dt {
+.host-health-visual {
+    display: grid;
+    place-items: center;
+    width: 10rem;
+    aspect-ratio: 1;
+    border: var(--ohana-border-width-thin) solid
+        color-mix(in srgb, var(--host-state-color) 55%, var(--ohana-border-default));
+    border-radius: var(--ohana-radius-round);
+    background: radial-gradient(
+        circle,
+        var(--host-state-soft),
+        var(--ohana-background-surface) 72%
+    );
+    box-shadow: 0 0 2.4rem
+        color-mix(in srgb, var(--host-state-color) 18%, transparent);
+}
+
+.host-health-icon {
+    display: none;
+    width: 9rem;
+    height: 9rem;
+    object-fit: contain;
+}
+
+.host-health-icon--unknown {
+    place-items: center;
+    color: var(--ohana-health-unknown);
+    font-size: 4rem;
+    font-weight: var(--ohana-font-weight-bold);
+}
+
+.host-cockpit[data-status="healthy"] [data-host-health-icon="healthy"],
+.host-cockpit[data-status="degraded"] [data-host-health-icon="degraded"],
+.host-cockpit[data-status="critical"] [data-host-health-icon="critical"],
+.host-cockpit[data-status="unknown"] .host-health-icon--unknown {
+    display: grid;
+}
+
+.host-health-card__copy {
+    display: grid;
+    gap: var(--ohana-space-3);
+    min-width: 0;
+}
+
+.host-overline {
     color: var(--ohana-text-muted);
+    font-size: var(--ohana-font-size-xs);
+    font-weight: var(--ohana-font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
 }
 
-.host-details-card dd {
+.host-state-label {
+    color: var(--ohana-text-primary);
+    font-size: var(--ohana-font-size-3xl);
+    line-height: var(--ohana-line-height-tight);
+}
+
+.host-status-message,
+.host-machine-line,
+.host-availability-note {
     margin: 0;
+}
+
+.host-status-message {
+    display: flex;
+    gap: var(--ohana-space-3);
+    align-items: center;
+    color: var(--host-state-color);
     font-weight: var(--ohana-font-weight-semibold);
 }
 
-.host-metrics {
+.host-status-dot {
+    flex: 0 0 auto;
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: var(--ohana-radius-round);
+    background: currentcolor;
+    box-shadow: 0 0 0 0.3rem var(--host-state-soft);
+}
+
+.host-machine-line {
+    display: flex;
+    gap: var(--ohana-space-2) var(--ohana-space-3);
+    flex-wrap: wrap;
+    align-items: center;
+    color: var(--ohana-text-muted);
+    font-size: var(--ohana-font-size-sm);
+}
+
+.host-machine-line strong {
+    color: var(--ohana-text-primary);
+}
+
+.host-machine-line span + span::before {
+    margin-right: var(--ohana-space-3);
+    content: "·";
+}
+
+.host-availability-card {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--ohana-space-5);
+    align-content: center;
+    padding: var(--ohana-space-6);
+}
+
+.host-availability-card h3,
+.host-diagnostic-card h3 {
+    margin: var(--ohana-space-2) 0 0;
+}
+
+.host-uptimes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ohana-space-3);
+}
+
+.host-uptimes > div {
+    display: grid;
+    gap: var(--ohana-space-2);
+    padding: var(--ohana-space-4);
+    border-radius: var(--ohana-radius-md);
+    background: var(--ohana-background-surface-raised);
+}
+
+.host-uptimes span,
+.host-availability-note,
+.host-metric-card small,
+.host-metric-card > span,
+.host-diagnostic-group > span {
+    color: var(--ohana-text-muted);
+}
+
+.host-uptimes strong {
+    font-size: var(--ohana-font-size-lg);
+}
+
+.host-availability-line {
+    position: relative;
+    height: 0.45rem;
+    border-radius: var(--ohana-radius-round);
+    background: linear-gradient(
+        90deg,
+        var(--ohana-brand-primary-active),
+        var(--host-state-color)
+    );
+}
+
+.host-availability-line::after {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: var(--ohana-radius-round);
+    background: var(--host-state-color);
+    box-shadow: 0 0 0 0.25rem var(--host-state-soft);
+    content: "";
+    transform: translateY(-50%);
+}
+
+.host-primary-metrics,
+.host-secondary-metrics {
+    display: grid;
     gap: var(--ohana-space-4);
+}
+
+.host-primary-metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.host-secondary-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .host-metric-card {
     display: grid;
-    gap: var(--ohana-space-2);
+    gap: var(--ohana-space-3);
+    min-width: 0;
     padding: var(--ohana-space-5);
 }
 
-.host-metric-card span {
-    color: var(--ohana-text-muted);
+.host-metric-card__heading,
+.host-diagnostic-card__heading {
+    display: flex;
+    gap: var(--ohana-space-3);
+    align-items: center;
+    justify-content: space-between;
+}
+
+.host-metric-card__heading {
+    color: var(--ohana-text-secondary);
+}
+
+.host-metric-card__heading svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    color: var(--host-state-color);
 }
 
 .host-metric-card strong {
+    overflow-wrap: anywhere;
+    color: var(--ohana-text-primary);
     font-size: var(--ohana-font-size-xl);
 }
 
-.host-diagnostics {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--ohana-space-5);
+.host-metric-card small {
+    min-height: 2.6em;
+    line-height: 1.3;
 }
 
-.host-diagnostics article {
+.host-meter {
+    overflow: hidden;
+    height: 0.45rem;
+    border-radius: var(--ohana-radius-round);
+    background: var(--ohana-border-subtle);
+}
+
+.host-meter span {
+    display: block;
+    width: var(--host-value, 0%);
+    height: 100%;
+    border-radius: inherit;
+    background: var(--host-meter-color, var(--ohana-brand-primary));
+    transition:
+        width var(--ohana-duration-normal) var(--ohana-easing-standard),
+        background-color var(--ohana-duration-normal) var(--ohana-easing-standard);
+}
+
+.host-metric-card--compact {
+    align-content: start;
+}
+
+.host-diagnostic-card {
+    display: grid;
+    gap: var(--ohana-space-4);
     padding: var(--ohana-space-5);
-    border: var(--ohana-border-width-thin) solid var(--ohana-border-default);
-    border-radius: var(--ohana-radius-xl);
-    background: var(--ohana-background-surface);
+}
+
+.host-diagnostic-card__heading h3 {
+    margin: 0;
+}
+
+.host-diagnostic-card__heading strong {
+    color: var(--host-state-color);
+}
+
+.host-diagnostic-group {
+    display: grid;
+    gap: var(--ohana-space-2);
+}
+
+.host-diagnostic-group > span {
+    font-size: var(--ohana-font-size-xs);
+    font-weight: var(--ohana-font-weight-bold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
 .host-list {
     display: grid;
     gap: var(--ohana-space-2);
-    margin: var(--ohana-space-4) 0 0;
+    margin: 0;
     padding-left: var(--ohana-space-5);
 }
 
@@ -128,19 +328,51 @@
     color: var(--ohana-text-muted);
 }
 
-@media (max-width: 56rem) {
-    .host-overview,
-    .host-diagnostics {
-        grid-template-columns: 1fr;
-    }
-
-    .host-metrics {
+@media (max-width: 75rem) {
+    .host-primary-metrics {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
-@media (max-width: 36rem) {
-    .host-metrics {
+@media (max-width: 62rem) {
+    .host-hero,
+    .host-lower-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 44rem) {
+    .host-health-card {
+        grid-template-columns: 1fr;
+    }
+
+    .host-health-visual {
+        justify-self: center;
+    }
+
+    .host-primary-metrics,
+    .host-secondary-metrics {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 28rem) {
+    .host-health-visual {
+        width: 8.5rem;
+    }
+
+    .host-health-icon {
+        width: 7.7rem;
+        height: 7.7rem;
+    }
+
+    .host-uptimes {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .host-meter span {
+        transition: none;
     }
 }

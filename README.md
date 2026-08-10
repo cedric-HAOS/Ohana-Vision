@@ -90,6 +90,11 @@ mémoire, swap, disque racine, température lorsqu'elle est disponible, uptimes
 hôte et Agent, redémarrages Agent et diagnostics systemd. Les durées sont
 affichées sous forme compacte, par exemple `8 j 19 h 29 min`.
 
+Le cockpit associe l'état sain, dégradé ou critique à un grand pictogramme
+dédié, sans score numérique. Des jauges contextualisent les ressources
+principales tandis que la disponibilité et le diagnostic restent lisibles en
+un coup d'œil.
+
 ### Timeline
 
 La timeline repose sur les périodes métier calculées par le backend.

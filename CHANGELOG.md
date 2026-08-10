@@ -6,6 +6,30 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.11.2] — Cockpit de santé de l'hôte — 2026-08-10
+
+## Amélioré
+
+- La page **Supervision / Hôte** adopte un cockpit synthétique qui met en avant
+  l'état courant, la disponibilité, les ressources principales et le
+  diagnostic de la machine Agent.
+- Trois pictogrammes dédiés, grands et sans score numérique, distinguent les
+  états sain, dégradé et critique. Les images PNG transparentes sont intégrées
+  aux assets officiels de Vision.
+- Les ressources CPU, mémoire, disque et température disposent de jauges et de
+  contextes lisibles. La charge, le swap et les redémarrages restent visibles
+  dans des cartes secondaires compactes.
+- Les uptimes hôte et Agent, les alertes actives et les unités systemd en échec
+  sont regroupés dans des zones de disponibilité et de diagnostic.
+
+## Qualité
+
+- Les 845 tests Vision, Ruff et le contrôle de format réussissent.
+- Le rendu a été vérifié localement aux largeurs 1920, 1024 et 600 pixels, sans
+  erreur JavaScript et avec chargement des trois pictogrammes 1024 × 1024.
+
+---
+
 # [1.11.1] — Supervision de l'hôte Agent — 2026-08-10
 
 ## Ajouté

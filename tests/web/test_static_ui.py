@@ -2667,6 +2667,13 @@ def test_static_ui_exposes_host_health_page() -> None:
     assert 'id="host-state-label"' in response.text
     assert 'data-host-metric="host-uptime"' in response.text
     assert 'data-host-metric="agent-uptime"' in response.text
+    assert 'data-host-health-icon="healthy"' in response.text
+    assert 'data-host-health-icon="degraded"' in response.text
+    assert 'data-host-health-icon="critical"' in response.text
+    assert "host-health-healthy.png" in response.text
+    assert "host-health-degraded.png" in response.text
+    assert "host-health-critical.png" in response.text
+    assert "/100" not in response.text
 
 
 def test_host_health_javascript_is_available() -> None:
@@ -2679,6 +2686,8 @@ def test_host_health_javascript_is_available() -> None:
     assert "API.hostHealth" in response.text
     assert "host_uptime" in response.text
     assert "agent_uptime" in response.text
+    assert "RESOURCE_THRESHOLDS" in response.text
+    assert "data-host-meter" in response.text
 
 
 def test_host_health_stylesheet_is_available() -> None:
@@ -2688,7 +2697,26 @@ def test_host_health_stylesheet_is_available() -> None:
     assert response.status_code == 200
     assert "text/css" in response.headers["content-type"]
     assert ".host-view" in response.text
-    assert ".host-metrics" in response.text
+    assert ".host-primary-metrics" in response.text
+    assert ".host-health-icon" in response.text
+    assert "width: 9rem" in response.text
+
+
+@pytest.mark.parametrize(
+    "asset_name",
+    (
+        "host-health-healthy.png",
+        "host-health-degraded.png",
+        "host-health-critical.png",
+    ),
+)
+def test_host_health_pictograms_are_packaged(asset_name: str) -> None:
+    """The approved host-state pictograms must be served by Vision."""
+    response = make_client().get(f"/ui/assets/icons/health/{asset_name}")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/png"
+    assert len(response.content) > 10_000
 
 
 def test_application_wires_host_health_controller() -> None:
