@@ -1,407 +1,186 @@
 # ROADMAP
 
-## Vision
+## Mission
 
-Ohana-Vision transforme les données produites par Ohana-Agent en une représentation lisible, temps réel et historique de l'infrastructure.
+Ohana-Vision transforme les données produites par Ohana-Agent en une
+représentation lisible, temps réel et historique de l'infrastructure.
 
-Ohana-Agent reste propriétaire de la configuration et de l'exécution des observations. Vision valide, projette et présente les snapshots et observations reçus.
+Ohana-Agent reste propriétaire de la configuration et de l'exécution des
+observations. Vision valide, persiste, projette et présente les snapshots et
+observations reçus. Les opérations d'administration passent exclusivement par
+les contrats publics et versionnés de l'Agent.
 
----
+## État actuel
 
-# Socle de visualisation
+**Version publiée : 1.11.0 — Persistance et centre d'incidents.**
 
-## Phase 3.1 — Domaine backend
+Le socle actuel couvre notamment :
 
-- Observation Store
-- Projection Engine
-- Health Engine
-- Timeline Engine
-- objets métier immuables
+- la visualisation temps réel de l'infrastructure, des services et des
+  capacités ;
+- l'administration graphique de l'infrastructure, du réseau, du DHCP et des
+  plugins exposés par Agent ;
+- la présence réseau et les plages de surveillance ;
+- la persistance durable des observations ;
+- le regroupement des évaluations répétitives ;
+- le cycle de vie des incidents, avec acquittement et silence temporaire.
 
-**Statut :** ✅ Terminé
-
-## Phase 3.2 — Runtime et API
-
-- Observation Processor
-- API REST
-- WebSocket
-- runtime applicatif
-
-**Statut :** ✅ Terminé
-
-## Phase 3.3 — Dashboard
-
-- indicateurs principaux
-- alertes
-- état du runtime
-- observations temps réel
-
-**Statut :** ✅ Terminé
-
-## Phase 3.4 — Topologie interactive
-
-- équipements et liaisons
-- sélection d'un équipement
-- panneau de détails
-- projection des états de santé
-
-**Statut :** ✅ Terminé
-
-## Phase 3.5 — Frontend modulaire
-
-- navigation
-- modules JavaScript spécialisés
-- CSS modulaire
-- timeline fondée sur les périodes métier
-- responsive
-- audit frontend
-
-**Statut :** ✅ Terminé
+Le détail exhaustif des versions et correctifs publiés est conservé dans le
+[CHANGELOG](CHANGELOG.md).
 
 ---
 
-# Version 1.1.0 — Infrastructure pilotée par Agent
+## Jalons livrés
 
-## 3.6.1 — Contrat d'infrastructure
+### 1.0 — Socle de visualisation
 
-- modèle Pydantic strict et versionné
-- ingestion par `PUT /api/infrastructure`
-- validation des nœuds et services
-- remplacement atomique du snapshot
+- domaine backend, stockage des observations et moteurs de projection, santé
+  et timeline ;
+- API REST, WebSocket et runtime applicatif ;
+- dashboard, topologie interactive et frontend modulaire.
 
-**Statut :** ✅ Terminé
+**Statut : livré.**
 
-## 3.6.2 — Topologie complète
+### 1.1 — Infrastructure pilotée par Agent
 
-- équipements
-- liaisons
-- layouts
-- références vers les nœuds
-- métadonnées topologiques
+- contrat d'infrastructure strict et versionné ;
+- ingestion atomique par `PUT /api/infrastructure` ;
+- topologie complète avec équipements, liaisons et positions logiques ;
+- synchronisation résiliente Agent ↔ Vision.
 
-**Statut :** ✅ Terminé
+**Statut : livré.**
 
-## 3.6.3 — Grille horizontale
+### 1.2 — Administration graphique
 
-- positions logiques `column` / `row`
-- conversion réalisée uniquement par Vision
-- calcul du canvas et des couches
-- rejet des cellules dupliquées
+- configuration DHCP et gestion des réservations ;
+- édition de l'architecture, des équipements, des liaisons et des services ;
+- proxy backend authentifié, sans exposition du jeton Agent au navigateur.
 
-**Statut :** ✅ Terminé
+**Statut : livré.**
 
-## 3.6.4 — Source de vérité unique
+### 1.3 — Administration des plugins
 
-- suppression de la topologie codée en dur du bootstrap de production
-- état vide avant synchronisation
-- projection complète après réception du snapshot
-- événement WebSocket `infrastructure.updated`
+- inventaire des plugins réellement enregistrés dans Agent ;
+- lecture, modification, reconfiguration et test immédiat ;
+- formulaires dédiés pour DNS, NTP et MQTT ;
+- gestion des états vides, erreurs, confirmations et secrets.
 
-**Statut :** ✅ Terminé
+**Statut : livré.**
 
-## 3.6.5 — Résilience Agent ↔ Vision
+### 1.4 — Présence réseau des équipements
 
-- synchronisation obligatoire avant les observations
-- retry Agent toutes les 10 secondes
-- refresh toutes les 5 minutes
-- suspension des observations en cas de désynchronisation
-- reprise automatique après retour de Vision
+- prise en charge de la capacité `network.reachable` ;
+- distinction entre présence réseau et santé des services ;
+- indicateurs de présence dans la topologie et informations de diagnostic dans
+  l'inspecteur.
 
-**Statut :** ✅ Terminé
+**Statut : livré.**
 
-## 3.6.6 — Validation
+### 1.5 à 1.7 — Réseau, télémétrie et Téléinformation
 
-- quatre scénarios d'intégration réels
-- cohérence des versions CLI et OpenAPI
-- hygiène du dépôt
-- 745 tests
+- administration et présentation des plugins Z-Wave, WireGuard, Freebox et
+  Shelly Telemetry ;
+- amélioration progressive de la configuration par équipement ;
+- intégration de la Téléinformation Linky ;
+- validation renforcée des noms utilisés par les réservations DHCP.
 
-**Statut :** ✅ Terminé
+**Statut : livré.**
 
----
+### 1.8 — Télémétrie et formulaires de services
 
-# Version 1.2.0 — Administration graphique
-
-L'administration reste exécutée par Ohana-Agent. Vision expose les
-formulaires, les commandes et les résultats à travers les contrats publics
-de l'Agent.
-
-## 4.1 — Configuration DHCP
-
-- consultation des paramètres du serveur DHCP
-- gestion des réservations
-- consultation des baux actifs
-- validation explicite avant application
-
-**Statut :** ✅ Terminé
-
-## 4.2 — Architecture
-
-- déplacement des équipements sur la grille
-- création et modification des liaisons
-- édition des équipements
-- persistance des positions logiques
-
-**Statut :** ✅ Terminé
-
-## 4.3 — Services
-
-- association de services aux équipements
-- édition de l'implémentation et de l'activation
-- gestion de la criticité
-- métadonnées spécifiques aux services
-- services personnalisés
-
-**Statut :** ✅ Terminé
-
-## 4.4 — Sécurité de l'administration
-
-- proxy backend authentifié
-- jeton Agent absent du navigateur
-- découverte des capacités administrables
-- confirmations avant application
-
-**Statut :** ✅ Terminé
-
-## 4.5 — Validation de la version
-
-- cohérence des versions CLI, package, OpenAPI et interface
-- validation des contrats Agent
-- tests du proxy d'administration
-- tests de l'interface graphique
-- validation des ressources installables
-- 754 tests
-
-**Statut :** ✅ Terminé
-
----
-
-# Version 1.3.0 — Administration des plugins
-
-## 1.3.1 — Contrat d’administration dans Agent
-
-- opérations `plugins.read`, `plugins.write` et `plugins.test`
-- modèles versionnés pour l’état, la configuration et le résultat de test
-
-**Statut :** ✅ Terminé
-
-## 1.3.2 — Exposition du plugin DNS
-
-- inventaire réel du `PluginManager`
-- état, version, tâches, exécutions et configuration publique
-
-**Statut :** ✅ Terminé
-
-## 1.3.3 — Reconfiguration et test immédiat du DNS
-
-- écriture atomique
-- replanification sans redémarrage
-- restauration en cas d’échec
-
-**Statut :** ✅ Terminé
-
-## 1.3.4 — Proxy d’administration dans Vision
-
-- inventaire, lecture, modification et test
-- conservation du jeton côté backend
-
-**Statut :** ✅ Terminé
-
-## 1.3.5 — Onglet Plugins et cartes d’état
-
-- cartes responsive
-- états actif, en attente, désactivé et dégradé
-- métriques d’exécution et dernière erreur
-
-**Statut :** ✅ Terminé
-
-## 1.3.6 — Inspecteur et formulaires
-
-- paramètres communs
-- formulaires DNS, NTP et MQTT
-- protection du mot de passe MQTT
-
-**Statut :** ✅ Terminé
-
-## 1.3.7 — États vides, erreurs et confirmations
-
-- Agent non compatible
-- inventaire vide ou indisponible
-- confirmation avant application
-- résultat du test immédiat
-
-**Statut :** ✅ Terminé
-
-## 1.3.8 — Tests et documentation
-
-- tests du proxy et du frontend statique
-- documentation d’utilisation et de sécurité
-- 759 tests réussis
-
-**Statut :** ✅ Terminé
-
-## 1.3.9 — Intégration progressive
-
-- DNS, NTP et MQTT administrables
-- DHCP conservé dans son écran dédié tant qu’il n’est pas un plugin
-  d’observation enregistré dans Agent
-
-**Statut :** ✅ Terminé
-
----
-
-# Version 1.4.0 — Présence réseau des équipements
-
-## 1.4.1 — Contrat de présence
-
-- prise en charge de la capacité `network.reachable`
-- rattachement par `metadata.device_id`
-- conservation des informations ICMP et ARP
-
-**Statut :** ✅ Terminé
-
-## 1.4.2 — Présence distincte de la santé
-
-- observations d’équipements conservées dans l’historique
-- exclusion de la timeline des services
-- aucune incidence sur la santé globale
-
-**Statut :** ✅ Terminé
-
-## 1.4.3 — Topologie
-
-- indicateur discret sur les équipements adressables
-- états présent, absent et inconnu
-- absence d’indicateur pour les équipements sans hôte ni adresse IP
-- légende intégrée à l’aide à la lecture
-
-**Statut :** ✅ Terminé
-
-## 1.4.4 — Inspecteur
-
-- dernière vérification
-- méthode de détection
-- latence
-- compteur d’échecs consécutifs
-
-**Statut :** ✅ Terminé
-
-## 1.4.5 — Tests et documentation
-
-- tests du pipeline backend
-- tests du rendu statique
-- documentation du contrat et du modèle de santé
-- 764 tests réussis
-
-**Statut :** ✅ Terminé
-
----
-
-## 4.10 — Téléinformation Linky
-
-- service Téléinformation rattaché au RPI-Linky ;
-- saisie des entités SINSTS, NTARF et EASF01 à EASF06 ;
-- administration du plugin et test immédiat ;
-- projection des observations dans Services et Infrastructure.
-
-**Statut :** ✅ Terminé
-
----
-
-## Version 1.8.0 — Lot A : télémétrie et formulaires de services
-
-- présentation du plugin **Télémétrie Home Assistant** ;
+- présentation du plugin de télémétrie Home Assistant ;
 - migration visuelle des anciens services `shelly_telemetry` ;
-- saisie d’une adresse IPv4 ou d’un nom DNS pour les équipements ;
-- affichage contextuel du champ Port selon le type de service ;
-- conservation des anciens contrats Agent pendant la transition.
+- prise en charge des adresses IPv4 et noms DNS ;
+- formulaires adaptés au type de service.
 
-**Statut :** ✅ Terminé
+**Statut : livré.**
 
----
+### 1.9 — Téléinformation directe et plages de surveillance
 
-## Version 1.9.0 — Lot B : Téléinformation directe et plages horaires
+- configuration de l'envoi HTTP direct depuis `teleinfo2mqtt` ;
+- identification du compteur Linky et de sa source ;
+- plages horaires par équipement, héritées par les services et la présence
+  réseau ;
+- état suspendu neutre dans la santé globale et les incidents.
 
-- configuration de l’envoi HTTP direct depuis `teleinfo2mqtt` ;
-- identification du compteur Linky et de la source RPI-Linky ;
-- maintien temporaire du mode historique Home Assistant ;
-- plages horaires au niveau des équipements ;
-- héritage par les services et la présence réseau ;
-- état **Suspendu** neutre dans la santé globale et les incidents.
+**Statut : livré.**
 
-**Statut :** ✅ Terminé
+### 1.10 — Administration réseau et enrichissement de la topologie
 
----
+- lecture et configuration NetworkManager avec confirmation et rollback ;
+- lecture visuelle des capacités Ethernet ;
+- découverte, positionnement et rendu des équipements Z-Wave ;
+- cohérence temps réel des cartes, services et timelines.
 
-# Prochaines évolutions
+**Statut : livré.**
 
-- historique avancé
-- comparaison entre snapshots
-- statistiques détaillées par capacité
-- supervision multi-agents
-- enrichissement progressif des opérations administrables
+### 1.11 — Persistance et centre d'incidents
 
----
+- stockage SQLite et restauration des observations ;
+- ingestion idempotente fondée sur `observation_id` ;
+- ouverture, mise à jour, résolution, acquittement et silence des incidents ;
+- regroupement et filtrage des évaluations répétitives ;
+- navigation fluide dans l'éditeur d'architecture et création d'une
+  réservation depuis un bail DHCP dynamique.
 
-# Phase 5 — Historique et rapports
-
-## 5.1 Timeline avancée
-
-- zoom temporel
-- navigation
-- agrégation
-
-## 5.2 Historique
-
-- recherche
-- comparaison de périodes
-- évolution d'une capacité
-- historique des snapshots d'infrastructure
-
-## 5.3 Rapports
-
-- disponibilité
-- SLA
-- export CSV
-- export PDF
+**Statut : livré.**
 
 ---
 
-# Phase 6 — Sécurité et utilisateurs
+## Prochaines priorités
 
-- authentification
-- rôles et permissions
-- préférences utilisateur
-- audit des actions
-- notifications et Webhooks
+### Maintenant — Consolidation de la version 1.11
+
+- qualifier la volumétrie, les performances et la rétention du stockage
+  durable ;
+- renforcer les diagnostics de restauration et de projection des incidents ;
+- poursuivre la simplification des vues d'observations et d'incidents ;
+- détailler les statistiques par capacité.
+
+**Statut : en consolidation.**
+
+### Ensuite — Historique et rapports
+
+- zoom et navigation dans la timeline ;
+- recherche et comparaison de périodes ;
+- évolution d'une capacité et comparaison de snapshots d'infrastructure ;
+- rapports de disponibilité et de SLA ;
+- export CSV et PDF.
+
+**Statut : planifié.**
+
+### Plus tard — Sécurité et utilisateurs
+
+- authentification ;
+- rôles et permissions ;
+- préférences utilisateur ;
+- audit des actions ;
+- notifications et Webhooks.
+
+**Statut : à cadrer.**
+
+### Plus tard — Écosystème Ohana
+
+- prise en charge de plusieurs Agents et de plusieurs sites ;
+- vues par site et vue consolidée ;
+- gestion des conflits d'identifiants ;
+- documentation des contrats et capacités des plugins ;
+- diagnostics et actions contrôlées avec suivi d'exécution.
+
+**Statut : exploration.**
 
 ---
 
-# Phase 7 — Écosystème Ohana
+## Principes durables
 
-## 7.1 Multi-agents
+Les évolutions de Vision doivent préserver les règles suivantes :
 
-- enregistrement de plusieurs Agents
-- vues par site
-- vue consolidée
-- gestion des conflits d'identifiants
-
-## 7.2 SDK et plugins
-
-- documentation intégrée
-- contrats des plugins
-- informations de capacités
-
-## 7.3 Actions contrôlées
-
-- diagnostics à la demande
-- opérations d'administration
-- suivi de l'exécution
-
-
-## Version 1.10.0 — Lot C : réseau de l’Agent
-
-- [x] Vue NetworkManager en lecture.
-- [x] Formulaire IPv4 statique ou DHCP.
-- [x] Confirmation et restauration pendant la fenêtre de rollback.
-- [x] Redirection vers la nouvelle adresse IPv4.
+1. Agent reste la source de vérité de l'infrastructure et de son exécution ;
+2. Vision ne réalise une opération d'administration qu'à travers un contrat
+   public et versionné ;
+3. la santé est projetée à partir des capacités observées ;
+4. la présence réseau reste distincte de la santé fonctionnelle ;
+5. les données durables doivent pouvoir être restaurées sans doublon ;
+6. le détail des releases appartient au changelog, pas à la roadmap ;
+7. chaque évolution doit rester testable, accessible et exploitable sur les
+   différentes tailles d'écran.
