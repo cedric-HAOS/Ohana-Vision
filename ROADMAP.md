@@ -12,7 +12,7 @@ les contrats publics et versionnés de l'Agent.
 
 ## État actuel
 
-**Version préparée : 1.11.5 — Terminologie et formulaire de sauvegarde.**
+**Version préparée : 1.11.6 — Application fiable des sauvegardes HAOS.**
 
 Le socle actuel couvre notamment :
 

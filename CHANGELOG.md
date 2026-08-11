@@ -6,6 +6,19 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.11.6] — Application fiable des sauvegardes HAOS — 2026-08-11
+
+## Corrigé
+
+- Les champs Apple masqués d'une connexion iCloud déjà configurée ne
+  bloquent plus silencieusement le bouton **Appliquer**.
+- L'identifiant Apple, le mot de passe et le code 2FA sont validés uniquement
+  au moment de connecter ou renouveler iCloud.
+- **Tester maintenant** signale les modifications non appliquées au lieu de
+  tester silencieusement l'ancienne configuration enregistrée par Agent.
+- L'état non appliqué du formulaire reste conservé pendant le parcours iCloud
+  et sa validation 2FA.
+
 # [1.11.5] — Terminologie et formulaire de sauvegarde — 2026-08-11
 
 ## Corrigé

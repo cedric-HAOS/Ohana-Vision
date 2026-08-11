@@ -127,6 +127,7 @@ export class ConfigurationController {
         this.pluginsAvailable = false;
         this.pluginsLoadError = null;
         this.selectedPluginId = null;
+        this.pluginFormDirty = false;
         this.loaded = false;
         this.selectedArchitectureItem = null;
         this.architectureInteractionMode = "move";
@@ -576,6 +577,22 @@ export class ConfigurationController {
                     void this.savePluginConfiguration();
                 },
             );
+        for (const eventName of ["input", "change"]) {
+            this.elements.pluginForm
+                ?.addEventListener(
+                    eventName,
+                    (event) => {
+                        if (
+                            event.target?.id?.startsWith(
+                                "plugin-backup-icloud-",
+                            )
+                        ) {
+                            return;
+                        }
+                        this.pluginFormDirty = true;
+                    },
+                );
+        }
         this.elements.pluginTest
             ?.addEventListener(
                 "click",
@@ -4216,6 +4233,7 @@ export class ConfigurationController {
                 ${escapeHtml(this.pluginConfigurationHint(plugin))}
             </p>
         `;
+        this.pluginFormDirty = false;
 
         document.getElementById("plugin-enabled")
             ?.addEventListener(
@@ -4419,7 +4437,7 @@ export class ConfigurationController {
                     ${icloud.requires_two_factor ? `
                         <label class="configuration-span-2">
                             Code de validation Apple
-                            <input id="plugin-backup-icloud-two-factor" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="Code 2FA" required>
+                            <input id="plugin-backup-icloud-two-factor" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="Code 2FA">
                         </label>
                         <div class="configuration-span-2">
                             <button id="plugin-backup-icloud-connect" class="button" type="button" ${icloud.binary_available ? "" : "disabled"}>
@@ -4432,11 +4450,11 @@ export class ConfigurationController {
                             <div class="configuration-form-grid plugin-backup-target__advanced">
                                 <label>
                                     Identifiant Apple
-                                    <input id="plugin-backup-icloud-apple-id" type="email" autocomplete="username" placeholder="nom@icloud.com" required>
+                                    <input id="plugin-backup-icloud-apple-id" type="email" autocomplete="username" placeholder="nom@icloud.com">
                                 </label>
                                 <label>
                                     Mot de passe Apple
-                                    <input id="plugin-backup-icloud-password" type="password" autocomplete="current-password" required>
+                                    <input id="plugin-backup-icloud-password" type="password" autocomplete="current-password">
                                     <small>Ces identifiants ne sont pas conservés. Le mot de passe Apple normal est requis ; les mots de passe spécifiques aux apps ne fonctionnent pas avec rclone.</small>
                                 </label>
                                 <div class="configuration-span-2">
@@ -5085,6 +5103,16 @@ export class ConfigurationController {
             return;
         }
 
+        if (this.pluginFormDirty) {
+            this.elements.pluginTestResult.innerHTML = `
+                <strong>Modifications non appliquées</strong>
+                <span>Cliquez sur Appliquer avant de tester la configuration enregistrée.</span>
+            `;
+            this.elements.pluginTestResult.className =
+                "plugin-test-result plugin-test-result--error";
+            return;
+        }
+
         hideError(this.elements.error);
         this.elements.pluginTest.disabled = true;
         this.elements.pluginTestResult.textContent =
@@ -5130,6 +5158,31 @@ export class ConfigurationController {
             return;
         }
         const icloud = plugin.configuration?.icloud ?? {};
+        const requiredFields = icloud.requires_two_factor
+            ? [
+                {
+                    id: "plugin-backup-icloud-two-factor",
+                    message: "Renseignez le code 2FA pour valider la connexion iCloud.",
+                },
+            ]
+            : [
+                {
+                    id: "plugin-backup-icloud-apple-id",
+                    message: "Renseignez l'identifiant Apple pour connecter iCloud.",
+                },
+                {
+                    id: "plugin-backup-icloud-password",
+                    message: "Renseignez le mot de passe Apple pour connecter iCloud.",
+                },
+            ];
+        const missingField = requiredFields.find(
+            (field) => !this.value(field.id).trim(),
+        );
+        if (missingField) {
+            showError(this.elements.error, missingField.message);
+            document.getElementById(missingField.id)?.focus();
+            return;
+        }
         const formDraft = this.captureBackupFormDraft();
         const button = document.getElementById("plugin-backup-icloud-connect");
         if (button) {
@@ -5189,7 +5242,11 @@ export class ConfigurationController {
                 "[data-backup-target-index] details[open]",
             ),
         ).map((details) => details.closest("[data-backup-target-index]")?.dataset.backupTargetIndex);
-        return { fields, expandedTargets };
+        return {
+            fields,
+            expandedTargets,
+            dirty: this.pluginFormDirty,
+        };
     }
 
     restoreBackupFormDraft(draft) {
@@ -5209,6 +5266,7 @@ export class ConfigurationController {
                 `[data-backup-target-index="${index}"] details`,
             )?.setAttribute("open", "");
         }
+        this.pluginFormDirty = Boolean(draft.dirty);
     }
 
     formatPluginDate(value, fallback = "Jamais") {

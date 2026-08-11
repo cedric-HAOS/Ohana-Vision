@@ -203,7 +203,7 @@ Selon les capacités exposées par Ohana-Agent et ses plugins, Ohana-Vision pour
 - lancer des observations ou des diagnostics à la demande ;
 - déclencher certaines actions d'administration.
 
-La version 1.11.5 concrétise également cette architecture pour les sauvegardes
+La version 1.11.6 concrétise également cette architecture pour les sauvegardes
 HAOS. La page **Configuration / Plugins / Sauvegardes HAOS** configure les
 cibles, leurs adresses et leurs heures quotidiennes. Les jetons Home Assistant
 et clés de chiffrement des sauvegardes se saisissent dans des champs masqués ; une
@@ -211,7 +211,10 @@ valeur vide conserve le secret déjà présent et aucune valeur n'est renvoyée 
 l'API. La même page connecte ou reconnecte iCloud avec l'identifiant Apple, le
 mot de passe Apple et le code 2FA ponctuel, puis choisit le dossier de
 destination. Le passage par le flux 2FA conserve les réglages HAOS en cours de
-saisie. Agent exécute les sauvegardes et décide de la rotation locale
+saisie. Les champs Apple ne participent pas à l'application des réglages HAOS
+et ne sont exigés que pour connecter iCloud. Si le formulaire a été modifié,
+Vision demande de l'appliquer avant de tester la configuration enregistrée.
+Agent exécute les sauvegardes et décide de la rotation locale
 après validation distante.
 
 Ohana-Vision ne réalise pas directement ces opérations.

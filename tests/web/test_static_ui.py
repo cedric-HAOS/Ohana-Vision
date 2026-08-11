@@ -2566,6 +2566,14 @@ def test_plugin_ui_configures_haos_backups() -> None:
     assert "captureBackupFormDraft" in response.text
     assert "restoreBackupFormDraft" in response.text
     assert "Ces identifiants ne sont pas conservés" in response.text
+    assert "Modifications non appliquées" in response.text
+    assert "Cliquez sur Appliquer avant de tester" in response.text
+    assert "event.target?.id?.startsWith" in response.text
+    assert "Renseignez l'identifiant Apple" in response.text
+    assert "Renseignez le code 2FA" in response.text
+    assert 'placeholder="nom@icloud.com" required' not in response.text
+    assert 'autocomplete="current-password" required' not in response.text
+    assert 'placeholder="Code 2FA" required' not in response.text
     assert "script.ohana_backup_zwave_nvm" in response.text
     assert "configuration.rclone_remote" in response.text
 
