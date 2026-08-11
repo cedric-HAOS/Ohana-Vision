@@ -4421,22 +4421,32 @@ export class ConfigurationController {
                             Code de validation Apple
                             <input id="plugin-backup-icloud-two-factor" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="Code 2FA" required>
                         </label>
+                        <div class="configuration-span-2">
+                            <button id="plugin-backup-icloud-connect" class="button" type="button" ${icloud.binary_available ? "" : "disabled"}>
+                                Valider le code 2FA
+                            </button>
+                        </div>
                     ` : `
-                        <label>
-                            Identifiant Apple
-                            <input id="plugin-backup-icloud-apple-id" type="email" autocomplete="username" placeholder="nom@icloud.com" required>
-                        </label>
-                        <label>
-                            Mot de passe Apple
-                            <input id="plugin-backup-icloud-password" type="password" autocomplete="current-password" required>
-                            <small>Le mot de passe Apple normal est requis ; les mots de passe spécifiques aux apps ne fonctionnent pas avec rclone.</small>
-                        </label>
+                        <details class="configuration-span-2" ${icloud.configured ? "" : "open"}>
+                            <summary>${icloud.configured ? "Renouveler la connexion iCloud" : "Configurer la connexion iCloud"}</summary>
+                            <div class="configuration-form-grid plugin-backup-target__advanced">
+                                <label>
+                                    Identifiant Apple
+                                    <input id="plugin-backup-icloud-apple-id" type="email" autocomplete="username" placeholder="nom@icloud.com" required>
+                                </label>
+                                <label>
+                                    Mot de passe Apple
+                                    <input id="plugin-backup-icloud-password" type="password" autocomplete="current-password" required>
+                                    <small>Ces identifiants ne sont pas conservés. Le mot de passe Apple normal est requis ; les mots de passe spécifiques aux apps ne fonctionnent pas avec rclone.</small>
+                                </label>
+                                <div class="configuration-span-2">
+                                    <button id="plugin-backup-icloud-connect" class="button" type="button" ${icloud.binary_available ? "" : "disabled"}>
+                                        ${icloud.configured ? "Reconnecter iCloud" : "Connecter iCloud"}
+                                    </button>
+                                </div>
+                            </div>
+                        </details>
                     `}
-                    <div class="configuration-span-2">
-                        <button id="plugin-backup-icloud-connect" class="button" type="button" ${icloud.binary_available ? "" : "disabled"}>
-                            ${icloud.requires_two_factor ? "Valider le code 2FA" : icloud.configured ? "Reconnecter iCloud" : "Connecter iCloud"}
-                        </button>
-                    </div>
                 </fieldset>
                 <label class="configuration-span-2">
                     Dossier de destination iCloud
@@ -4480,9 +4490,9 @@ export class ConfigurationController {
                                     <small>${target.token_configured ? "Jeton configuré. Laissez vide pour le conserver." : "Jeton absent."}</small>
                                 </label>
                                 <label>
-                                    Mot de passe de chiffrement
-                                    <input id="plugin-backup-target-${index}-password" type="password" value="" autocomplete="new-password" placeholder="Laisser vide pour conserver le mot de passe actuel">
-                                    <small>${target.password_configured ? "Mot de passe configuré. Laissez vide pour le conserver." : "Mot de passe absent."}</small>
+                                    Clé de chiffrement des sauvegardes
+                                    <input id="plugin-backup-target-${index}-password" type="password" value="" autocomplete="new-password" placeholder="Laisser vide pour conserver la clé actuelle">
+                                    <small>${target.password_configured ? "Clé configurée. Laissez vide pour la conserver." : "Clé absente."} Elle se trouve dans Home Assistant → Paramètres → Système → Sauvegardes.</small>
                                 </label>
                                 ${target.id === "zwave-01" ? `
                                     <label class="configuration-span-2">
@@ -5120,6 +5130,7 @@ export class ConfigurationController {
             return;
         }
         const icloud = plugin.configuration?.icloud ?? {};
+        const formDraft = this.captureBackupFormDraft();
         const button = document.getElementById("plugin-backup-icloud-connect");
         if (button) {
             button.disabled = true;
@@ -5143,6 +5154,7 @@ export class ConfigurationController {
             );
             plugin.configuration.icloud = result;
             this.renderPluginInspector();
+            this.restoreBackupFormDraft(formDraft);
             this.showNotice(result.message ?? "Configuration iCloud mise à jour.");
         } catch (error) {
             showError(
@@ -5152,6 +5164,50 @@ export class ConfigurationController {
             if (button) {
                 button.disabled = false;
             }
+        }
+    }
+
+    captureBackupFormDraft() {
+        const fields = Array.from(
+            document.querySelectorAll(
+                "#plugin-enabled, [id^='plugin-backup-']",
+            ),
+        )
+            .filter((element) =>
+                element.matches("input, select, textarea")
+                && !element.id.startsWith("plugin-backup-icloud-")
+            )
+            .map((element) => ({
+                id: element.id,
+                checked: element.matches("input[type='checkbox'], input[type='radio']")
+                    ? element.checked
+                    : null,
+                value: element.value,
+            }));
+        const expandedTargets = Array.from(
+            document.querySelectorAll(
+                "[data-backup-target-index] details[open]",
+            ),
+        ).map((details) => details.closest("[data-backup-target-index]")?.dataset.backupTargetIndex);
+        return { fields, expandedTargets };
+    }
+
+    restoreBackupFormDraft(draft) {
+        for (const field of draft.fields) {
+            const element = document.getElementById(field.id);
+            if (!element) {
+                continue;
+            }
+            if (field.checked === null) {
+                element.value = field.value;
+            } else {
+                element.checked = field.checked;
+            }
+        }
+        for (const index of draft.expandedTargets) {
+            document.querySelector(
+                `[data-backup-target-index="${index}"] details`,
+            )?.setAttribute("open", "");
         }
     }
 

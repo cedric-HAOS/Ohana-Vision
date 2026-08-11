@@ -12,7 +12,7 @@ les contrats publics et versionnés de l'Agent.
 
 ## État actuel
 
-**Version préparée : 1.11.4 — Secrets HAOS et connexion iCloud.**
+**Version préparée : 1.11.5 — Terminologie et formulaire de sauvegarde.**
 
 Le socle actuel couvre notamment :
 

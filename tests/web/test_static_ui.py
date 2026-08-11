@@ -2557,10 +2557,15 @@ def test_plugin_ui_configures_haos_backups() -> None:
     assert "password_configured" in response.text
     assert "plugin-backup-target-${index}-token" in response.text
     assert "plugin-backup-target-${index}-password" in response.text
+    assert "Clé de chiffrement des sauvegardes" in response.text
+    assert "Paramètres → Système → Sauvegardes" in response.text
     assert "plugin-backup-icloud-apple-id" in response.text
     assert "plugin-backup-icloud-password" in response.text
     assert "plugin-backup-icloud-two-factor" in response.text
     assert "administrationBackupICloudConnect" in response.text
+    assert "captureBackupFormDraft" in response.text
+    assert "restoreBackupFormDraft" in response.text
+    assert "Ces identifiants ne sont pas conservés" in response.text
     assert "script.ohana_backup_zwave_nvm" in response.text
     assert "configuration.rclone_remote" in response.text
 

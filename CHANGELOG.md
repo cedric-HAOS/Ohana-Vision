@@ -6,6 +6,18 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.11.5] — Terminologie et formulaire de sauvegarde — 2026-08-11
+
+## Corrigé
+
+- Le champ ambigu **Mot de passe de chiffrement** devient **Clé de chiffrement
+  des sauvegardes** et indique son emplacement exact dans Home Assistant.
+- Le flux de connexion et de validation 2FA iCloud conserve désormais tous les
+  réglages HAOS non encore appliqués, y compris les secrets saisis et l'état
+  ouvert des sections avancées.
+- Une connexion iCloud déjà configurée replie les identifiants Apple et précise
+  que ceux-ci ne sont pas conservés ; seul le jeton de confiance rclone l'est.
+
 # [1.11.4] — Secrets HAOS et connexion iCloud — 2026-08-11
 
 ## Modifié
