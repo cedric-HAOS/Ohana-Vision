@@ -203,6 +203,12 @@ Selon les capacités exposées par Ohana-Agent et ses plugins, Ohana-Vision pour
 - lancer des observations ou des diagnostics à la demande ;
 - déclencher certaines actions d'administration.
 
+La version 1.11.3 concrétise également cette architecture pour les sauvegardes
+HAOS. La page **Configuration / Plugins / Sauvegardes HAOS** configure les
+cibles, leurs adresses et leurs heures quotidiennes, tandis qu'Agent conserve
+les secrets, exécute les sauvegardes et décide de la rotation locale après
+validation distante.
+
 Ohana-Vision ne réalise pas directement ces opérations.
 
 Il s'appuie sur les API exposées par Ohana-Agent, qui reste le seul responsable de l'exécution des actions sur l'infrastructure.

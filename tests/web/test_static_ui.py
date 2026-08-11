@@ -2543,6 +2543,22 @@ def test_plugin_ui_supports_observation_plugins() -> None:
     assert "teleinformation.freshness" not in html_response.text
 
 
+def test_plugin_ui_configures_haos_backups() -> None:
+    """Expose safe, per-target backup controls in the Agent plugin editor."""
+    response = make_client().get("/ui/configuration.js")
+
+    assert response.status_code == 200
+    assert 'plugin.id === "backup"' in response.text
+    assert "plugin-backup-remote" in response.text
+    assert "plugin-backup-target-${index}-enabled" in response.text
+    assert "plugin-backup-target-${index}-url" in response.text
+    assert "plugin-backup-target-${index}-time" in response.text
+    assert "token_configured" in response.text
+    assert "password_configured" in response.text
+    assert "script.ohana_backup_zwave_nvm" in response.text
+    assert "configuration.rclone_remote" in response.text
+
+
 def test_sidebar_exposes_agent_version_placeholder() -> None:
     """Sidebar footer must reserve a line for the connected Agent version."""
     response = make_client().get("/ui/")

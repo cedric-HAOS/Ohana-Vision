@@ -97,6 +97,7 @@ const PLUGIN_STATUS_LABELS = Object.freeze({
 });
 
 const PLUGIN_ICONS = Object.freeze({
+    backup: "/ui/assets/icons/administration/archive.svg",
     dhcp: "/ui/assets/icons/network/router.svg",
     dns: "/ui/assets/icons/network/globe-2.svg",
     ntp: "/ui/assets/icons/network/clock-3.svg",
@@ -4258,6 +4259,10 @@ export class ConfigurationController {
     }
 
     pluginEnabledLabel(plugin) {
+        if (plugin.id === "backup") {
+            return "Sauvegardes HAOS activées";
+        }
+
         if (plugin.id === "dhcp") {
             return "Observation DHCP activée";
         }
@@ -4266,6 +4271,10 @@ export class ConfigurationController {
     }
 
     pluginConfigurationHint(plugin) {
+        if (plugin.id === "backup") {
+            return "Agent conserve une sauvegarde Ohana sur chaque HAOS et ne supprime l’ancienne qu’après validation de l’archive et de sa somme SHA-256 sur iCloud.";
+        }
+
         if (plugin.id === "network") {
             return "Les équipements adressables sont découverts automatiquement depuis l’onglet Architecture.";
         }
@@ -4356,6 +4365,95 @@ export class ConfigurationController {
                 'min="0" step="1" required',
             )}
         `;
+
+        if (plugin.id === "backup") {
+            const defaults = [
+                ["ha-01", "HA-01", "02:00"],
+                ["linky-01", "LINKY-01", "03:00"],
+                ["zwave-01", "ZWAVE-01", "04:00"],
+            ];
+            const configuredTargets = configuration.targets ?? [];
+            const targets = configuredTargets.length > 0
+                ? configuredTargets
+                : defaults.map(([id, label, time]) => ({
+                    id,
+                    label,
+                    enabled: true,
+                    url: `http://${id}.ohana.lan:8123`,
+                    token_environment_variable: `OHANA_BACKUP_${id.replaceAll("-", "_").toUpperCase()}_TOKEN`,
+                    password_environment_variable: `OHANA_BACKUP_${id.replaceAll("-", "_").toUpperCase()}_PASSWORD`,
+                    schedule: `${Number(time.slice(3))} ${Number(time.slice(0, 2))} * * *`,
+                    verify_tls: true,
+                    timeout: id === "ha-01" ? 900 : 600,
+                }));
+            const scheduleTime = (schedule) => {
+                const parts = String(schedule ?? "").trim().split(/\s+/);
+                if (parts.length !== 5 || parts[2] !== "*" || parts[3] !== "*" || parts[4] !== "*") {
+                    return "00:00";
+                }
+                return `${String(Number(parts[1])).padStart(2, "0")}:${String(Number(parts[0])).padStart(2, "0")}`;
+            };
+
+            return `
+                <label class="configuration-span-2">
+                    Destination iCloud via rclone
+                    <input id="plugin-backup-remote" type="text" value="${escapeHtml(configuration.rclone_remote ?? "icloud:Ohana/Backups")}" required>
+                    <small>Nom du remote rclone, suivi du dossier de destination.</small>
+                </label>
+                ${targets.map((target, index) => `
+                    <fieldset class="plugin-backup-target configuration-span-2" data-backup-target-index="${index}">
+                        <legend>${escapeHtml(target.label ?? target.id)}</legend>
+                        <input id="plugin-backup-target-${index}-id" type="hidden" value="${escapeHtml(target.id)}">
+                        <label class="configuration-check configuration-span-2">
+                            <input id="plugin-backup-target-${index}-enabled" type="checkbox" ${target.enabled !== false ? "checked" : ""}>
+                            Sauvegarder ${escapeHtml(target.label ?? target.id)}
+                        </label>
+                        <label>
+                            Nom affiché
+                            <input id="plugin-backup-target-${index}-label" type="text" value="${escapeHtml(target.label ?? target.id)}" required>
+                        </label>
+                        <label>
+                            Heure quotidienne
+                            <input id="plugin-backup-target-${index}-time" type="time" value="${escapeHtml(scheduleTime(target.schedule))}" required>
+                        </label>
+                        <label class="configuration-span-2">
+                            Adresse HAOS
+                            <input id="plugin-backup-target-${index}-url" type="url" value="${escapeHtml(target.url ?? `http://${target.id}.ohana.lan:8123`)}" placeholder="http://${escapeHtml(target.id)}.ohana.lan:8123" required>
+                        </label>
+                        <label>
+                            Délai maximal (secondes)
+                            <input id="plugin-backup-target-${index}-timeout" type="number" min="1" step="1" value="${escapeHtml(target.timeout ?? 600)}" required>
+                        </label>
+                        <label class="configuration-check">
+                            <input id="plugin-backup-target-${index}-verify-tls" type="checkbox" ${target.verify_tls !== false ? "checked" : ""}>
+                            Vérifier le certificat TLS
+                        </label>
+                        <details class="configuration-span-2">
+                            <summary>Secrets et préparation</summary>
+                            <div class="configuration-form-grid plugin-backup-target__advanced">
+                                <label>
+                                    Variable du jeton HAOS
+                                    <input id="plugin-backup-target-${index}-token-environment" type="text" value="${escapeHtml(target.token_environment_variable)}" required>
+                                    <small>${target.token_configured ? "Jeton présent sur Agent." : "Jeton absent sur Agent."}</small>
+                                </label>
+                                <label>
+                                    Variable du mot de passe
+                                    <input id="plugin-backup-target-${index}-password-environment" type="text" value="${escapeHtml(target.password_environment_variable)}" required>
+                                    <small>${target.password_configured ? "Mot de passe présent sur Agent." : "Mot de passe absent sur Agent."}</small>
+                                </label>
+                                ${target.id === "zwave-01" ? `
+                                    <label class="configuration-span-2">
+                                        Script Home Assistant avant sauvegarde
+                                        <input id="plugin-backup-target-${index}-pre-action" type="text" value="${escapeHtml(target.pre_backup_action ? `${target.pre_backup_action.domain}.${target.pre_backup_action.service}` : "script.ohana_backup_zwave_nvm")}" placeholder="script.ohana_backup_zwave_nvm">
+                                        <small>Le script doit attendre la fin de l’export NVM Z-Wave.</small>
+                                    </label>
+                                ` : ""}
+                            </div>
+                        </details>
+                    </fieldset>
+                `).join("")}
+            `;
+        }
 
         if (plugin.id === "dhcp") {
             return `
@@ -4659,6 +4757,47 @@ export class ConfigurationController {
         const configuration = structuredClone(
             plugin.configuration ?? {},
         );
+        if (plugin.id === "backup") {
+            configuration.rclone_remote = this.value("plugin-backup-remote");
+            configuration.targets = Array.from(
+                document.querySelectorAll("[data-backup-target-index]"),
+            ).map((fieldset) => {
+                const index = fieldset.dataset.backupTargetIndex;
+                const original = (plugin.configuration?.targets ?? [])[index] ?? {};
+                const time = this.value(`plugin-backup-target-${index}-time`);
+                const [hour, minute] = time.split(":").map(Number);
+                const action = this.value(`plugin-backup-target-${index}-pre-action`);
+                const [domain, ...serviceParts] = action.split(".");
+                const target = {
+                    ...original,
+                    id: this.value(`plugin-backup-target-${index}-id`),
+                    label: this.value(`plugin-backup-target-${index}-label`),
+                    enabled: this.checked(`plugin-backup-target-${index}-enabled`),
+                    url: this.value(`plugin-backup-target-${index}-url`),
+                    token_environment_variable: this.value(`plugin-backup-target-${index}-token-environment`),
+                    password_environment_variable: this.value(`plugin-backup-target-${index}-password-environment`),
+                    schedule: `${minute} ${hour} * * *`,
+                    verify_tls: this.checked(`plugin-backup-target-${index}-verify-tls`),
+                    timeout: Number(this.value(`plugin-backup-target-${index}-timeout`)),
+                };
+                delete target.token_configured;
+                delete target.password_configured;
+                if (action) {
+                    target.pre_backup_action = {
+                        domain,
+                        service: serviceParts.join("."),
+                        data: original.pre_backup_action?.data ?? {},
+                    };
+                } else {
+                    target.pre_backup_action = null;
+                }
+                return target;
+            });
+            return {
+                enabled: this.checked("plugin-enabled"),
+                configuration,
+            };
+        }
         configuration.interval_seconds = Number(
             this.value("plugin-interval-seconds"),
         );

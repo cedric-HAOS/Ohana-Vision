@@ -6,6 +6,33 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.11.3] — Administration des sauvegardes HAOS — 2026-08-11
+
+## Ajouté
+
+- La page **Configuration / Plugins / Sauvegardes HAOS** pilote l'activation
+  globale et l'activation individuelle de HA-01, LINKY-01 et ZWAVE-01.
+- Chaque cible expose son adresse HAOS, son heure quotidienne, son délai, la
+  vérification TLS et les noms des variables contenant ses secrets.
+- La destination rclone/iCloud et le script de préparation NVM de ZWAVE-01 sont
+  modifiables depuis la même interface.
+- Vision indique si les secrets sont présents sur Agent sans jamais recevoir
+  ni afficher leur valeur.
+
+## Sécurité
+
+- Le bouton de test utilise le diagnostic en lecture seule d'Agent : aucune
+  sauvegarde n'est créée, envoyée ou supprimée.
+- Le formulaire rappelle qu'une sauvegarde locale est conservée sur chaque
+  HAOS et que la rotation intervient uniquement après validation distante.
+
+## Qualité
+
+- Tests statiques du formulaire, de la sérialisation des heures quotidiennes,
+  de la présence des contrôles par cible et de la frontière des secrets.
+
+---
+
 # [1.11.2] — Cockpit de santé de l'hôte — 2026-08-10
 
 ## Amélioré

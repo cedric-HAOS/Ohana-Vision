@@ -1090,6 +1090,25 @@
         var(--ohana-border-subtle);
 }
 
+.plugin-backup-target {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ohana-space-3);
+    margin: 0;
+    padding: var(--ohana-space-3);
+    border: var(--ohana-border-width-thin) solid var(--ohana-border-default);
+    border-radius: var(--ohana-radius-sm);
+}
+
+.plugin-backup-target legend {
+    padding: 0 var(--ohana-space-2);
+    font-weight: 700;
+}
+
+.plugin-backup-target__advanced {
+    margin-top: var(--ohana-space-3);
+}
+
 .plugin-inspector__hint {
     margin: var(--ohana-space-3) 0 0;
     font-size: var(--ohana-font-size-xs);
@@ -1145,6 +1164,10 @@
 }
 
 @media (max-width: 52rem) {
+    .plugin-backup-target {
+        grid-template-columns: 1fr;
+    }
+
     .plugin-cards,
     .plugin-runtime-summary {
         grid-template-columns: 1fr;

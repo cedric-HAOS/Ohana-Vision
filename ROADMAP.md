@@ -12,7 +12,7 @@ les contrats publics et versionnés de l'Agent.
 
 ## État actuel
 
-**Version préparée : 1.11.2 — Cockpit de santé de l'hôte Agent.**
+**Version préparée : 1.11.3 — Administration des sauvegardes HAOS.**
 
 Le socle actuel couvre notamment :
 
@@ -22,6 +22,8 @@ Le socle actuel couvre notamment :
   systemd de la machine hôte d'Agent ;
 - l'administration graphique de l'infrastructure, du réseau, du DHCP et des
   plugins exposés par Agent ;
+- la configuration des sauvegardes HAOS vers iCloud, avec activation et
+  horaire distincts pour chaque cible et secrets conservés côté Agent ;
 - la présence réseau et les plages de surveillance ;
 - la persistance durable des observations ;
 - le regroupement des évaluations répétitives ;
