@@ -161,9 +161,9 @@ export class TopologyController {
      * Refresh health and network presence without reloading the
      * topology definition.
      *
-     * The canvas is rebuilt only when a visible status actually
-     * changes. Repeated observations with the same status therefore
-     * update the shared details without making the map blink.
+     * Statuses are reconciled on the existing SVG nodes. Rebuilding
+     * the canvas would replay every entrance animation and make the
+     * whole map blink whenever one device changes state.
      */
     async refreshStatus() {
         const topology = this.state.topology;
@@ -183,31 +183,15 @@ export class TopologyController {
                 topology,
                 this.state.observations,
             );
-        const visualStatusChanged =
-            this.hasVisualStatusChanged(
-                topology,
-                deviceHealth,
-                devicePresence,
-            );
-
         this.state.deviceHealth =
             deviceHealth;
         this.state.devicePresence =
             devicePresence;
 
-        if (visualStatusChanged) {
-            this.canvas.render(
-                topology,
-                deviceHealth,
-                devicePresence,
-            );
-
-            if (this.state.selectedDeviceId) {
-                this.setSelectedDevice(
-                    this.state.selectedDeviceId,
-                );
-            }
-        }
+        this.canvas.updateStatus(
+            deviceHealth,
+            devicePresence,
+        );
 
         hideError(this.elements.error);
 
@@ -215,42 +199,6 @@ export class TopologyController {
             topology,
             deviceHealth,
             devicePresence,
-        });
-    }
-
-    hasVisualStatusChanged(
-        topology,
-        deviceHealth,
-        devicePresence,
-    ) {
-        return (
-            topology?.devices
-            ?? []
-        ).some((device) => {
-            const deviceId = device.device_id;
-            const previousHealth =
-                this.state.deviceHealth[
-                    deviceId
-                ]
-                ?? "unknown";
-            const nextHealth =
-                deviceHealth[deviceId]
-                ?? "unknown";
-            const previousPresence =
-                this.state.devicePresence[
-                    deviceId
-                ]?.status
-                ?? null;
-            const nextPresence =
-                devicePresence[deviceId]
-                    ?.status
-                ?? null;
-
-            return (
-                previousHealth !== nextHealth
-                || previousPresence
-                    !== nextPresence
-            );
         });
     }
 

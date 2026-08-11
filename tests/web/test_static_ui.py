@@ -1065,23 +1065,42 @@ def test_application_module_refreshes_backend_resources() -> None:
 
 
 def test_topology_refreshes_status_without_reloading_definition() -> None:
-    """Stable realtime statuses must not rebuild the topology canvas."""
+    """Realtime statuses must update the existing topology canvas."""
     response = make_client().get("/ui/topology.js")
 
     assert response.status_code == 200
     assert "async refreshStatus()" in response.text
-    assert "hasVisualStatusChanged(" in response.text
-    assert "if (visualStatusChanged)" in response.text
+    assert "this.canvas.updateStatus(" in response.text
 
     status_refresh = response.text.split(
         "async refreshStatus()",
         maxsplit=1,
     )[1].split(
-        "hasVisualStatusChanged(",
+        "setSelectedDevice(",
         maxsplit=1,
     )[0]
 
     assert "API.topology" not in status_refresh
+    assert "this.canvas.render(" not in status_refresh
+
+
+def test_topology_canvas_updates_realtime_statuses_in_place() -> None:
+    """Status changes must not replay the canvas entrance animations."""
+    response = make_client().get("/ui/topology_canvas.js")
+
+    assert response.status_code == 200
+    assert "updateStatus(" in response.text
+    assert "updateDeviceStatus(" in response.text
+
+    status_update = response.text.split(
+        "updateStatus(",
+        maxsplit=1,
+    )[1].split(
+        "updateDeviceStatus(",
+        maxsplit=1,
+    )[0]
+
+    assert "replaceChildren(" not in status_update
 
 
 def test_topology_reconciles_health_from_recent_observations() -> None:
@@ -2593,7 +2612,7 @@ def test_plugin_ui_configures_haos_backups() -> None:
     assert 'placeholder="nom@icloud.com" required' not in response.text
     assert 'autocomplete="current-password" required' not in response.text
     assert 'placeholder="Code 2FA" required' not in response.text
-    assert "script.ohana_backup_zwave_nvm" in response.text
+    assert "planification NVM de Z-Wave JS UI" in response.text
     assert "configuration.rclone_remote" in response.text
 
 

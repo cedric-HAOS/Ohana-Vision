@@ -4514,9 +4514,9 @@ export class ConfigurationController {
                                 </label>
                                 ${target.id === "zwave-01" ? `
                                     <label class="configuration-span-2">
-                                        Script Home Assistant avant sauvegarde
-                                        <input id="plugin-backup-target-${index}-pre-action" type="text" value="${escapeHtml(target.pre_backup_action ? `${target.pre_backup_action.domain}.${target.pre_backup_action.service}` : "script.ohana_backup_zwave_nvm")}" placeholder="script.ohana_backup_zwave_nvm">
-                                        <small>Le script doit attendre la fin de l’export NVM Z-Wave.</small>
+                                        Action Home Assistant optionnelle avant sauvegarde
+                                        <input id="plugin-backup-target-${index}-pre-action" type="text" value="${escapeHtml(target.pre_backup_action ? `${target.pre_backup_action.domain}.${target.pre_backup_action.service}` : "")}" placeholder="Laisser vide avec la planification NVM de Z-Wave JS UI">
+                                        <small>Recommandé : planifiez la sauvegarde NVM directement dans Z-Wave JS UI avant l’heure HAOS.</small>
                                     </label>
                                 ` : ""}
                             </div>

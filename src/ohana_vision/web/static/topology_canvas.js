@@ -153,6 +153,171 @@ class TopologyCanvas {
         });
     }
 
+    /**
+     * Reconcile health and presence on the existing SVG.
+     *
+     * Realtime observations must not recreate the canvas because the
+     * topology entrance animations would restart for every device.
+     */
+    updateStatus(
+        deviceHealth = {},
+        devicePresence = {},
+    ) {
+        this.deviceHealth = deviceHealth;
+        this.devicePresence = devicePresence;
+
+        if (!this.svg || !this.topology) {
+            return;
+        }
+
+        for (const group of this.svg.querySelectorAll(
+            ".topology-device",
+        )) {
+            const device = this.deviceIndex.get(
+                group.dataset.deviceId,
+            );
+
+            if (device) {
+                this.updateDeviceStatus(group, device);
+            }
+        }
+
+        for (const group of this.svg.querySelectorAll(
+            ".topology-link",
+        )) {
+            const link = (
+                this.topology.links ?? []
+            ).find(
+                (candidate) => candidate.link_id
+                    === group.dataset.linkId,
+            );
+
+            if (!link) {
+                continue;
+            }
+
+            this.replaceStatusClass(
+                group,
+                "topology-link--health-",
+                this.linkHealth(link),
+            );
+        }
+    }
+
+    updateDeviceStatus(group, device) {
+        const health = this.deviceStatus(device);
+        const presence = this.devicePresenceStatus(device);
+        const compact = this.isCompactDevice(device);
+
+        this.replaceStatusClass(
+            group,
+            "topology-device--health-",
+            health,
+        );
+        this.replaceStatusClass(
+            group,
+            "topology-device--presence-",
+            presence,
+        );
+
+        if (presence) {
+            group.dataset.presenceStatus = presence;
+        } else {
+            delete group.dataset.presenceStatus;
+        }
+
+        const healthIndicator = group.querySelector(
+            ".topology-device__health",
+        );
+
+        if (healthIndicator) {
+            this.replaceStatusClass(
+                healthIndicator,
+                "topology-device__health--",
+                health,
+            );
+            const healthLabel = healthIndicator.querySelector(
+                ".topology-device__health-label",
+            );
+
+            if (healthLabel) {
+                healthLabel.textContent = this.healthShortLabel(
+                    health,
+                    compact,
+                );
+            }
+        }
+
+        let presenceIndicator = group.querySelector(
+            ".topology-device__presence",
+        );
+
+        if (presence && !presenceIndicator) {
+            presenceIndicator = this.createPresenceIndicator(
+                presence,
+                compact,
+            );
+            group.append(presenceIndicator);
+        } else if (!presence && presenceIndicator) {
+            presenceIndicator.remove();
+            presenceIndicator = null;
+        }
+
+        if (presenceIndicator) {
+            this.replaceStatusClass(
+                presenceIndicator,
+                "topology-device__presence--",
+                presence,
+            );
+            const presenceLabel =
+                this.formatPresenceStatus(presence);
+
+            presenceIndicator.setAttribute(
+                "aria-label",
+                presenceLabel,
+            );
+            const title = presenceIndicator.querySelector("title");
+
+            if (title) {
+                title.textContent = presenceLabel;
+            }
+        }
+
+        const labels = [
+            device.label,
+            this.formatKind(device.kind),
+            this.formatHealthStatus(health),
+            presence
+                ? this.formatPresenceStatus(presence)
+                : null,
+        ].filter(Boolean);
+
+        group.setAttribute("aria-label", labels.join(", "));
+        const title = group.querySelector("title");
+
+        if (title) {
+            title.replaceWith(
+                this.createDeviceTitle(
+                    device,
+                    health,
+                    presence,
+                ),
+            );
+        }
+    }
+
+    replaceStatusClass(element, prefix, status) {
+        for (const className of [...element.classList]) {
+            if (className.startsWith(prefix)) {
+                element.classList.remove(className);
+            }
+        }
+
+        if (status) {
+            element.classList.add(`${prefix}${status}`);
+        }
+    }
+
 
     createToolsPanel() {
         const panel = document.createElement("aside");

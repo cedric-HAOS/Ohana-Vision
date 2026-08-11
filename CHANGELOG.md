@@ -6,6 +6,23 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.11.8] — Topologie stable et préparation Z-Wave optionnelle — 2026-08-11
+
+## Corrigé
+
+- Les changements de santé et de présence mettent désormais à jour les nœuds,
+  les liaisons, les libellés et les attributs d’accessibilité directement dans
+  le SVG existant, sans reconstruire la carte ni rejouer ses animations.
+- Le champ d’action Home Assistant avant sauvegarde de ZWAVE-01 reste réellement
+  vide après **Appliquer**. Vision ne transforme plus le nom d’exemple
+  `script.ohana_backup_zwave_nvm` en configuration active.
+- L’interface recommande la planification NVM native de Z-Wave JS UI et conserve
+  l’action Home Assistant uniquement comme option avancée.
+
+## Validation
+
+- 850 tests réussis, Ruff et syntaxe JavaScript validés.
+
 # [1.11.7] — Sauvegarde immédiate par équipement — 2026-08-11
 
 ## Ajouté
