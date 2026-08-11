@@ -9,6 +9,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+BACKUP_ADMINISTRATION_TIMEOUT_SECONDS = 60.0
+
 
 class AgentAdministrationError(RuntimeError):
     """Raised when Ohana-Agent rejects or cannot serve an operation."""
@@ -106,6 +108,11 @@ class AgentAdministrationClient:
         return self._request(
             "POST",
             f"/v1/plugins/{quote(identifier, safe='')}/test",
+            timeout_seconds=(
+                max(self.timeout_seconds, BACKUP_ADMINISTRATION_TIMEOUT_SECONDS)
+                if identifier == "backup"
+                else None
+            ),
         )
 
     def connect_backup_icloud(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -114,6 +121,17 @@ class AgentAdministrationClient:
             "POST",
             "/v1/plugins/backup/icloud/connect",
             payload,
+            timeout_seconds=max(
+                self.timeout_seconds,
+                BACKUP_ADMINISTRATION_TIMEOUT_SECONDS,
+            ),
+        )
+
+    def run_backup(self, target_id: str) -> dict[str, Any]:
+        """Start one configured HAOS backup through Agent."""
+        return self._request(
+            "POST",
+            f"/v1/plugins/backup/targets/{quote(target_id, safe='')}/run",
         )
 
     def read_infrastructure(self) -> dict[str, Any]:
@@ -136,6 +154,8 @@ class AgentAdministrationClient:
         method: str,
         path: str,
         payload: dict[str, Any] | None = None,
+        *,
+        timeout_seconds: float | None = None,
     ) -> dict[str, Any]:
         token = self._read_token()
         data = None
@@ -167,7 +187,9 @@ class AgentAdministrationClient:
         try:
             with urlopen(  # noqa: S310 - URL is administrator-configured.
                 request,
-                timeout=self.timeout_seconds,
+                timeout=(
+                    self.timeout_seconds if timeout_seconds is None else timeout_seconds
+                ),
             ) as response:
                 response_payload = json.load(response)
         except HTTPError as error:

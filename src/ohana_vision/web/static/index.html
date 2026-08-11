@@ -306,12 +306,22 @@
             —
            </p>
           </div>
-          <button aria-label="
+          <div class="device-details__actions">
+           <button class="device-details__backup hidden" id="device-details-backup" type="button">
+            <span aria-hidden="true">↻</span>
+            Sauvegarder
+           </button>
+           <span aria-live="polite" class="device-details__backup-progress hidden" id="device-details-backup-progress" role="status">
+            Backup in progress
+           </span>
+           <button aria-label="
                                         Fermer les détails
                                         de l’équipement
                                     " class="device-details__close" id="device-details-close" type="button">
-           ×
-          </button>
+            ×
+           </button>
+          </div>
+          <p aria-live="polite" class="device-details__action-status hidden" id="device-details-backup-status"></p>
          </div>
          <div class="device-details__summary">
           <div class="device-details__health" id="device-details-health">

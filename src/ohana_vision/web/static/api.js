@@ -38,6 +38,9 @@ export const API = Object.freeze({
     },
     administrationBackupICloudConnect:
         "/api/administration/plugins/backup/icloud/connect",
+    administrationBackupRun(targetId) {
+        return `/api/administration/plugins/backup/targets/${encodeURIComponent(targetId)}/run`;
+    },
 });
 
 /**

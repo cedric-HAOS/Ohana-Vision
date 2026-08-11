@@ -1,6 +1,11 @@
 "use strict";
 
 import {
+    API,
+    fetchJson,
+    requestJson,
+} from "./api.js";
+import {
     deviceIconPath,
     escapeHtml,
     formatDate,
@@ -33,6 +38,15 @@ export class DeviceDetailsController {
             ),
             close: document.querySelector(
                 "#device-details-close",
+            ),
+            backup: document.querySelector(
+                "#device-details-backup",
+            ),
+            backupStatus: document.querySelector(
+                "#device-details-backup-status",
+            ),
+            backupProgress: document.querySelector(
+                "#device-details-backup-progress",
             ),
             title: document.querySelector(
                 "#device-details-title",
@@ -101,6 +115,9 @@ export class DeviceDetailsController {
 
         this.handleKeydown =
             this.handleKeydown.bind(this);
+        this.backupTarget = null;
+        this.backupSelectionGeneration = 0;
+        this.backupProgressTimer = null;
     }
 
     initialize() {
@@ -108,6 +125,12 @@ export class DeviceDetailsController {
             "click",
             () => {
                 this.close();
+            },
+        );
+        this.elements.backup?.addEventListener(
+            "click",
+            () => {
+                void this.runBackup();
             },
         );
 
@@ -139,6 +162,7 @@ export class DeviceDetailsController {
         );
 
         this.render(device);
+        void this.loadBackupTarget(device);
 
         return true;
     }
@@ -155,6 +179,9 @@ export class DeviceDetailsController {
     }
 
     close() {
+        this.backupSelectionGeneration += 1;
+        this.clearBackupProgressTimer();
+        this.hideBackupAction();
         this.state.selectedDeviceId = null;
 
         this.onSelectionChanged(null);
@@ -279,6 +306,198 @@ export class DeviceDetailsController {
         this.elements.panel?.setAttribute(
             "aria-hidden",
             "false",
+        );
+    }
+
+    async loadBackupTarget(
+        device,
+        {keepProgress = false} = {},
+    ) {
+        const generation =
+            ++this.backupSelectionGeneration;
+        this.clearBackupProgressTimer();
+        if (!keepProgress) {
+            this.hideBackupAction();
+        }
+
+        try {
+            const plugin = await fetchJson(
+                API.administrationPlugin("backup"),
+            );
+            if (
+                generation
+                !== this.backupSelectionGeneration
+                || this.state.selectedDeviceId
+                !== device.device_id
+            ) {
+                return;
+            }
+
+            const targets = Array.isArray(
+                plugin?.configuration?.targets,
+            )
+                ? plugin.configuration.targets
+                : [];
+            const target = targets.find(
+                (candidate) => (
+                    candidate?.id
+                    === device.device_id
+                ),
+            );
+
+            if (!plugin?.enabled || !target?.enabled) {
+                this.hideBackupAction();
+                return;
+            }
+
+            this.backupTarget = target;
+            if (target.backup_in_progress === true) {
+                this.showBackupInProgress(device);
+                this.scheduleBackupProgressRefresh(device);
+                return;
+            }
+
+            this.hideBackupAction();
+            this.backupTarget = target;
+            if (this.elements.backup) {
+                this.elements.backup.classList.remove(
+                    "hidden",
+                );
+                this.elements.backup.disabled = false;
+                this.elements.backup.setAttribute(
+                    "aria-label",
+                    `Déclencher immédiatement une sauvegarde HAOS de ${device.label}`,
+                );
+                this.elements.backup.title =
+                    `Cible Sauvegardes HAOS : ${target.id}`;
+            }
+        } catch {
+            if (keepProgress) {
+                this.scheduleBackupProgressRefresh(device);
+            } else {
+                this.hideBackupAction();
+            }
+        }
+    }
+
+    async runBackup() {
+        const target = this.backupTarget;
+        const device = this.deviceById(
+            this.state.selectedDeviceId,
+        );
+        if (!target || !device) {
+            return;
+        }
+
+        if (!window.confirm(
+            `Déclencher maintenant une sauvegarde complète de ${device.label} ?`,
+        )) {
+            return;
+        }
+
+        this.elements.backup.disabled = true;
+        this.setBackupStatus(
+            `Démarrage de la sauvegarde ${device.label}…`,
+            "pending",
+        );
+        try {
+            await requestJson(
+                API.administrationBackupRun(target.id),
+                {method: "POST"},
+            );
+            this.showBackupInProgress(device);
+            this.scheduleBackupProgressRefresh(device);
+        } catch (error) {
+            this.setBackupStatus(
+                `Impossible de démarrer la sauvegarde : ${error.message}`,
+                "error",
+            );
+        } finally {
+            if (
+                this.backupTarget?.id
+                === target.id
+                && this.elements.backup
+                && this.elements.backupProgress
+                    ?.classList.contains("hidden")
+            ) {
+                this.elements.backup.disabled = false;
+            }
+        }
+    }
+
+    hideBackupAction() {
+        this.backupTarget = null;
+        this.elements.backup?.classList.add("hidden");
+        if (this.elements.backup) {
+            this.elements.backup.disabled = true;
+        }
+        this.elements.backupProgress?.classList.add(
+            "hidden",
+        );
+        this.elements.backupStatus?.classList.add(
+            "hidden",
+        );
+        this.elements.backupStatus?.removeAttribute(
+            "data-status",
+        );
+        this.setText(this.elements.backupStatus, "");
+    }
+
+    showBackupInProgress(device) {
+        this.elements.backup?.classList.add("hidden");
+        if (this.elements.backup) {
+            this.elements.backup.disabled = true;
+        }
+        this.elements.backupProgress?.classList.remove(
+            "hidden",
+        );
+        this.elements.backupProgress?.setAttribute(
+            "aria-label",
+            `Sauvegarde HAOS de ${device.label} en cours`,
+        );
+        this.elements.backupStatus?.classList.add(
+            "hidden",
+        );
+    }
+
+    scheduleBackupProgressRefresh(device) {
+        this.clearBackupProgressTimer();
+        this.backupProgressTimer = window.setTimeout(
+            () => {
+                if (
+                    this.state.selectedDeviceId
+                    === device.device_id
+                ) {
+                    void this.loadBackupTarget(
+                        device,
+                        {keepProgress: true},
+                    );
+                }
+            },
+            3000,
+        );
+    }
+
+    clearBackupProgressTimer() {
+        if (this.backupProgressTimer !== null) {
+            window.clearTimeout(
+                this.backupProgressTimer,
+            );
+            this.backupProgressTimer = null;
+        }
+    }
+
+    setBackupStatus(message, status) {
+        this.setText(
+            this.elements.backupStatus,
+            message,
+        );
+        this.elements.backupStatus?.classList.remove(
+            "hidden",
+        );
+        this.elements.backupStatus?.setAttribute(
+            "data-status",
+            status,
         );
     }
 

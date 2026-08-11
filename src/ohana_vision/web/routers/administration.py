@@ -153,6 +153,13 @@ def connect_backup_icloud(
     return _call(lambda: client.connect_backup_icloud(payload))
 
 
+@router.post("/plugins/backup/targets/{target_id}/run")
+def run_backup(target_id: str, request: Request) -> dict[str, Any]:
+    """Start one configured HAOS backup without waiting for completion."""
+    client = _client(request)
+    return _call(lambda: client.run_backup(target_id))
+
+
 @router.get("/infrastructure")
 def read_infrastructure(request: Request) -> dict[str, Any]:
     """Read Agent's infrastructure source of truth."""

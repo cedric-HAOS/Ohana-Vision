@@ -112,6 +112,13 @@ class FakeAdministrationClient:
             "apple_id_received": payload.get("apple_id"),
         }
 
+    def run_backup(self, target_id: str) -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "target_id": target_id,
+            "status": "accepted",
+        }
+
     def read_infrastructure(self) -> dict[str, Any]:
         return {
             "infrastructure": {
@@ -207,6 +214,9 @@ def test_administration_routes_proxy_writes() -> None:
         "/api/administration/plugins/backup/icloud/connect",
         json={"apple_id": "user@example.com", "password": "secret"},
     )
+    backup_response = client.post(
+        "/api/administration/plugins/backup/targets/ha-01/run",
+    )
 
     assert dhcp_response.json() == {"schema_version": 1}
     assert network_response.json()["transaction_id"] == "network-transaction"
@@ -228,6 +238,11 @@ def test_administration_routes_proxy_writes() -> None:
         "configured": False,
         "requires_two_factor": True,
         "apple_id_received": "user@example.com",
+    }
+    assert backup_response.json() == {
+        "schema_version": 1,
+        "target_id": "ha-01",
+        "status": "accepted",
     }
 
 

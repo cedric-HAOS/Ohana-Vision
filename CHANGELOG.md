@@ -6,6 +6,24 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.11.7] — Sauvegarde immédiate par équipement — 2026-08-11
+
+## Ajouté
+
+- La fiche d'un équipement associé exactement à une cible active du plugin
+  **Sauvegardes HAOS** propose désormais **Sauvegarder** en haut de la carte.
+  L'action déclenche immédiatement cette cible et confirme son démarrage en
+  arrière-plan.
+- Pendant l'exécution réelle, le bouton est remplacé par **Backup in progress**
+  et Vision actualise automatiquement l'état avant de rendre l'action à
+  nouveau disponible.
+
+## Corrigé
+
+- La connexion ou reconnexion iCloud et le test du plugin de sauvegarde
+  disposent d'un délai dédié de 60 secondes pour absorber le démarrage à froid
+  de rclone sans augmenter le délai des autres opérations d'administration.
+
 # [1.11.6] — Application fiable des sauvegardes HAOS — 2026-08-11
 
 ## Corrigé

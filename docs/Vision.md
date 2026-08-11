@@ -203,7 +203,7 @@ Selon les capacités exposées par Ohana-Agent et ses plugins, Ohana-Vision pour
 - lancer des observations ou des diagnostics à la demande ;
 - déclencher certaines actions d'administration.
 
-La version 1.11.6 concrétise également cette architecture pour les sauvegardes
+La version 1.11.7 concrétise également cette architecture pour les sauvegardes
 HAOS. La page **Configuration / Plugins / Sauvegardes HAOS** configure les
 cibles, leurs adresses et leurs heures quotidiennes. Les jetons Home Assistant
 et clés de chiffrement des sauvegardes se saisissent dans des champs masqués ; une
@@ -216,6 +216,16 @@ et ne sont exigés que pour connecter iCloud. Si le formulaire a été modifié,
 Vision demande de l'appliquer avant de tester la configuration enregistrée.
 Agent exécute les sauvegardes et décide de la rotation locale
 après validation distante.
+
+Dans la vue d'ensemble, la fiche d'un équipement affiche **Sauvegarder** en
+haut uniquement lorsque son identifiant technique correspond exactement à une
+cible activée du plugin **Sauvegardes HAOS**. Après confirmation, Vision
+demande à Agent de lancer cette cible immédiatement et affiche le démarrage de
+l'exécution en arrière-plan. Tant que la tâche Agent est active, le bouton est
+remplacé par **Backup in progress** et ne peut donc pas être actionné une
+seconde fois. La connexion iCloud et le test du plugin tolèrent
+jusqu'à 60 secondes afin de couvrir un premier démarrage à froid de rclone ; ce
+délai spécifique ne ralentit pas les autres actions d'administration.
 
 Ohana-Vision ne réalise pas directement ces opérations.
 

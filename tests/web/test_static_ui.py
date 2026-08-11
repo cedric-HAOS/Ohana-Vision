@@ -767,6 +767,25 @@ def test_device_details_module_uses_shared_state() -> None:
     assert "this.state.selectedDeviceId" in response.text
 
 
+def test_device_details_manual_backup_uses_the_exact_configured_target() -> None:
+    """A device card must never fall back to another HAOS backup target."""
+    response = make_client().get("/ui/device_details.js")
+
+    assert response.status_code == 200
+    assert 'API.administrationPlugin("backup")' in response.text
+    assert "candidate?.id" in response.text
+    assert "=== device.device_id" in response.text
+    assert "!plugin?.enabled || !target?.enabled" in response.text
+    assert "API.administrationBackupRun(target.id)" in response.text
+    assert "target.backup_in_progress === true" in response.text
+    assert "showBackupInProgress(device)" in response.text
+    assert "scheduleBackupProgressRefresh(device)" in response.text
+
+    page = make_client().get("/")
+    assert 'id="device-details-backup-progress"' in page.text
+    assert "Backup in progress" in page.text
+
+
 def test_device_details_module_renders_network_presence() -> None:
     """Device details must expose the latest network presence check."""
     response = make_client().get(
