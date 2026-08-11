@@ -36,6 +36,8 @@ export const API = Object.freeze({
     administrationPluginTest(identifier) {
         return `${this.administrationPlugin(identifier)}/test`;
     },
+    administrationBackupICloudConnect:
+        "/api/administration/plugins/backup/icloud/connect",
 });
 
 /**

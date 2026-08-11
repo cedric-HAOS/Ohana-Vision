@@ -108,6 +108,14 @@ class AgentAdministrationClient:
             f"/v1/plugins/{quote(identifier, safe='')}/test",
         )
 
+    def connect_backup_icloud(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Start or complete Agent's iCloud authentication flow."""
+        return self._request(
+            "POST",
+            "/v1/plugins/backup/icloud/connect",
+            payload,
+        )
+
     def read_infrastructure(self) -> dict[str, Any]:
         """Read the Agent-owned infrastructure configuration."""
         return self._request("GET", "/v1/infrastructure")

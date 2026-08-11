@@ -6,6 +6,19 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.11.4] — Secrets HAOS et connexion iCloud — 2026-08-11
+
+## Modifié
+
+- Les noms de variables ont été remplacés par des champs masqués permettant de
+  saisir directement les jetons Home Assistant et les mots de passe de
+  chiffrement. Vision indique ensuite seulement si chaque secret est présent.
+- La destination distante est présentée comme un dossier iCloud, le nom du
+  remote rclone étant géré automatiquement.
+- Une section **Connexion iCloud** recueille l'identifiant Apple et le mot de
+  passe, puis le code 2FA demandé par Apple ; elle permet aussi de renouveler
+  une session expirée.
+
 # [1.11.3] — Administration des sauvegardes HAOS — 2026-08-11
 
 ## Ajouté

@@ -143,6 +143,16 @@ def test_plugin(
     )
 
 
+@router.post("/plugins/backup/icloud/connect")
+def connect_backup_icloud(
+    request: Request,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    """Start or complete the rclone iCloud authentication flow."""
+    client = _client(request)
+    return _call(lambda: client.connect_backup_icloud(payload))
+
+
 @router.get("/infrastructure")
 def read_infrastructure(request: Request) -> dict[str, Any]:
     """Read Agent's infrastructure source of truth."""

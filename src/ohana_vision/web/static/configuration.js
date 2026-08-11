@@ -4224,6 +4224,13 @@ export class ConfigurationController {
                     this.updatePluginConfigurationAvailability();
                 },
             );
+        document.getElementById("plugin-backup-icloud-connect")
+            ?.addEventListener(
+                "click",
+                () => {
+                    void this.connectBackupICloud();
+                },
+            );
         this.updatePluginConfigurationAvailability();
     }
 
@@ -4380,8 +4387,8 @@ export class ConfigurationController {
                     label,
                     enabled: true,
                     url: `http://${id}.ohana.lan:8123`,
-                    token_environment_variable: `OHANA_BACKUP_${id.replaceAll("-", "_").toUpperCase()}_TOKEN`,
-                    password_environment_variable: `OHANA_BACKUP_${id.replaceAll("-", "_").toUpperCase()}_PASSWORD`,
+                    token: null,
+                    password: null,
                     schedule: `${Number(time.slice(3))} ${Number(time.slice(0, 2))} * * *`,
                     verify_tls: true,
                     timeout: id === "ha-01" ? 900 : 600,
@@ -4393,12 +4400,48 @@ export class ConfigurationController {
                 }
                 return `${String(Number(parts[1])).padStart(2, "0")}:${String(Number(parts[0])).padStart(2, "0")}`;
             };
+            const icloud = configuration.icloud ?? {};
+            const destinationPath = String(
+                configuration.rclone_remote ?? "icloud:Ohana/Backups",
+            ).split(":", 2)[1] || "Ohana/Backups";
+            const icloudStatus = !icloud.binary_available
+                ? "rclone n’est pas encore installé sur Agent."
+                : icloud.configured
+                    ? "Connexion iCloud configurée."
+                    : icloud.requires_two_factor
+                        ? "Authentification commencée : code 2FA attendu."
+                        : "Connexion iCloud non configurée.";
 
             return `
+                <fieldset class="plugin-backup-target configuration-span-2">
+                    <legend>Connexion iCloud</legend>
+                    <p class="configuration-span-2">${escapeHtml(icloudStatus)}</p>
+                    ${icloud.requires_two_factor ? `
+                        <label class="configuration-span-2">
+                            Code de validation Apple
+                            <input id="plugin-backup-icloud-two-factor" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="Code 2FA" required>
+                        </label>
+                    ` : `
+                        <label>
+                            Identifiant Apple
+                            <input id="plugin-backup-icloud-apple-id" type="email" autocomplete="username" placeholder="nom@icloud.com" required>
+                        </label>
+                        <label>
+                            Mot de passe Apple
+                            <input id="plugin-backup-icloud-password" type="password" autocomplete="current-password" required>
+                            <small>Le mot de passe Apple normal est requis ; les mots de passe spécifiques aux apps ne fonctionnent pas avec rclone.</small>
+                        </label>
+                    `}
+                    <div class="configuration-span-2">
+                        <button id="plugin-backup-icloud-connect" class="button" type="button" ${icloud.binary_available ? "" : "disabled"}>
+                            ${icloud.requires_two_factor ? "Valider le code 2FA" : icloud.configured ? "Reconnecter iCloud" : "Connecter iCloud"}
+                        </button>
+                    </div>
+                </fieldset>
                 <label class="configuration-span-2">
-                    Destination iCloud via rclone
-                    <input id="plugin-backup-remote" type="text" value="${escapeHtml(configuration.rclone_remote ?? "icloud:Ohana/Backups")}" required>
-                    <small>Nom du remote rclone, suivi du dossier de destination.</small>
+                    Dossier de destination iCloud
+                    <input id="plugin-backup-destination-path" type="text" value="${escapeHtml(destinationPath)}" placeholder="Ohana/Backups" required>
+                    <small>Chemin dans iCloud Drive. La connexion rclone « ${escapeHtml(icloud.remote_name ?? "icloud")} » est gérée automatiquement par Agent.</small>
                 </label>
                 ${targets.map((target, index) => `
                     <fieldset class="plugin-backup-target configuration-span-2" data-backup-target-index="${index}">
@@ -4432,14 +4475,14 @@ export class ConfigurationController {
                             <summary>Secrets et préparation</summary>
                             <div class="configuration-form-grid plugin-backup-target__advanced">
                                 <label>
-                                    Variable du jeton HAOS
-                                    <input id="plugin-backup-target-${index}-token-environment" type="text" value="${escapeHtml(target.token_environment_variable)}" required>
-                                    <small>${target.token_configured ? "Jeton présent sur Agent." : "Jeton absent sur Agent."}</small>
+                                    Jeton Home Assistant
+                                    <input id="plugin-backup-target-${index}-token" type="password" value="" autocomplete="new-password" placeholder="Laisser vide pour conserver le jeton actuel">
+                                    <small>${target.token_configured ? "Jeton configuré. Laissez vide pour le conserver." : "Jeton absent."}</small>
                                 </label>
                                 <label>
-                                    Variable du mot de passe
-                                    <input id="plugin-backup-target-${index}-password-environment" type="text" value="${escapeHtml(target.password_environment_variable)}" required>
-                                    <small>${target.password_configured ? "Mot de passe présent sur Agent." : "Mot de passe absent sur Agent."}</small>
+                                    Mot de passe de chiffrement
+                                    <input id="plugin-backup-target-${index}-password" type="password" value="" autocomplete="new-password" placeholder="Laisser vide pour conserver le mot de passe actuel">
+                                    <small>${target.password_configured ? "Mot de passe configuré. Laissez vide pour le conserver." : "Mot de passe absent."}</small>
                                 </label>
                                 ${target.id === "zwave-01" ? `
                                     <label class="configuration-span-2">
@@ -4758,7 +4801,7 @@ export class ConfigurationController {
             plugin.configuration ?? {},
         );
         if (plugin.id === "backup") {
-            configuration.rclone_remote = this.value("plugin-backup-remote");
+            configuration.rclone_remote = `${configuration.icloud?.remote_name ?? "icloud"}:${this.value("plugin-backup-destination-path")}`;
             configuration.targets = Array.from(
                 document.querySelectorAll("[data-backup-target-index]"),
             ).map((fieldset) => {
@@ -4774,8 +4817,10 @@ export class ConfigurationController {
                     label: this.value(`plugin-backup-target-${index}-label`),
                     enabled: this.checked(`plugin-backup-target-${index}-enabled`),
                     url: this.value(`plugin-backup-target-${index}-url`),
-                    token_environment_variable: this.value(`plugin-backup-target-${index}-token-environment`),
-                    password_environment_variable: this.value(`plugin-backup-target-${index}-password-environment`),
+                    token: this.value(`plugin-backup-target-${index}-token`) || null,
+                    password: this.value(`plugin-backup-target-${index}-password`) || null,
+                    token_environment_variable: original.token_environment_variable ?? null,
+                    password_environment_variable: original.password_environment_variable ?? null,
                     schedule: `${minute} ${hour} * * *`,
                     verify_tls: this.checked(`plugin-backup-target-${index}-verify-tls`),
                     timeout: Number(this.value(`plugin-backup-target-${index}-timeout`)),
@@ -5066,6 +5111,47 @@ export class ConfigurationController {
                 "plugin-test-result plugin-test-result--error";
         } finally {
             this.elements.pluginTest.disabled = false;
+        }
+    }
+
+    async connectBackupICloud() {
+        const plugin = this.selectedPlugin();
+        if (plugin?.id !== "backup") {
+            return;
+        }
+        const icloud = plugin.configuration?.icloud ?? {};
+        const button = document.getElementById("plugin-backup-icloud-connect");
+        if (button) {
+            button.disabled = true;
+        }
+        hideError(this.elements.error);
+        try {
+            const payload = icloud.requires_two_factor
+                ? {
+                    two_factor_code: this.value("plugin-backup-icloud-two-factor"),
+                }
+                : {
+                    apple_id: this.value("plugin-backup-icloud-apple-id"),
+                    password: this.value("plugin-backup-icloud-password"),
+                };
+            const result = await requestJson(
+                API.administrationBackupICloudConnect,
+                {
+                    method: "POST",
+                    body: JSON.stringify(payload),
+                },
+            );
+            plugin.configuration.icloud = result;
+            this.renderPluginInspector();
+            this.showNotice(result.message ?? "Configuration iCloud mise à jour.");
+        } catch (error) {
+            showError(
+                this.elements.error,
+                "Connexion iCloud refusée : " + this.errorMessage(error),
+            );
+            if (button) {
+                button.disabled = false;
+            }
         }
     }
 
