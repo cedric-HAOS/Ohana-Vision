@@ -175,7 +175,16 @@ export class DeviceDetailsController {
             return;
         }
 
-        this.select(deviceId);
+        const device = this.deviceById(
+            deviceId,
+        );
+
+        if (!device) {
+            this.close();
+            return;
+        }
+
+        this.render(device);
     }
 
     close() {

@@ -6,6 +6,20 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.13.1] — Carte de sauvegarde stable — 2026-08-13
+
+## Corrigé
+
+- Les rafraîchissements temps réel de la fiche équipement mettent à jour ses
+  informations sans masquer puis recharger l'action de sauvegarde. Le bouton
+  **Sauvegarder** et l'état **Backup in progress** ne clignotent plus.
+- Sur mobile, l'état **Backup in progress** conserve le nom de l'équipement sur
+  une seule ligne et évite le décalage vertical de la carte.
+
+## Validation
+
+- 854 tests réussis, Ruff et syntaxe JavaScript validés.
+
 # [1.13.0] — Identité age automatique — 2026-08-13
 
 ## Modifié

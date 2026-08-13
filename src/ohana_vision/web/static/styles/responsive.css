@@ -670,6 +670,19 @@
 }
 
 @media (max-width: 460px) {
+    .device-details__hero {
+        column-gap: 0.65rem;
+    }
+
+    .device-details__actions {
+        gap: 0.35rem;
+    }
+
+    .device-details__backup-progress {
+        padding-inline: 0.45rem;
+        font-size: 0.68rem;
+    }
+
     .dashboard-kpis {
         grid-template-columns: 1fr;
     }

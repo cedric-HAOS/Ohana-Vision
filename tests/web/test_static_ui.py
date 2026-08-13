@@ -767,6 +767,26 @@ def test_device_details_module_uses_shared_state() -> None:
     assert "this.state.selectedDeviceId" in response.text
 
 
+def test_device_details_refresh_preserves_the_backup_action() -> None:
+    """Realtime card refreshes must not reload and hide the backup action."""
+    response = make_client().get(
+        "/ui/device_details.js",
+    )
+
+    assert response.status_code == 200
+    refresh_source = response.text.split(
+        "    refresh() {",
+        maxsplit=1,
+    )[1].split(
+        "    close() {",
+        maxsplit=1,
+    )[0]
+    assert "this.render(device);" in refresh_source
+    assert "this.select(deviceId);" not in refresh_source
+    assert "loadBackupTarget" not in refresh_source
+    assert "hideBackupAction" not in refresh_source
+
+
 def test_device_details_manual_backup_uses_the_exact_configured_target() -> None:
     """A device card must never fall back to another HAOS backup target."""
     response = make_client().get("/ui/device_details.js")
@@ -1544,6 +1564,20 @@ def test_responsive_stylesheet_preserves_reduced_motion() -> None:
     assert "@media (prefers-reduced-motion: reduce)" in response.text
     assert "animation-duration: 1ms !important" in response.text
     assert "transition-duration: 1ms !important" in response.text
+
+
+def test_responsive_device_details_keeps_backup_progress_on_one_row() -> None:
+    """The longer progress label must not wrap the device identity on mobile."""
+    response = make_client().get(
+        "/ui/styles/responsive.css",
+    )
+
+    assert response.status_code == 200
+    assert ".device-details__hero {" in response.text
+    assert "column-gap: 0.65rem;" in response.text
+    assert ".device-details__backup-progress {" in response.text
+    assert "padding-inline: 0.45rem;" in response.text
+    assert "font-size: 0.68rem;" in response.text
 
 
 def test_stylesheet_entrypoint_imports_all_responsibility_modules() -> None:
