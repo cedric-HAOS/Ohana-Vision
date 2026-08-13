@@ -6,6 +6,21 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.12.0] — Sauvegarde d'INFRA-01 — 2026-08-13
+
+## Ajouté
+
+- La configuration du plugin de sauvegarde expose une cible distincte
+  `INFRA-01`, son horaire, son destinataire public `age` et sa rétention iCloud.
+- La fiche de l'équipement `infra-01` peut déclencher immédiatement sa propre
+  sauvegarde et affiche son état d'exécution.
+- La valeur de rétention `0` conserve toutes les sauvegardes ; une valeur
+  positive explique explicitement les conditions sûres de rotation.
+
+## Validation
+
+- 852 tests réussis, Ruff et syntaxe JavaScript validés.
+
 # [1.11.8] — Topologie stable et préparation Z-Wave optionnelle — 2026-08-11
 
 ## Corrigé

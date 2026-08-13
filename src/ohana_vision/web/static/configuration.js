@@ -4419,6 +4419,7 @@ export class ConfigurationController {
                 return `${String(Number(parts[1])).padStart(2, "0")}:${String(Number(parts[0])).padStart(2, "0")}`;
             };
             const icloud = configuration.icloud ?? {};
+            const infra = configuration.infra_01 ?? {};
             const destinationPath = String(
                 configuration.rclone_remote ?? "icloud:Ohana/Backups",
             ).split(":", 2)[1] || "Ohana/Backups";
@@ -4471,6 +4472,30 @@ export class ConfigurationController {
                     <input id="plugin-backup-destination-path" type="text" value="${escapeHtml(destinationPath)}" placeholder="Ohana/Backups" required>
                     <small>Chemin dans iCloud Drive. La connexion rclone « ${escapeHtml(icloud.remote_name ?? "icloud")} » est gérée automatiquement par Agent.</small>
                 </label>
+                <fieldset class="plugin-backup-target configuration-span-2">
+                    <legend>INFRA-01</legend>
+                    <label class="configuration-check configuration-span-2">
+                        <input id="plugin-backup-infra-enabled" type="checkbox" ${infra.enabled === true ? "checked" : ""}>
+                        Sauvegarder les configurations d’INFRA-01
+                    </label>
+                    <label>
+                        Heure quotidienne
+                        <input id="plugin-backup-infra-time" type="time" value="${escapeHtml(scheduleTime(infra.schedule ?? "0 1 * * *"))}" required>
+                    </label>
+                    <label>
+                        Destinataire age
+                        <input id="plugin-backup-infra-recipient" type="text" value="${escapeHtml(infra.age_recipient ?? "")}" placeholder="age1…">
+                        <small>Clé publique uniquement. Conservez l’identité privée hors d’INFRA-01.</small>
+                    </label>
+                    <label>
+                        Sauvegardes conservées dans iCloud
+                        <input id="plugin-backup-infra-retention" type="number" min="0" max="365" step="1" value="${escapeHtml(infra.remote_retention_count ?? 0)}" required>
+                        <small>0 conserve toutes les sauvegardes. La rotation ne supprime que des sauvegardes complètes après validation de la nouvelle.</small>
+                    </label>
+                    <p class="configuration-span-2">
+                        ${infra.backup_in_progress ? "Sauvegarde en cours…" : "Archive chiffrée, vérifiée puis envoyée directement à iCloud via le stockage temporaire en RAM."}
+                    </p>
+                </fieldset>
                 ${targets.map((target, index) => `
                     <fieldset class="plugin-backup-target configuration-span-2" data-backup-target-index="${index}">
                         <legend>${escapeHtml(target.label ?? target.id)}</legend>
@@ -4830,6 +4855,17 @@ export class ConfigurationController {
         );
         if (plugin.id === "backup") {
             configuration.rclone_remote = `${configuration.icloud?.remote_name ?? "icloud"}:${this.value("plugin-backup-destination-path")}`;
+            const infraTime = this.value("plugin-backup-infra-time");
+            const [infraHour, infraMinute] = infraTime.split(":").map(Number);
+            configuration.infra_01 = {
+                ...(plugin.configuration?.infra_01 ?? {}),
+                enabled: this.checked("plugin-backup-infra-enabled"),
+                schedule: `${infraMinute} ${infraHour} * * *`,
+                age_binary: plugin.configuration?.infra_01?.age_binary ?? "/usr/bin/age",
+                age_recipient: this.value("plugin-backup-infra-recipient") || null,
+                remote_retention_count: Number(this.value("plugin-backup-infra-retention")),
+            };
+            delete configuration.infra_01.backup_in_progress;
             configuration.targets = Array.from(
                 document.querySelectorAll("[data-backup-target-index]"),
             ).map((fieldset) => {

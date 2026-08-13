@@ -338,12 +338,22 @@ export class DeviceDetailsController {
             )
                 ? plugin.configuration.targets
                 : [];
-            const target = targets.find(
+            let target = targets.find(
                 (candidate) => (
                     candidate?.id
                     === device.device_id
                 ),
             );
+            if (
+                !target
+                && device.device_id === "infra-01"
+                && plugin?.configuration?.infra_01
+            ) {
+                target = {
+                    id: "infra-01",
+                    ...plugin.configuration.infra_01,
+                };
+            }
 
             if (!plugin?.enabled || !target?.enabled) {
                 this.hideBackupAction();
@@ -366,10 +376,10 @@ export class DeviceDetailsController {
                 this.elements.backup.disabled = false;
                 this.elements.backup.setAttribute(
                     "aria-label",
-                    `Déclencher immédiatement une sauvegarde HAOS de ${device.label}`,
+                    `Déclencher immédiatement une sauvegarde de ${device.label}`,
                 );
                 this.elements.backup.title =
-                    `Cible Sauvegardes HAOS : ${target.id}`;
+                    `Cible de sauvegarde : ${target.id}`;
             }
         } catch {
             if (keepProgress) {

@@ -2893,3 +2893,25 @@ def test_architecture_editor_supports_dns_hosts_and_contextual_ports() -> None:
     )
     assert 'home_assistant_telemetry: { mode: "hidden"' in js_response.text
     assert 'mqtt: { mode: "optional", defaultPort: 1883 }' in js_response.text
+
+
+def test_backup_ui_exposes_infra_01_encryption_and_schedule() -> None:
+    client = make_client()
+    response = client.get("/ui/configuration.js")
+
+    assert response.status_code == 200
+    assert "plugin-backup-infra-enabled" in response.text
+    assert "plugin-backup-infra-recipient" in response.text
+    assert "plugin-backup-infra-retention" in response.text
+    assert "remote_retention_count" in response.text
+    assert "configuration.infra_01" in response.text
+    assert "delete configuration.infra_01.backup_in_progress" in response.text
+
+
+def test_device_details_supports_manual_infra_01_backup() -> None:
+    client = make_client()
+    response = client.get("/ui/device_details.js")
+
+    assert response.status_code == 200
+    assert 'device.device_id === "infra-01"' in response.text
+    assert "plugin.configuration.infra_01" in response.text

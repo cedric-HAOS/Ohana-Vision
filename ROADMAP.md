@@ -12,7 +12,7 @@ les contrats publics et versionnés de l'Agent.
 
 ## État actuel
 
-**Version préparée : 1.11.7 — Sauvegarde immédiate par équipement.**
+**Version préparée : 1.12.0 — Sauvegarde d'INFRA-01.**
 
 Le socle actuel couvre notamment :
 
@@ -24,6 +24,8 @@ Le socle actuel couvre notamment :
   plugins exposés par Agent ;
 - la configuration des sauvegardes HAOS vers iCloud, avec activation et
   horaire distincts pour chaque cible et secrets conservés côté Agent ;
+- la configuration, la planification, la rétention et le déclenchement manuel
+  de la sauvegarde logique chiffrée d'INFRA-01 ;
 - la présence réseau et les plages de surveillance ;
 - la persistance durable des observations ;
 - le regroupement des évaluations répétitives ;
