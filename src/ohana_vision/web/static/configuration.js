@@ -4285,7 +4285,7 @@ export class ConfigurationController {
 
     pluginEnabledLabel(plugin) {
         if (plugin.id === "backup") {
-            return "Sauvegardes HAOS activées";
+            return "Sauvegardes activées";
         }
 
         if (plugin.id === "dhcp") {
@@ -4297,7 +4297,7 @@ export class ConfigurationController {
 
     pluginConfigurationHint(plugin) {
         if (plugin.id === "backup") {
-            return "Agent conserve une sauvegarde Ohana sur chaque HAOS et ne supprime l’ancienne qu’après validation de l’archive et de sa somme SHA-256 sur iCloud.";
+            return "Agent protège les systèmes HAOS et INFRA-01 dans iCloud, sans écrire d’archive persistante sur la carte microSD.";
         }
 
         if (plugin.id === "network") {
@@ -4483,9 +4483,15 @@ export class ConfigurationController {
                         <input id="plugin-backup-infra-time" type="time" value="${escapeHtml(scheduleTime(infra.schedule ?? "0 1 * * *"))}" required>
                     </label>
                     <label>
-                        Destinataire age
+                        Destinataire age (clé publique)
                         <input id="plugin-backup-infra-recipient" type="text" value="${escapeHtml(infra.age_recipient ?? "")}" placeholder="age1…">
-                        <small>Clé publique uniquement. Conservez l’identité privée hors d’INFRA-01.</small>
+                        <small>
+                            Sur un PC Windows équipé de age, exécutez dans PowerShell
+                            <code>age-keygen -o ohana-infra-01.agekey</code>, puis
+                            <code>age-keygen -y ohana-infra-01.agekey</code>.
+                            Collez ici uniquement la ligne <code>age1…</code> et conservez
+                            le fichier privé <code>ohana-infra-01.agekey</code> hors d’INFRA-01.
+                        </small>
                     </label>
                     <label>
                         Sauvegardes conservées dans iCloud

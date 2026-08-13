@@ -204,7 +204,7 @@ Selon les capacités exposées par Ohana-Agent et ses plugins, Ohana-Vision pour
 - déclencher certaines actions d'administration.
 
 La version 1.11.7 concrétise également cette architecture pour les sauvegardes
-HAOS. La page **Configuration / Plugins / Sauvegardes HAOS** configure les
+HAOS. La page **Configuration / Plugins / Sauvegardes** configure les
 cibles, leurs adresses et leurs heures quotidiennes. Les jetons Home Assistant
 et clés de chiffrement des sauvegardes se saisissent dans des champs masqués ; une
 valeur vide conserve le secret déjà présent et aucune valeur n'est renvoyée par
@@ -219,7 +219,7 @@ après validation distante.
 
 Dans la vue d'ensemble, la fiche d'un équipement affiche **Sauvegarder** en
 haut uniquement lorsque son identifiant technique correspond exactement à une
-cible activée du plugin **Sauvegardes HAOS**. Après confirmation, Vision
+cible activée du plugin **Sauvegardes**. Après confirmation, Vision
 demande à Agent de lancer cette cible immédiatement et affiche le démarrage de
 l'exécution en arrière-plan. Tant que la tâche Agent est active, le bouton est
 remplacé par **Backup in progress** et ne peut donc pas être actionné une

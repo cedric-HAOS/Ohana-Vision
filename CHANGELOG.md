@@ -6,6 +6,15 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.12.1] — Clé age et libellé Sauvegardes — 2026-08-13
+
+## Corrigé
+
+- Le plugin est nommé **Sauvegardes** au lieu de **Sauvegardes HAOS**.
+- Le champ du destinataire `age` explique la génération de la paire de clés
+  depuis Windows PowerShell et distingue explicitement la clé publique du
+  fichier privé à conserver hors d'INFRA-01.
+
 # [1.12.0] — Sauvegarde d'INFRA-01 — 2026-08-13
 
 ## Ajouté

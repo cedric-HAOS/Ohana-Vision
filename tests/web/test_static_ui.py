@@ -2904,6 +2904,10 @@ def test_backup_ui_exposes_infra_01_encryption_and_schedule() -> None:
     assert "plugin-backup-infra-recipient" in response.text
     assert "plugin-backup-infra-retention" in response.text
     assert "remote_retention_count" in response.text
+    assert "Destinataire age (clé publique)" in response.text
+    assert "age-keygen -o ohana-infra-01.agekey" in response.text
+    assert "age-keygen -y ohana-infra-01.agekey" in response.text
+    assert 'return "Sauvegardes activées";' in response.text
     assert "configuration.infra_01" in response.text
     assert "delete configuration.infra_01.backup_in_progress" in response.text
 

@@ -141,7 +141,7 @@ ni modifier de fichier YAML :
   équipements et création des liaisons en sélectionnant leur source puis leur
   destination ;
 - **Plugins** : état, activation, configuration et test immédiat des plugins
-  Sauvegardes HAOS, DHCP, DNS, NTP, MQTT, présence réseau, Z-Wave, WireGuard Freebox et
+  Sauvegardes, DHCP, DNS, NTP, MQTT, présence réseau, Z-Wave, WireGuard Freebox et
   Télémétrie Home Assistant et Téléinformation réellement enregistrés dans Ohana-Agent.
 
 La version 1.10.0 ajoute la page **Réseau Agent**. Elle ne dispose d’aucun
