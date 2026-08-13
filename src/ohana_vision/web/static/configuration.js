@@ -4482,17 +4482,13 @@ export class ConfigurationController {
                         Heure quotidienne
                         <input id="plugin-backup-infra-time" type="time" value="${escapeHtml(scheduleTime(infra.schedule ?? "0 1 * * *"))}" required>
                     </label>
-                    <label>
-                        Destinataire age (clé publique)
-                        <input id="plugin-backup-infra-recipient" type="text" value="${escapeHtml(infra.age_recipient ?? "")}" placeholder="age1…">
+                    <p>
+                        Chiffrement age géré automatiquement
                         <small>
-                            Sur un PC Windows équipé de age, exécutez dans PowerShell
-                            <code>age-keygen -o ohana-infra-01.agekey</code>, puis
-                            <code>age-keygen -y ohana-infra-01.agekey</code>.
-                            Collez ici uniquement la ligne <code>age1…</code> et conservez
-                            le fichier privé <code>ohana-infra-01.agekey</code> hors d’INFRA-01.
+                            Ohana-Installer crée l’identité sur INFRA-01 et conserve
+                            sa copie de récupération dans iCloud Drive.
                         </small>
-                    </label>
+                    </p>
                     <label>
                         Sauvegardes conservées dans iCloud
                         <input id="plugin-backup-infra-retention" type="number" min="0" max="365" step="1" value="${escapeHtml(infra.remote_retention_count ?? 0)}" required>
@@ -4868,9 +4864,9 @@ export class ConfigurationController {
                 enabled: this.checked("plugin-backup-infra-enabled"),
                 schedule: `${infraMinute} ${infraHour} * * *`,
                 age_binary: plugin.configuration?.infra_01?.age_binary ?? "/usr/bin/age",
-                age_recipient: this.value("plugin-backup-infra-recipient") || null,
                 remote_retention_count: Number(this.value("plugin-backup-infra-retention")),
             };
+            delete configuration.infra_01.age_recipient;
             delete configuration.infra_01.backup_in_progress;
             configuration.targets = Array.from(
                 document.querySelectorAll("[data-backup-target-index]"),

@@ -6,6 +6,19 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.13.0] — Identité age automatique — 2026-08-13
+
+## Modifié
+
+- Le destinataire public `age` n'est plus saisi dans Vision : Ohana-Installer
+  crée l'identité d'INFRA-01 et Agent utilise automatiquement son fichier public.
+- L'interface indique que la copie de récupération est conservée dans iCloud
+  Drive et retire l'ancienne procédure manuelle Windows.
+
+## Validation
+
+- 852 tests réussis, Ruff et syntaxe JavaScript validés.
+
 # [1.12.1] — Clé age et libellé Sauvegardes — 2026-08-13
 
 ## Corrigé
