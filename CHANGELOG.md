@@ -6,6 +6,23 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.14.1] — Ingestion persistante et fraîcheur Hôte — 2026-08-20
+
+## Corrigé
+
+- Le processeur d'observations est désormais composé une seule fois avec
+  l'application. Chaque POST réutilise son état courant au lieu de relancer la
+  reconstruction SQLite des capacités.
+- Un index ordonné par capacité et date accélère la lecture du dernier
+  `host.health` sans balayage global ni tri temporaire.
+- Le rattrapage de la file Agent ne monopolise plus un cœur et la page Hôte
+  rejoint les mesures courantes après redémarrage.
+
+## Validation
+
+- 862 tests réussis, Ruff, réutilisation du processeur et plan SQLite de la
+  requête Hôte validés.
+
 # [1.14.0] — Historique borné et supervision légère — 2026-08-20
 
 ## Modifié

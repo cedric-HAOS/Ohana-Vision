@@ -11,7 +11,7 @@ from ohana_vision.configuration import (
     Environment,
 )
 from ohana_vision.domain import IncidentStore, ObservationStore
-from ohana_vision.runtime import BackendRuntime
+from ohana_vision.runtime import BackendRuntime, ObservationProcessor
 from ohana_vision.timeline import TimelineEngine
 from ohana_vision.web.app import create_app
 from ohana_vision.web.application_context import ApplicationContext
@@ -41,6 +41,12 @@ def build_application_context(
         while recovery_batch := observation_store.unprocessed_for_incidents():
             incident_store.rebuild(recovery_batch)
     timeline_engine = TimelineEngine()
+    observation_processor = ObservationProcessor(
+        runtime=runtime,
+        observation_store=observation_store,
+        incident_store=incident_store,
+        timeline_engine=timeline_engine,
+    )
 
     runtime.start()
 
@@ -49,6 +55,7 @@ def build_application_context(
         observation_store=observation_store,
         incident_store=incident_store,
         timeline_engine=timeline_engine,
+        observation_processor=observation_processor,
     )
 
 

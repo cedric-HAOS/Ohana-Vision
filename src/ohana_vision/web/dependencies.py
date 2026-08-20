@@ -140,32 +140,16 @@ TimerDependency = Annotated[
 
 
 def get_observation_processor(
-    runtime: Annotated[
-        BackendRuntime,
-        Depends(get_runtime),
-    ],
-    observation_store: Annotated[
-        ObservationStore,
-        Depends(get_observation_store),
-    ],
-    incident_store: Annotated[
-        IncidentStore,
-        Depends(get_incident_store),
-    ],
-    timeline_engine: Annotated[
-        TimelineEngine,
-        Depends(get_timeline_engine),
-    ],
-    timer: TimerDependency,
+    context: ApplicationContextDependency,
 ) -> ObservationProcessor:
-    """Build an observation processor from application dependencies."""
-    return ObservationProcessor(
-        runtime=runtime,
-        observation_store=observation_store,
-        incident_store=incident_store,
-        timeline_engine=timeline_engine,
-        timer=timer,
-    )
+    """Return the long-lived processor attached to the application context."""
+    processor = context.observation_processor
+    if processor is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Observation processor is not configured",
+        )
+    return processor
 
 
 ObservationProcessorDependency = Annotated[

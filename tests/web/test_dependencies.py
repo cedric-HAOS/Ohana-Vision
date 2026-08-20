@@ -180,8 +180,8 @@ def test_timer_dependency_returns_timezone_aware_datetime() -> None:
     assert now.tzinfo is UTC
 
 
-def test_observation_processor_dependency_builds_processor() -> None:
-    """The dependency must build an observation processor."""
+def test_observation_processor_dependency_reuses_context_processor() -> None:
+    """Every ingestion request must reuse the long-lived processor."""
     runtime = BackendRuntime()
     observation_store = ObservationStore()
     timeline_engine = TimelineEngine()
@@ -195,16 +195,43 @@ def test_observation_processor_dependency_builds_processor() -> None:
         tzinfo=UTC,
     )
 
-    processor = get_observation_processor(
+    processor = ObservationProcessor(
         runtime=runtime,
         observation_store=observation_store,
         incident_store=incident_store,
         timeline_engine=timeline_engine,
         timer=lambda: observed_at.timestamp(),
     )
+    context = ApplicationContext(
+        runtime=runtime,
+        observation_store=observation_store,
+        incident_store=incident_store,
+        timeline_engine=timeline_engine,
+        observation_processor=processor,
+    )
 
-    assert isinstance(processor, ObservationProcessor)
+    assert get_observation_processor(context) is processor
+    assert get_observation_processor(context) is processor
     incident_store.close()
+
+
+def test_observation_processor_dependency_rejects_missing_processor() -> None:
+    """An incomplete context must fail instead of rebuilding per request."""
+    context = make_context()
+
+    application = FastAPI()
+    application.state.context = context
+
+    @application.get("/processor")
+    def read_processor(
+        processor: ObservationProcessorDependency,
+    ) -> dict[str, bool]:
+        return {"configured": processor is not None}
+
+    response = TestClient(application).get("/processor")
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Observation processor is not configured"}
 
 
 def test_observation_processor_dependency_can_be_overridden() -> None:

@@ -176,22 +176,16 @@ class ObservationStore:
             rows = self._connection.execute(
                 f"""
                 SELECT {self._COLUMN_NAMES}
-                FROM observations AS candidate
-                WHERE NOT EXISTS (
-                    SELECT 1
-                    FROM observations AS newer
-                    WHERE newer.node_id = candidate.node_id
-                      AND newer.service_id = candidate.service_id
-                      AND newer.capability_id = candidate.capability_id
-                      AND (
-                          newer.observed_at > candidate.observed_at
-                          OR (
-                              newer.observed_at = candidate.observed_at
-                              AND newer.sequence > candidate.sequence
-                          )
-                      )
+                FROM (
+                    SELECT {self._COLUMN_NAMES},
+                           ROW_NUMBER() OVER (
+                               PARTITION BY node_id, service_id, capability_id
+                               ORDER BY observed_at DESC, sequence DESC
+                           ) AS recency_rank
+                    FROM observations
                 )
-                ORDER BY candidate.observed_at, candidate.sequence
+                WHERE recency_rank = 1
+                ORDER BY observed_at, sequence
                 """
             ).fetchall()
         return tuple(self._from_row(row) for row in rows)
@@ -392,6 +386,20 @@ class ObservationStore:
             """
             CREATE INDEX IF NOT EXISTS observations_observed_at
             ON observations(observed_at, sequence)
+            """
+        )
+        connection.execute(
+            """
+            CREATE INDEX IF NOT EXISTS observations_capability_observed_at
+            ON observations(capability_id, observed_at, sequence)
+            """
+        )
+        connection.execute(
+            """
+            CREATE INDEX IF NOT EXISTS observations_identity_latest
+            ON observations(
+                node_id, service_id, capability_id, observed_at, sequence
+            )
             """
         )
         connection.execute(f"PRAGMA user_version={self._SCHEMA_VERSION}")

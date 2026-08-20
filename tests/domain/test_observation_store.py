@@ -113,6 +113,29 @@ def test_history_limit_returns_the_latest_observations_chronologically() -> None
     assert store.history(limit=3) == tuple(observations[-3:])
 
 
+def test_sqlite_latest_per_capability_keeps_only_the_newest_identity(
+    tmp_path: Path,
+) -> None:
+    store = ObservationStore(tmp_path / "vision.db")
+    observed_at = datetime(2026, 8, 20, 8, 0, tzinfo=UTC)
+    older = make_observation(
+        observed_at=observed_at,
+        capability_id="dns.resolve",
+    )
+    newer_same_timestamp = make_observation(
+        observed_at=observed_at,
+        capability_id="dns.resolve",
+    )
+    other = make_observation(
+        observed_at=observed_at + timedelta(minutes=1),
+        capability_id="dns.latency",
+    )
+    store.add_many((older, newer_same_timestamp, other))
+
+    assert store.latest_per_capability() == (newer_same_timestamp, other)
+    store.close()
+
+
 def test_history_rejects_a_non_positive_limit() -> None:
     store = ObservationStore()
 
@@ -267,6 +290,32 @@ def test_sqlite_retention_purges_observations_and_reuses_database_pages(
     assert store.observation_count == 1
     assert store.history() == (retained,)
     store.close()
+
+
+def test_sqlite_capability_history_uses_a_dedicated_ordered_index(
+    tmp_path: Path,
+) -> None:
+    """The host page must not scan and sort the complete observation history."""
+    database_path = tmp_path / "vision.db"
+    store = ObservationStore(database_path)
+    store.close()
+    connection = sqlite3.connect(database_path)
+
+    plan = connection.execute(
+        """
+        EXPLAIN QUERY PLAN
+        SELECT sequence
+        FROM observations
+        WHERE capability_id = 'host.health'
+        ORDER BY observed_at DESC, sequence DESC
+        LIMIT 1
+        """
+    ).fetchall()
+    connection.close()
+
+    detail = " ".join(str(row[3]) for row in plan)
+    assert "observations_capability_observed_at" in detail
+    assert "TEMP B-TREE" not in detail
 
 
 def test_sqlite_startup_memory_is_bounded_for_a_one_gib_host(

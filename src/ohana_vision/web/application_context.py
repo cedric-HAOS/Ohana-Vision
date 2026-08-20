@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 
 from ohana_vision.domain import IncidentStore, ObservationStore
-from ohana_vision.runtime import BackendRuntime
+from ohana_vision.runtime import BackendRuntime, ObservationProcessor
 from ohana_vision.timeline import TimelineEngine
 
 
@@ -15,3 +15,4 @@ class ApplicationContext:
     observation_store: ObservationStore
     timeline_engine: TimelineEngine
     incident_store: IncidentStore = field(default_factory=IncidentStore)
+    observation_processor: ObservationProcessor | None = None

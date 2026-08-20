@@ -12,7 +12,7 @@ from ohana_vision.configuration import (
     Environment,
 )
 from ohana_vision.domain import HealthStatus, Observation, ObservationStore
-from ohana_vision.runtime import BackendRuntime
+from ohana_vision.runtime import BackendRuntime, ObservationProcessor
 from ohana_vision.timeline import TimelineEngine
 from ohana_vision.web.app import create_app
 from ohana_vision.web.application_context import ApplicationContext
@@ -78,6 +78,15 @@ def test_build_application_context_contains_timeline_engine() -> None:
     )
 
 
+def test_build_application_context_contains_long_lived_processor() -> None:
+    """The processor must be composed once with the shared persistent stores."""
+    context = build_application_context()
+
+    assert isinstance(context.observation_processor, ObservationProcessor)
+    assert context.observation_processor.observation_store is context.observation_store
+    assert context.observation_processor.runtime is context.runtime
+
+
 def test_build_application_returns_fastapi() -> None:
     """The bootstrap must create the complete FastAPI application."""
     app = build_application()
@@ -95,6 +104,7 @@ def test_build_application_stores_built_context() -> None:
     assert app.state.context.runtime is context.runtime
     assert app.state.context.observation_store is context.observation_store
     assert app.state.context.timeline_engine is context.timeline_engine
+    assert app.state.context.observation_processor is context.observation_processor
 
 
 def test_bootstrapped_runtime_api_is_available() -> None:
