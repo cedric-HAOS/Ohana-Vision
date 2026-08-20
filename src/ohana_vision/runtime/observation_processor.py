@@ -77,9 +77,12 @@ class ObservationProcessor:
         self._latest_observations = {
             self._capability_key(observation): observation
             for observation in self.observation_store.latest_per_capability()
-            if observation.contributes_to_health
         }
-        self._timeline_observations = list(self._latest_observations.values())
+        self._timeline_observations = [
+            observation
+            for observation in self._latest_observations.values()
+            if observation.contributes_to_health
+        ]
         if self._latest_observations:
             self.infrastructure_timeline = self.timeline_engine.build_infrastructure(
                 tuple(self._timeline_observations)
@@ -103,7 +106,7 @@ class ObservationProcessor:
             candidate_observations = dict(self._latest_observations)
             key = self._capability_key(observation)
             current = candidate_observations.get(key)
-            replaces_current = observation.contributes_to_health and (
+            replaces_current = (
                 current is None or observation.observed_at >= current.observed_at
             )
             health_changed = observation.contributes_to_health and (

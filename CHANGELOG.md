@@ -6,6 +6,15 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.14.3] — État compact des capacités équipement — 2026-08-20
+
+## Corrigé
+
+- L'état compact conserve aussi le dernier état des capacités de type `device`,
+  dont `host.health`, sans les injecter dans la timeline de santé des services.
+- La page Hôte retrouve ainsi son instantané frais sans lecture SQLite ni
+  chargement de l'historique.
+
 # [1.14.2] — Lecture Hôte sans contention SQLite — 2026-08-20
 
 ## Corrigé

@@ -464,3 +464,6 @@ def test_processor_stores_device_presence_without_updating_health() -> None:
     assert result.snapshot.service_timelines == 0
     assert result.snapshot.node_timelines == 0
     assert result.snapshot.infrastructure_timelines == 0
+    assert (
+        processor.latest_observation(capability_id="network.reachable") is observation
+    )
