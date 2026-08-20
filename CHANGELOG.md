@@ -6,6 +6,16 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.17.0] — Disponibilité énergétique de Katsuyu — 2026-08-20
+
+## Ajouté
+
+- La page **Workers Katsuyu** affiche les workers enregistrés, leur état
+  `AVAILABLE`, `UNAVAILABLE` ou `WAKING`, leur dernière connexion et leurs
+  capacités.
+- La provenance du réveil distingue explicitement un réveil Ohana d'un
+  démarrage humain ou système, sans recopier cet état hors d'Agent.
+
 # [1.16.0] — Appairage Katsuyu avec confiance TLS — 2026-08-20
 
 ## Ajouté

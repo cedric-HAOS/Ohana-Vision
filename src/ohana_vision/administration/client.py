@@ -138,6 +138,10 @@ class AgentAdministrationClient:
         """Read Katsuyu pairing requests awaiting an administrator decision."""
         return self._request("GET", "/v1/jobs/workers/pairings")
 
+    def read_workers(self) -> dict[str, Any]:
+        """Read Katsuyu availability and Wake-on-LAN provenance."""
+        return self._request("GET", "/v1/jobs/workers")
+
     def approve_worker_pairing(self, pairing_id: str) -> dict[str, Any]:
         """Approve one verification code displayed by the Katsuyu installer."""
         return self._request(

@@ -167,6 +167,13 @@ def read_worker_pairings(request: Request) -> dict[str, Any]:
     return _call(client.read_worker_pairings)
 
 
+@router.get("/workers")
+def read_workers(request: Request) -> dict[str, Any]:
+    """Expose Agent-owned Katsuyu availability without duplicating state."""
+    client = _client(request)
+    return _call(client.read_workers)
+
+
 @router.post("/workers/pairings/{pairing_id}/approve")
 def approve_worker_pairing(pairing_id: str, request: Request) -> dict[str, Any]:
     """Approve a Katsuyu installer after comparing its verification code."""

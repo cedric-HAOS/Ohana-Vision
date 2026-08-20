@@ -34,6 +34,7 @@ def test_backup_operations_allow_slow_cold_icloud_startup(
     client.test_plugin("dns")
     client.run_backup("ha-01")
     client.read_worker_pairings()
+    client.read_workers()
     client.approve_worker_pairing("pairing id")
     client.reject_worker_pairing("pairing id")
 
@@ -46,6 +47,7 @@ def test_backup_operations_allow_slow_cold_icloud_startup(
             10.0,
         ),
         ("http://127.0.0.1:8765/v1/jobs/workers/pairings", 10.0),
+        ("http://127.0.0.1:8765/v1/jobs/workers", 10.0),
         (
             "http://127.0.0.1:8765/v1/jobs/workers/pairings/pairing%20id/approve",
             10.0,

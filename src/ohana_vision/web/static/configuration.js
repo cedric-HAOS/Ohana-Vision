@@ -143,6 +143,7 @@ export class ConfigurationController {
         this.pluginsAvailable = false;
         this.pluginsLoadError = null;
         this.workerPairings = [];
+        this.workers = [];
         this.workerPairingsAvailable = false;
         this.workerPairingsLoadError = null;
         this.selectedPluginId = null;
@@ -284,6 +285,11 @@ export class ConfigurationController {
                 byId("worker-pairings-pending-count"),
             workerPairingsRefresh:
                 byId("worker-pairings-refresh"),
+            workersTable: byId("workers-table"),
+            workerAvailabilitySummary:
+                byId("worker-availability-summary"),
+            workerWakeSummary:
+                byId("worker-wake-summary"),
         };
     }
 
@@ -770,10 +776,12 @@ export class ConfigurationController {
             this.workerPairingsLoadError = null;
             if (this.workerPairingsAvailable) {
                 try {
-                    const pairingPayload = await fetchJson(
-                        API.administrationWorkerPairings,
-                    );
+                    const [pairingPayload, workersPayload] = await Promise.all([
+                        fetchJson(API.administrationWorkerPairings),
+                        fetchJson(API.administrationWorkers),
+                    ]);
                     this.workerPairings = pairingPayload.pairings ?? [];
+                    this.workers = workersPayload.workers ?? [];
                 } catch (error) {
                     this.workerPairingsLoadError = this.errorMessage(error);
                 }
@@ -790,6 +798,7 @@ export class ConfigurationController {
             this.renderArchitecture();
             this.renderPlugins();
             this.renderWorkerPairings();
+            this.renderWorkers();
 
             if (this.dhcp) {
                 this.renderDHCP();
@@ -874,15 +883,19 @@ export class ConfigurationController {
             return;
         }
         try {
-            const payload = await fetchJson(
-                API.administrationWorkerPairings,
-            );
-            this.workerPairings = payload.pairings ?? [];
+            const [pairingPayload, workersPayload] = await Promise.all([
+                fetchJson(API.administrationWorkerPairings),
+                fetchJson(API.administrationWorkers),
+            ]);
+            this.workerPairings = pairingPayload.pairings ?? [];
+            this.workers = workersPayload.workers ?? [];
             this.workerPairingsLoadError = null;
             this.renderWorkerPairings();
+            this.renderWorkers();
         } catch (error) {
             this.workerPairingsLoadError = this.errorMessage(error);
             this.renderWorkerPairings();
+            this.renderWorkers();
         }
     }
 
@@ -921,6 +934,39 @@ export class ConfigurationController {
                     <button class="button" data-worker-pairing-action="approve" data-worker-pairing-id="${pairingId}" type="button">Autoriser</button>
                     <button class="configuration-danger-button" data-worker-pairing-action="reject" data-worker-pairing-id="${pairingId}" type="button">Refuser</button>
                 </span></td>
+            </tr>`;
+        }).join("");
+    }
+
+    renderWorkers() {
+        const table = this.elements.workersTable;
+        if (!table) {
+            return;
+        }
+        if (this.workerPairingsLoadError) {
+            table.innerHTML = `<tr><td colspan="5">${escapeHtml(this.workerPairingsLoadError)}</td></tr>`;
+            return;
+        }
+        if (!this.workers.length) {
+            table.innerHTML = '<tr><td colspan="5">Aucun worker enregistré.</td></tr>';
+            this.elements.workerAvailabilitySummary.textContent = "UNAVAILABLE";
+            this.elements.workerWakeSummary.textContent = "aucun worker connu";
+            return;
+        }
+        const primary = this.workers[0];
+        this.elements.workerAvailabilitySummary.textContent = primary.availability;
+        this.elements.workerWakeSummary.textContent = primary.woken_by_ohana
+            ? "réveillé par Ohana"
+            : "démarrage non déclenché par Ohana";
+        table.innerHTML = this.workers.map((worker) => {
+            const lastSeen = new Date(worker.last_seen_at).toLocaleString("fr-FR");
+            const wake = worker.woken_by_ohana ? "Ohana" : "Humain / système";
+            return `<tr>
+                <td><strong>${escapeHtml(worker.worker_id)}</strong><small>${escapeHtml(worker.platform)} · ${escapeHtml(worker.worker_version)}</small></td>
+                <td><strong>${escapeHtml(worker.availability)}</strong></td>
+                <td>${escapeHtml(wake)}</td>
+                <td>${escapeHtml(lastSeen)}</td>
+                <td>${escapeHtml((worker.capabilities ?? []).join(", "))}</td>
             </tr>`;
         }).join("");
     }

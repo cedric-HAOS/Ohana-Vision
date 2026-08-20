@@ -132,6 +132,18 @@ class FakeAdministrationClient:
             ],
         }
 
+    def read_workers(self) -> dict[str, Any]:
+        return {
+            "protocol_version": 1,
+            "workers": [
+                {
+                    "worker_id": "katsuyu-bubule",
+                    "availability": "WAKING",
+                    "woken_by_ohana": True,
+                }
+            ],
+        }
+
     def approve_worker_pairing(self, pairing_id: str) -> dict[str, Any]:
         return {"pairing_id": pairing_id, "status": "APPROVED"}
 
@@ -178,6 +190,7 @@ def test_administration_routes_proxy_agent_documents() -> None:
     plugins = client.get("/api/administration/plugins")
     plugin = client.get("/api/administration/plugins/dns")
     pairings = client.get("/api/administration/workers/pairings")
+    workers = client.get("/api/administration/workers")
 
     assert capabilities.status_code == 200
     assert "dhcp.read" in capabilities.json()["operations"]
@@ -188,6 +201,7 @@ def test_administration_routes_proxy_agent_documents() -> None:
     assert plugins.json()["plugins"][0]["id"] == "dns"
     assert plugin.json()["id"] == "dns"
     assert pairings.json()["pairings"][0]["worker_id"] == "katsuyu-bubule"
+    assert workers.json()["workers"][0]["availability"] == "WAKING"
 
 
 def test_administration_routes_proxy_writes() -> None:

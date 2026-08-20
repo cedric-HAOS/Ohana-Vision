@@ -43,6 +43,8 @@ export const API = Object.freeze({
     },
     administrationWorkerPairings:
         "/api/administration/workers/pairings",
+    administrationWorkers:
+        "/api/administration/workers",
     administrationWorkerPairingAction(pairingId, action) {
         return `${this.administrationWorkerPairings}/${encodeURIComponent(pairingId)}/${action}`;
     },
