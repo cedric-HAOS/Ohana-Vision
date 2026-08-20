@@ -6,6 +6,20 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.16.0] — Appairage Katsuyu avec confiance TLS — 2026-08-20
+
+## Ajouté
+
+- La page **Workers Katsuyu** affiche l'empreinte SHA-256 de l'autorité TLS à
+  comparer avec celle présentée par l'installateur sur Bubule.
+- La confirmation d'autorisation rappelle simultanément le code local et
+  l'empreinte complète avant d'appeler le contrat Agent existant.
+
+## Corrigé
+
+- Vision distingue désormais un Agent compatible dont les jobs distribués
+  sont désactivés d'une version Agent réellement incompatible.
+
 # [1.15.0] — Appairage Katsuyu — 2026-08-20
 
 ## Ajouté

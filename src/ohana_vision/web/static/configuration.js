@@ -26,6 +26,22 @@ const ARCHITECTURE_MINIMUM_ROWS = 10;
 const DNS_NAME_PATTERN =
     /^(?=.{1,253}$)(?!-)[A-Za-z0-9-]+(?:\.(?!-)[A-Za-z0-9-]+)*$/;
 
+function formatTlsFingerprint(value) {
+    const normalized = String(value ?? "").toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(normalized)) {
+        return "Empreinte indisponible";
+    }
+    return normalized.match(/.{2}/g).join(":").toUpperCase();
+}
+
+function agentSupportsDistributedJobs(value) {
+    const parts = String(value ?? "").split(".").map(Number);
+    return parts.length >= 2
+        && Number.isInteger(parts[0])
+        && Number.isInteger(parts[1])
+        && (parts[0] > 1 || (parts[0] === 1 && parts[1] >= 16));
+}
+
 
 const SERVICE_PORT_POLICIES = Object.freeze({
     dhcp: { mode: "hidden", defaultPort: null },
@@ -762,8 +778,11 @@ export class ConfigurationController {
                     this.workerPairingsLoadError = this.errorMessage(error);
                 }
             } else {
-                this.workerPairingsLoadError =
-                    "La version installée d’Agent ne prend pas encore en charge l’appairage Katsuyu.";
+                this.workerPairingsLoadError = agentSupportsDistributedJobs(
+                    capabilities.agent_version,
+                )
+                    ? "Les jobs distribués Katsuyu sont désactivés dans la configuration d’Agent."
+                    : "Cette version d’Agent ne prend pas en charge l’appairage Katsuyu.";
             }
 
             this.loaded = true;
@@ -880,20 +899,22 @@ export class ConfigurationController {
                 String(pending.length);
         }
         if (this.workerPairingsLoadError) {
-            table.innerHTML = `<tr><td colspan="5">${escapeHtml(this.workerPairingsLoadError)}</td></tr>`;
+            table.innerHTML = `<tr><td colspan="6">${escapeHtml(this.workerPairingsLoadError)}</td></tr>`;
             return;
         }
         if (!pending.length) {
-            table.innerHTML = '<tr><td colspan="5">Aucune demande en attente.</td></tr>';
+            table.innerHTML = '<tr><td colspan="6">Aucune demande en attente.</td></tr>';
             return;
         }
         table.innerHTML = pending.map((pairing) => {
             const pairingId = escapeHtml(pairing.pairing_id);
             const capabilities = (pairing.capabilities ?? []).join(", ");
             const expiresAt = new Date(pairing.expires_at).toLocaleString("fr-FR");
+            const fingerprint = formatTlsFingerprint(pairing.tls_ca_sha256);
             return `<tr>
                 <td><strong>${escapeHtml(pairing.worker_id)}</strong><small>${escapeHtml(pairing.platform)} · ${escapeHtml(pairing.worker_version)}</small></td>
                 <td><strong>${escapeHtml(pairing.verification_code)}</strong></td>
+                <td><code class="configuration-table__fingerprint">${escapeHtml(fingerprint)}</code></td>
                 <td>${escapeHtml(capabilities)}</td>
                 <td>${escapeHtml(expiresAt)}</td>
                 <td><span class="configuration-table__actions">
@@ -909,7 +930,13 @@ export class ConfigurationController {
             return;
         }
         const verb = action === "approve" ? "autoriser" : "refuser";
-        if (!window.confirm(`Confirmer : ${verb} cet appairage Katsuyu ?`)) {
+        const pairing = this.workerPairings.find(
+            (candidate) => candidate.pairing_id === pairingId,
+        );
+        const securityDetail = pairing
+            ? `\n\nCode : ${pairing.verification_code}\nSHA-256 : ${formatTlsFingerprint(pairing.tls_ca_sha256)}`
+            : "";
+        if (!window.confirm(`Confirmer : ${verb} cet appairage Katsuyu ?${securityDetail}`)) {
             return;
         }
         try {

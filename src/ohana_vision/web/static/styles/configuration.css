@@ -179,6 +179,13 @@
     gap: var(--ohana-space-2);
 }
 
+.configuration-table__fingerprint {
+    display: block;
+    max-width: 24rem;
+    overflow-wrap: anywhere;
+    font-size: var(--ohana-font-size-xs);
+}
+
 .configuration-icon-button {
     min-width: 2.25rem;
     min-height: 2.25rem;

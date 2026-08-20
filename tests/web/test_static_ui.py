@@ -61,6 +61,21 @@ def test_static_javascript_is_available() -> None:
     assert "application.initialize()" in response.text
 
 
+def test_katsuyu_pairing_requires_code_and_tls_fingerprint() -> None:
+    client = make_client()
+
+    script = client.get("/ui/configuration.js")
+    page = client.get("/ui/")
+
+    assert script.status_code == 200
+    assert "formatTlsFingerprint" in script.text
+    assert "Les jobs distribués Katsuyu sont désactivés" in script.text
+    assert "SHA-256" in script.text
+    assert page.status_code == 200
+    assert "Empreinte TLS" in page.text
+    assert "code et toute l’empreinte SHA-256" in page.text
+
+
 def test_static_ui_references_local_assets() -> None:
     """The entry page must reference locally served assets."""
     client = make_client()

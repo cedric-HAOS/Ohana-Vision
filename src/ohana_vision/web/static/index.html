@@ -845,8 +845,8 @@
          </article>
          <article class="configuration-summary-card">
           <span>Sécurité</span>
-          <strong>Code local</strong>
-          <small>à comparer avec l’installateur</small>
+          <strong>HTTPS + code local</strong>
+          <small>code et empreinte à comparer</small>
          </article>
         </div>
         <section class="configuration-card">
@@ -854,17 +854,17 @@
           <div>
            <p class="panel-heading__kicker">Tsunade</p>
            <h2>Appairage Katsuyu</h2>
-           <p>Autorisez uniquement une demande dont le code correspond exactement à celui affiché sur Bubule.</p>
+           <p>Autorisez uniquement une demande dont le code et toute l’empreinte SHA-256 correspondent exactement à ceux affichés sur Bubule.</p>
           </div>
           <button class="configuration-secondary-button" id="worker-pairings-refresh" type="button">Actualiser</button>
          </div>
          <div class="configuration-table-wrapper">
           <table class="configuration-table">
            <thead>
-            <tr><th>Worker</th><th>Code</th><th>Capacités</th><th>Expiration</th><th>Action</th></tr>
+            <tr><th>Worker</th><th>Code</th><th>Empreinte TLS</th><th>Capacités</th><th>Expiration</th><th>Action</th></tr>
            </thead>
            <tbody id="worker-pairings-table">
-            <tr><td colspan="5">Chargement des demandes…</td></tr>
+            <tr><td colspan="6">Chargement des demandes…</td></tr>
            </tbody>
           </table>
          </div>
