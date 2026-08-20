@@ -126,6 +126,17 @@ En production, observations et incidents utilisent par défaut
 `/var/lib/ohana-vision/vision.db`, configurable avec
 `storage.database_path` dans `vision.yaml`.
 
+L'historique SQLite n'est pas chargé en mémoire au démarrage. Les requêtes
+utilisent des index et restent bornées par `storage.history_max_rows`; l'API
+`GET /api/observations` accepte `limit` et `offset`. La rétention des
+observations est fixée par `storage.retention_days` (2 jours par défaut pour
+le profil INFRA-01 de 1 Gio) et la purge est effectuée au démarrage puis, au
+plus, toutes les `storage.purge_interval_seconds` lors d'une ingestion. Aucun
+travail périodique n'est ajouté lorsque Vision est au repos.
+
+`GET /api/runtime` expose aussi les temps de traitement du pipeline : dernière
+valeur, moyenne, maximum et cumul en millisecondes.
+
 ### Configuration graphique
 
 La section **Configuration** permet d'administrer l'infrastructure sans ouvrir

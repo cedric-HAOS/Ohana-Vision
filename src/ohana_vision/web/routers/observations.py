@@ -24,6 +24,7 @@ router = APIRouter(
 OptionalStringQuery = Annotated[str | None, Query()]
 OptionalDatetimeQuery = Annotated[datetime | None, Query()]
 ObservationLimitQuery = Annotated[int, Query(ge=1, le=100)]
+ObservationOffsetQuery = Annotated[int, Query(ge=0, le=100_000)]
 
 
 @router.get(
@@ -38,10 +39,11 @@ def get_observations(
     since: OptionalDatetimeQuery = None,
     until: OptionalDatetimeQuery = None,
     limit: ObservationLimitQuery = 100,
+    offset: ObservationOffsetQuery = 0,
 ) -> list[Observation]:
     """Return stored observations matching the requested filters."""
     try:
-        observations = observation_store.history(
+        filters = dict(
             node_id=node_id,
             service_id=service_id,
             capability_id=capability_id,
@@ -49,6 +51,9 @@ def get_observations(
             until=until,
             limit=limit,
         )
+        if offset:
+            filters["offset"] = offset
+        observations = observation_store.history(**filters)
     except ValueError as error:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,

@@ -1,3 +1,5 @@
+import sqlite3
+import tracemalloc
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -212,3 +214,86 @@ def test_sqlite_store_clear_is_durable(tmp_path: Path) -> None:
 
     assert restored_store.observations == ()
     restored_store.close()
+
+
+def test_sqlite_history_is_paginated_without_loading_the_database(
+    tmp_path: Path,
+) -> None:
+    store = ObservationStore(tmp_path / "vision.db")
+    start = datetime(2026, 8, 10, 10, 0, tzinfo=UTC)
+    observations = [
+        make_observation(
+            observed_at=start + timedelta(minutes=index),
+            capability_id=f"dns.resolve.{index}",
+        )
+        for index in range(5)
+    ]
+    store.add_many(observations)
+
+    assert store.history(limit=2, offset=2) == tuple(observations[1:3])
+    store.close()
+
+
+def test_memory_history_uses_the_same_pagination_order() -> None:
+    store = ObservationStore()
+    start = datetime(2026, 8, 10, 10, 0, tzinfo=UTC)
+    observations = [
+        make_observation(
+            observed_at=start + timedelta(minutes=index),
+            capability_id=f"dns.resolve.{index}",
+        )
+        for index in range(5)
+    ]
+    store.add_many(observations)
+
+    assert store.history(limit=2, offset=2) == tuple(observations[1:3])
+
+
+def test_sqlite_retention_purges_observations_and_reuses_database_pages(
+    tmp_path: Path,
+) -> None:
+    now = datetime(2026, 8, 10, 12, 0, tzinfo=UTC)
+    store = ObservationStore(tmp_path / "vision.db", retention_days=7)
+    expired = make_observation(observed_at=now - timedelta(days=8))
+    retained = make_observation(
+        observed_at=now - timedelta(days=6),
+        capability_id="dns.latency",
+    )
+    store.add_many((expired, retained))
+
+    removed = store.purge_expired(now=now)
+
+    assert removed == 1
+    assert store.observation_count == 1
+    assert store.history() == (retained,)
+    store.close()
+
+
+def test_sqlite_startup_memory_is_bounded_for_a_one_gib_host(
+    tmp_path: Path,
+) -> None:
+    """A representative history must not be materialised during startup."""
+    database_path = tmp_path / "vision.db"
+    ObservationStore(database_path).close()
+    connection = sqlite3.connect(database_path)
+    connection.executemany(
+        """
+        INSERT INTO observations (
+            observation_id, capability_id, service_id, node_id, status,
+            observed_at, message, latency_ms, metadata_json
+        ) VALUES (?, 'dns.resolve', 'dns-primary', 'infra-01', 'healthy',
+                  '2026-08-10T10:00:00+00:00', NULL, NULL, '{}')
+        """,
+        ((f"00000000-0000-0000-0000-{index:012d}",) for index in range(50_000)),
+    )
+    connection.commit()
+    connection.close()
+
+    tracemalloc.start()
+    store = ObservationStore(database_path)
+    _current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    assert store.observation_count == 50_000
+    assert peak < 16 * 1024 * 1024
+    store.close()

@@ -68,6 +68,17 @@ class FakeObservationStore:
     def observations(self) -> tuple[Observation, ...]:
         return tuple(self.stored)
 
+    def latest_per_capability(self) -> tuple[Observation, ...]:
+        latest: dict[tuple[str, str, str], Observation] = {}
+        for observation in self.stored:
+            key = (
+                observation.node_id,
+                observation.service_id,
+                observation.capability_id,
+            )
+            latest[key] = observation
+        return tuple(latest.values())
+
     def add(self, observation: Observation) -> Observation:
         if self.error is not None:
             raise self.error
@@ -428,7 +439,7 @@ def test_processor_stores_device_presence_without_updating_health() -> None:
     assert result.accepted is True
     assert result.timeline_updated is False
     assert store.observations == (observation,)
-    assert timeline_engine.processed == [()]
+    assert timeline_engine.processed == []
     assert result.snapshot.observations_stored == 1
     assert result.snapshot.service_timelines == 0
     assert result.snapshot.node_timelines == 0

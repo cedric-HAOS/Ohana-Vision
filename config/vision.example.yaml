@@ -12,6 +12,9 @@ web:
 
 storage:
   database_path: /var/lib/ohana-vision/vision.db
+  retention_days: 2
+  purge_interval_seconds: 3600
+  history_max_rows: 50000
 
 agent:
   administration_enabled: true

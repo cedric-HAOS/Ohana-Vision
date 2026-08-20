@@ -26,9 +26,8 @@ class ObservationStoreProtocol(Protocol):
     def observation_count(self) -> int:
         """Return the number of stored observations."""
 
-    @property
-    def observations(self) -> tuple[Observation, ...]:
-        """Return stored observations in ingestion order."""
+    def latest_per_capability(self) -> tuple[Observation, ...]:
+        """Return the latest observation for each capability identity."""
 
     def add(self, observation: Observation) -> Observation:
         """Store and return an observation."""
@@ -64,6 +63,27 @@ class ObservationProcessor:
         default_factory=InfrastructureTimeline,
         init=False,
     )
+    _latest_observations: dict[tuple[str, str, str], Observation] = field(
+        default_factory=dict,
+        init=False,
+    )
+    _timeline_observations: list[Observation] = field(
+        default_factory=list,
+        init=False,
+    )
+
+    def __post_init__(self) -> None:
+        """Restore only the compact current state needed during ingestion."""
+        self._latest_observations = {
+            self._capability_key(observation): observation
+            for observation in self.observation_store.latest_per_capability()
+            if observation.contributes_to_health
+        }
+        self._timeline_observations = list(self._latest_observations.values())
+        if self._latest_observations:
+            self.infrastructure_timeline = self.timeline_engine.build_infrastructure(
+                tuple(self._timeline_observations)
+            )
 
     def process(self, observation: Observation) -> ProcessingResult:
         """Process an observation through the backend pipeline."""
@@ -80,16 +100,23 @@ class ObservationProcessor:
         self.runtime.record_received(observation.observed_at)
 
         try:
-            candidate_observations = (
-                *self.observation_store.observations,
-                observation,
+            candidate_observations = dict(self._latest_observations)
+            key = self._capability_key(observation)
+            current = candidate_observations.get(key)
+            replaces_current = observation.contributes_to_health and (
+                current is None or observation.observed_at >= current.observed_at
             )
-            candidate_timeline = self.timeline_engine.build_infrastructure(
-                tuple(
-                    candidate
-                    for candidate in candidate_observations
-                    if candidate.contributes_to_health
+            health_changed = observation.contributes_to_health and (
+                current is None or observation.status is not current.status
+            )
+            if replaces_current:
+                candidate_observations[key] = observation
+            candidate_timeline = (
+                self.timeline_engine.build_infrastructure(
+                    (*self._timeline_observations, observation)
                 )
+                if health_changed
+                else self.infrastructure_timeline
             )
 
             self.observation_store.add(observation)
@@ -99,11 +126,12 @@ class ObservationProcessor:
                 else None
             )
         except DuplicateObservationError:
-            self.runtime.record_accepted()
+            duration = self._duration_since(started)
+            self.runtime.record_accepted(duration.total_seconds() * 1000)
             return ProcessingResult.accepted_result(
                 observation_id=observation.observation_id,
                 snapshot=self._snapshot(),
-                duration=self._duration_since(started),
+                duration=duration,
                 timeline_updated=False,
             )
         except (TypeError, ValueError, KeyError) as exc:
@@ -118,14 +146,19 @@ class ObservationProcessor:
             raise
 
         timeline_updated = candidate_timeline != self.infrastructure_timeline
+        self._latest_observations = candidate_observations
+        if health_changed:
+            self._timeline_observations.append(observation)
+            self._timeline_observations.sort(key=lambda item: item.observed_at)
         self.infrastructure_timeline = candidate_timeline
 
-        self.runtime.record_accepted()
+        duration = self._duration_since(started)
+        self.runtime.record_accepted(duration.total_seconds() * 1000)
 
         return ProcessingResult.accepted_result(
             observation_id=observation.observation_id,
             snapshot=self._snapshot(),
-            duration=self._duration_since(started),
+            duration=duration,
             timeline_updated=timeline_updated,
             incident_updated=incident_transition is not None,
             incident_id=(
@@ -145,12 +178,15 @@ class ObservationProcessor:
     ) -> ProcessingResult:
         """Create a rejected processing result."""
         if record_received:
-            self.runtime.record_rejected()
+            duration = self._duration_since(started)
+            self.runtime.record_rejected(duration.total_seconds() * 1000)
+        else:
+            duration = self._duration_since(started)
 
         return ProcessingResult.rejected_result(
             observation_id=observation.observation_id,
             snapshot=self._snapshot(),
-            duration=self._duration_since(started),
+            duration=duration,
             reason=reason,
         )
 
@@ -192,3 +228,7 @@ class ObservationProcessor:
         return timedelta(
             seconds=max(elapsed, 0.0),
         )
+
+    @staticmethod
+    def _capability_key(observation: Observation) -> tuple[str, str, str]:
+        return observation.node_id, observation.service_id, observation.capability_id

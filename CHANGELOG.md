@@ -6,6 +6,23 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.14.0] — Historique borné et supervision légère — 2026-08-20
+
+## Modifié
+
+- Vision ne charge plus l'intégralité des observations SQLite en mémoire au
+  démarrage : l'état courant est reconstruit par requêtes indexées et bornées.
+- Les lectures historiques sont paginées et limitées à une fenêtre explicite ;
+  la rétention et la purge automatique sont configurables.
+- La timeline en mémoire conserve les derniers états et leurs transitions au
+  lieu de dupliquer chaque observation reçue.
+- Les statistiques runtime exposent la durée des traitements et des accès au
+  stockage pour mesurer la supervision sur INFRA-01.
+
+## Validation
+
+- 858 tests réussis, Ruff et contrôles de distribution validés.
+
 # [1.13.1] — Carte de sauvegarde stable — 2026-08-13
 
 ## Corrigé

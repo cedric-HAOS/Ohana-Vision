@@ -122,15 +122,15 @@ class BackendRuntime:
         self._validate_datetime(received_at)
         self.statistics = self.statistics.record_received(received_at)
 
-    def record_accepted(self) -> None:
+    def record_accepted(self, processing_ms: float | None = None) -> None:
         """Record an accepted observation."""
 
-        self.statistics = self.statistics.record_accepted()
+        self.statistics = self.statistics.record_accepted(processing_ms)
 
-    def record_rejected(self) -> None:
+    def record_rejected(self, processing_ms: float | None = None) -> None:
         """Record a rejected observation."""
 
-        self.statistics = self.statistics.record_rejected()
+        self.statistics = self.statistics.record_rejected(processing_ms)
 
     def record_error(self, occurred_at: datetime | None = None) -> None:
         """Record a runtime error."""

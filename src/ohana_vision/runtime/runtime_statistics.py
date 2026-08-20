@@ -16,6 +16,10 @@ class RuntimeStatistics:
     errors: int = 0
     last_observation_at: datetime | None = None
     last_error_at: datetime | None = None
+    last_processing_ms: float | None = None
+    average_processing_ms: float = 0.0
+    max_processing_ms: float = 0.0
+    total_processing_ms: float = 0.0
 
     @property
     def observations_processed(self) -> int:
@@ -47,27 +51,35 @@ class RuntimeStatistics:
             last_observation_at=received_at,
         )
 
-    def record_accepted(self) -> RuntimeStatistics:
+    def record_accepted(
+        self,
+        processing_ms: float | None = None,
+    ) -> RuntimeStatistics:
         """Return statistics including one accepted observation."""
 
         if self.observations_processed >= self.observations_received:
             raise ValueError("Cannot accept an observation that has not been received")
 
-        return replace(
+        updated = replace(
             self,
             observations_accepted=self.observations_accepted + 1,
         )
+        return updated._record_processing(processing_ms)
 
-    def record_rejected(self) -> RuntimeStatistics:
+    def record_rejected(
+        self,
+        processing_ms: float | None = None,
+    ) -> RuntimeStatistics:
         """Return statistics including one rejected observation."""
 
         if self.observations_processed >= self.observations_received:
             raise ValueError("Cannot reject an observation that has not been received")
 
-        return replace(
+        updated = replace(
             self,
             observations_rejected=self.observations_rejected + 1,
         )
+        return updated._record_processing(processing_ms)
 
     def record_error(self, occurred_at: datetime) -> RuntimeStatistics:
         """Return statistics including one runtime error."""
@@ -76,4 +88,18 @@ class RuntimeStatistics:
             self,
             errors=self.errors + 1,
             last_error_at=occurred_at,
+        )
+
+    def _record_processing(self, processing_ms: float | None) -> RuntimeStatistics:
+        if processing_ms is None:
+            return self
+        if processing_ms < 0:
+            raise ValueError("processing_ms cannot be negative")
+        total = self.total_processing_ms + processing_ms
+        return replace(
+            self,
+            last_processing_ms=processing_ms,
+            total_processing_ms=total,
+            average_processing_ms=total / self.observations_processed,
+            max_processing_ms=max(self.max_processing_ms, processing_ms),
         )
