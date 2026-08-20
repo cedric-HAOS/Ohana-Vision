@@ -6,6 +6,14 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.14.4] — Rafraîchissement Hôte hors pool de workers — 2026-08-20
+
+## Corrigé
+
+- Le routeur Hôte, qui ne réalise plus aucune entrée-sortie bloquante, s'exécute
+  directement sur la boucle ASGI et ne dépend plus de la disponibilité du pool
+  de threads occupé par les vagues d'ingestion.
+
 # [1.14.3] — État compact des capacités équipement — 2026-08-20
 
 ## Corrigé

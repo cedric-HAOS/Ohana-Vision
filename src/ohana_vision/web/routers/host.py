@@ -16,7 +16,7 @@ router = APIRouter(
     "",
     summary="Latest Agent host health",
 )
-def get_host_health(
+async def get_host_health(
     observation_processor: ObservationProcessorDependency,
 ) -> dict[str, Any]:
     """Return the latest host snapshot published by Ohana-Agent."""
