@@ -4,7 +4,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
 
-from ohana_vision.web.dependencies import ObservationStoreDependency
+from ohana_vision.web.dependencies import ObservationProcessorDependency
 
 router = APIRouter(
     prefix="/host-health",
@@ -17,20 +17,17 @@ router = APIRouter(
     summary="Latest Agent host health",
 )
 def get_host_health(
-    observation_store: ObservationStoreDependency,
+    observation_processor: ObservationProcessorDependency,
 ) -> dict[str, Any]:
     """Return the latest host snapshot published by Ohana-Agent."""
-    observations = observation_store.history(
+    observation = observation_processor.latest_observation(
         capability_id="host.health",
-        limit=1,
     )
-    if not observations:
+    if observation is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Aucune observation de santé hôte n'est disponible.",
         )
-
-    observation = observations[-1]
     snapshot = observation.metadata.get("host_health")
     if not isinstance(snapshot, dict):
         raise HTTPException(

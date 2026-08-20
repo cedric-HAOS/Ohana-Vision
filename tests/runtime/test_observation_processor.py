@@ -88,6 +88,26 @@ class FakeObservationStore:
         return observation
 
 
+def test_latest_observation_reads_the_compact_current_state() -> None:
+    older = make_observation()
+    newer = Observation(
+        observation_id=UUID("00000000-0000-0000-0000-000000000002"),
+        capability_id=older.capability_id,
+        service_id=older.service_id,
+        node_id=older.node_id,
+        status=HealthStatus.HEALTHY,
+        observed_at=older.observed_at + timedelta(minutes=1),
+    )
+    processor = ObservationProcessor(
+        runtime=make_running_runtime(),
+        observation_store=FakeObservationStore(stored=[older, newer]),
+        timeline_engine=FakeTimelineEngine(),
+    )
+
+    assert processor.latest_observation(capability_id="dns") is newer
+    assert processor.latest_observation(capability_id="host.health") is None
+
+
 @dataclass
 class FakeTimelineEngine:
     """Timeline engine used by processor tests."""

@@ -6,6 +6,15 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.14.2] — Lecture Hôte sans contention SQLite — 2026-08-20
+
+## Corrigé
+
+- La page Hôte lit désormais le dernier état `host.health` depuis l'état compact
+  déjà maintenu par le processeur persistant, sans attendre le verrou SQLite
+  pendant les vagues périodiques d'observations.
+- Aucun historique supplémentaire n'est chargé ou dupliqué en mémoire.
+
 # [1.14.1] — Ingestion persistante et fraîcheur Hôte — 2026-08-20
 
 ## Corrigé

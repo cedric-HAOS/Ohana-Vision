@@ -168,6 +168,19 @@ class ObservationProcessor:
             ),
         )
 
+    def latest_observation(self, *, capability_id: str) -> Observation | None:
+        """Return the latest compact current state for one capability."""
+        current = self._latest_observations
+        return max(
+            (
+                observation
+                for observation in current.values()
+                if observation.capability_id == capability_id
+            ),
+            key=lambda observation: observation.observed_at,
+            default=None,
+        )
+
     def _reject(
         self,
         *,
