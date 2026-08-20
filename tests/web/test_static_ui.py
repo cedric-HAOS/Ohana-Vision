@@ -301,6 +301,7 @@ def test_static_ui_exposes_graphical_configuration_views() -> None:
 
     assert response.status_code == 200
     assert 'data-navigation-target="configuration-network"' in response.text
+    assert 'data-navigation-target="configuration-workers"' in response.text
     assert 'data-navigation-target="configuration-dhcp"' in response.text
     assert 'data-navigation-target="configuration-architecture"' in response.text
     assert 'data-navigation-target="configuration-plugins"' in response.text
@@ -324,6 +325,7 @@ def test_static_ui_exposes_graphical_configuration_views() -> None:
     assert 'id="architecture-device-network-presence"' in response.text
     assert 'id="device-details-node"' not in response.text
     assert 'id="plugins-configuration-panel"' in response.text
+    assert 'id="workers-configuration-panel"' in response.text
     assert 'id="plugin-cards"' in response.text
     assert 'id="plugin-configuration-form"' in response.text
     assert 'id="plugin-test"' in response.text

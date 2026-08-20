@@ -119,6 +119,25 @@ class FakeAdministrationClient:
             "status": "accepted",
         }
 
+    def read_worker_pairings(self) -> dict[str, Any]:
+        return {
+            "protocol_version": 1,
+            "pairings": [
+                {
+                    "pairing_id": "11111111-1111-4111-8111-111111111111",
+                    "worker_id": "katsuyu-bubule",
+                    "verification_code": "ABCD-2345",
+                    "status": "PENDING",
+                }
+            ],
+        }
+
+    def approve_worker_pairing(self, pairing_id: str) -> dict[str, Any]:
+        return {"pairing_id": pairing_id, "status": "APPROVED"}
+
+    def reject_worker_pairing(self, pairing_id: str) -> dict[str, Any]:
+        return {"pairing_id": pairing_id, "status": "REJECTED"}
+
     def read_infrastructure(self) -> dict[str, Any]:
         return {
             "infrastructure": {
@@ -158,6 +177,7 @@ def test_administration_routes_proxy_agent_documents() -> None:
     infrastructure = client.get("/api/administration/infrastructure")
     plugins = client.get("/api/administration/plugins")
     plugin = client.get("/api/administration/plugins/dns")
+    pairings = client.get("/api/administration/workers/pairings")
 
     assert capabilities.status_code == 200
     assert "dhcp.read" in capabilities.json()["operations"]
@@ -167,6 +187,7 @@ def test_administration_routes_proxy_agent_documents() -> None:
     assert infrastructure.json()["infrastructure"]["id"] == "ohana-house"
     assert plugins.json()["plugins"][0]["id"] == "dns"
     assert plugin.json()["id"] == "dns"
+    assert pairings.json()["pairings"][0]["worker_id"] == "katsuyu-bubule"
 
 
 def test_administration_routes_proxy_writes() -> None:
@@ -217,6 +238,13 @@ def test_administration_routes_proxy_writes() -> None:
     backup_response = client.post(
         "/api/administration/plugins/backup/targets/ha-01/run",
     )
+    pairing_id = "11111111-1111-4111-8111-111111111111"
+    pairing_approved = client.post(
+        f"/api/administration/workers/pairings/{pairing_id}/approve"
+    )
+    pairing_rejected = client.post(
+        f"/api/administration/workers/pairings/{pairing_id}/reject"
+    )
 
     assert dhcp_response.json() == {"schema_version": 1}
     assert network_response.json()["transaction_id"] == "network-transaction"
@@ -244,6 +272,8 @@ def test_administration_routes_proxy_writes() -> None:
         "target_id": "ha-01",
         "status": "accepted",
     }
+    assert pairing_approved.json()["status"] == "APPROVED"
+    assert pairing_rejected.json()["status"] == "REJECTED"
 
 
 def test_administration_routes_translate_agent_errors() -> None:

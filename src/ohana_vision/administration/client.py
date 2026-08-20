@@ -134,6 +134,24 @@ class AgentAdministrationClient:
             f"/v1/plugins/backup/targets/{quote(target_id, safe='')}/run",
         )
 
+    def read_worker_pairings(self) -> dict[str, Any]:
+        """Read Katsuyu pairing requests awaiting an administrator decision."""
+        return self._request("GET", "/v1/jobs/workers/pairings")
+
+    def approve_worker_pairing(self, pairing_id: str) -> dict[str, Any]:
+        """Approve one verification code displayed by the Katsuyu installer."""
+        return self._request(
+            "POST",
+            f"/v1/jobs/workers/pairings/{quote(pairing_id, safe='')}/approve",
+        )
+
+    def reject_worker_pairing(self, pairing_id: str) -> dict[str, Any]:
+        """Reject one unrecognized or obsolete Katsuyu pairing request."""
+        return self._request(
+            "POST",
+            f"/v1/jobs/workers/pairings/{quote(pairing_id, safe='')}/reject",
+        )
+
     def read_infrastructure(self) -> dict[str, Any]:
         """Read the Agent-owned infrastructure configuration."""
         return self._request("GET", "/v1/infrastructure")

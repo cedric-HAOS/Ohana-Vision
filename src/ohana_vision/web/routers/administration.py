@@ -160,6 +160,27 @@ def run_backup(target_id: str, request: Request) -> dict[str, Any]:
     return _call(lambda: client.run_backup(target_id))
 
 
+@router.get("/workers/pairings")
+def read_worker_pairings(request: Request) -> dict[str, Any]:
+    """List Katsuyu pairing requests through Agent's administration contract."""
+    client = _client(request)
+    return _call(client.read_worker_pairings)
+
+
+@router.post("/workers/pairings/{pairing_id}/approve")
+def approve_worker_pairing(pairing_id: str, request: Request) -> dict[str, Any]:
+    """Approve a Katsuyu installer after comparing its verification code."""
+    client = _client(request)
+    return _call(lambda: client.approve_worker_pairing(pairing_id))
+
+
+@router.post("/workers/pairings/{pairing_id}/reject")
+def reject_worker_pairing(pairing_id: str, request: Request) -> dict[str, Any]:
+    """Reject an unrecognized Katsuyu installer request."""
+    client = _client(request)
+    return _call(lambda: client.reject_worker_pairing(pairing_id))
+
+
 @router.get("/infrastructure")
 def read_infrastructure(request: Request) -> dict[str, Any]:
     """Read Agent's infrastructure source of truth."""

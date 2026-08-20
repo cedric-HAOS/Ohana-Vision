@@ -126,6 +126,9 @@ export class ConfigurationController {
         this.plugins = [];
         this.pluginsAvailable = false;
         this.pluginsLoadError = null;
+        this.workerPairings = [];
+        this.workerPairingsAvailable = false;
+        this.workerPairingsLoadError = null;
         this.selectedPluginId = null;
         this.pluginFormDirty = false;
         this.loaded = false;
@@ -259,6 +262,12 @@ export class ConfigurationController {
             pluginTest: byId("plugin-test"),
             pluginTestResult:
                 byId("plugin-test-result"),
+            workerPairingsTable:
+                byId("worker-pairings-table"),
+            workerPairingsPendingCount:
+                byId("worker-pairings-pending-count"),
+            workerPairingsRefresh:
+                byId("worker-pairings-refresh"),
         };
     }
 
@@ -285,6 +294,26 @@ export class ConfigurationController {
             ?.addEventListener(
                 "click",
                 () => void this.rollbackNetworkChange(),
+            );
+        this.elements.workerPairingsRefresh
+            ?.addEventListener(
+                "click",
+                () => void this.refreshWorkerPairings(),
+            );
+        this.elements.workerPairingsTable
+            ?.addEventListener(
+                "click",
+                (event) => {
+                    const button = event.target.closest(
+                        "[data-worker-pairing-action]",
+                    );
+                    if (button) {
+                        void this.decideWorkerPairing(
+                            button.dataset.workerPairingId,
+                            button.dataset.workerPairingAction,
+                        );
+                    }
+                },
             );
 
         this.elements.dhcpSettingsForm
@@ -718,10 +747,30 @@ export class ConfigurationController {
                 }
             }
 
+            this.workerPairings = [];
+            this.workerPairingsAvailable = operations.includes(
+                "jobs.workers.pairings.read",
+            );
+            this.workerPairingsLoadError = null;
+            if (this.workerPairingsAvailable) {
+                try {
+                    const pairingPayload = await fetchJson(
+                        API.administrationWorkerPairings,
+                    );
+                    this.workerPairings = pairingPayload.pairings ?? [];
+                } catch (error) {
+                    this.workerPairingsLoadError = this.errorMessage(error);
+                }
+            } else {
+                this.workerPairingsLoadError =
+                    "La version installée d’Agent ne prend pas encore en charge l’appairage Katsuyu.";
+            }
+
             this.loaded = true;
             this.renderNetwork();
             this.renderArchitecture();
             this.renderPlugins();
+            this.renderWorkerPairings();
 
             if (this.dhcp) {
                 this.renderDHCP();
@@ -782,6 +831,14 @@ export class ConfigurationController {
         }
 
         if (
+            sectionName === "workers"
+            && this.loaded
+            && this.workerPairingsAvailable
+        ) {
+            void this.refreshWorkerPairings();
+        }
+
+        if (
             sectionName === "plugins"
             && this.loaded
             && this.pluginsAvailable
@@ -790,6 +847,88 @@ export class ConfigurationController {
         }
 
         return true;
+    }
+
+    async refreshWorkerPairings() {
+        if (!this.workerPairingsAvailable) {
+            this.renderWorkerPairings();
+            return;
+        }
+        try {
+            const payload = await fetchJson(
+                API.administrationWorkerPairings,
+            );
+            this.workerPairings = payload.pairings ?? [];
+            this.workerPairingsLoadError = null;
+            this.renderWorkerPairings();
+        } catch (error) {
+            this.workerPairingsLoadError = this.errorMessage(error);
+            this.renderWorkerPairings();
+        }
+    }
+
+    renderWorkerPairings() {
+        const table = this.elements.workerPairingsTable;
+        if (!table) {
+            return;
+        }
+        const pending = this.workerPairings.filter(
+            (pairing) => pairing.status === "PENDING",
+        );
+        if (this.elements.workerPairingsPendingCount) {
+            this.elements.workerPairingsPendingCount.textContent =
+                String(pending.length);
+        }
+        if (this.workerPairingsLoadError) {
+            table.innerHTML = `<tr><td colspan="5">${escapeHtml(this.workerPairingsLoadError)}</td></tr>`;
+            return;
+        }
+        if (!pending.length) {
+            table.innerHTML = '<tr><td colspan="5">Aucune demande en attente.</td></tr>';
+            return;
+        }
+        table.innerHTML = pending.map((pairing) => {
+            const pairingId = escapeHtml(pairing.pairing_id);
+            const capabilities = (pairing.capabilities ?? []).join(", ");
+            const expiresAt = new Date(pairing.expires_at).toLocaleString("fr-FR");
+            return `<tr>
+                <td><strong>${escapeHtml(pairing.worker_id)}</strong><small>${escapeHtml(pairing.platform)} · ${escapeHtml(pairing.worker_version)}</small></td>
+                <td><strong>${escapeHtml(pairing.verification_code)}</strong></td>
+                <td>${escapeHtml(capabilities)}</td>
+                <td>${escapeHtml(expiresAt)}</td>
+                <td><span class="configuration-table__actions">
+                    <button class="button" data-worker-pairing-action="approve" data-worker-pairing-id="${pairingId}" type="button">Autoriser</button>
+                    <button class="configuration-danger-button" data-worker-pairing-action="reject" data-worker-pairing-id="${pairingId}" type="button">Refuser</button>
+                </span></td>
+            </tr>`;
+        }).join("");
+    }
+
+    async decideWorkerPairing(pairingId, action) {
+        if (!pairingId || !["approve", "reject"].includes(action)) {
+            return;
+        }
+        const verb = action === "approve" ? "autoriser" : "refuser";
+        if (!window.confirm(`Confirmer : ${verb} cet appairage Katsuyu ?`)) {
+            return;
+        }
+        try {
+            await requestJson(
+                API.administrationWorkerPairingAction(pairingId, action),
+                { method: "POST" },
+            );
+            this.showNotice(
+                action === "approve"
+                    ? "L’appairage est autorisé. Katsuyu peut maintenant récupérer son jeton."
+                    : "La demande d’appairage a été refusée.",
+            );
+            await this.refreshWorkerPairings();
+        } catch (error) {
+            showError(
+                this.elements.error,
+                `Impossible de ${verb} l’appairage : ${this.errorMessage(error)}`,
+            );
+        }
     }
 
     async refreshNetwork() {

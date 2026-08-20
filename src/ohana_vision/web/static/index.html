@@ -95,6 +95,10 @@
       <span aria-hidden="true" class="sidebar-navigation__icon sidebar-navigation__icon--network"></span>
       <span>Réseau Agent</span>
      </button>
+     <button class="sidebar-navigation__item" data-navigation-target="configuration-workers" type="button">
+      <span aria-hidden="true" class="sidebar-navigation__icon sidebar-navigation__icon--plugins"></span>
+      <span>Workers Katsuyu</span>
+     </button>
      <button class="sidebar-navigation__item" data-navigation-target="configuration-dhcp" type="button">
       <span
     aria-hidden="true"
@@ -826,6 +830,46 @@
        </div>
        <div class="configuration-notice hidden" id="configuration-notice" role="status">
        </div>
+       <section
+        aria-label="Appairage des workers Katsuyu"
+        class="configuration-panel"
+        data-configuration-panel="workers"
+        id="workers-configuration-panel"
+        hidden
+       >
+        <div class="configuration-summary">
+         <article class="configuration-summary-card">
+          <span>Demandes en attente</span>
+          <strong id="worker-pairings-pending-count">—</strong>
+          <small>validation explicite requise</small>
+         </article>
+         <article class="configuration-summary-card">
+          <span>Sécurité</span>
+          <strong>Code local</strong>
+          <small>à comparer avec l’installateur</small>
+         </article>
+        </div>
+        <section class="configuration-card">
+         <div class="configuration-card__heading">
+          <div>
+           <p class="panel-heading__kicker">Tsunade</p>
+           <h2>Appairage Katsuyu</h2>
+           <p>Autorisez uniquement une demande dont le code correspond exactement à celui affiché sur Bubule.</p>
+          </div>
+          <button class="configuration-secondary-button" id="worker-pairings-refresh" type="button">Actualiser</button>
+         </div>
+         <div class="configuration-table-wrapper">
+          <table class="configuration-table">
+           <thead>
+            <tr><th>Worker</th><th>Code</th><th>Capacités</th><th>Expiration</th><th>Action</th></tr>
+           </thead>
+           <tbody id="worker-pairings-table">
+            <tr><td colspan="5">Chargement des demandes…</td></tr>
+           </tbody>
+          </table>
+         </div>
+        </section>
+       </section>
        <section
         aria-label="Configuration réseau de l’Agent"
         class="configuration-panel"

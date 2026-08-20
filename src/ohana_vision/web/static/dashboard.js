@@ -33,6 +33,10 @@ const VIEW_HEADERS = Object.freeze({
         kicker: "Activité",
         title: "Observations",
     },
+    "configuration-workers": {
+        kicker: "Configuration",
+        title: "Workers Katsuyu",
+    },
     "configuration-dhcp": {
         kicker: "Configuration",
         title: "DHCP",

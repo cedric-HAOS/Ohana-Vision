@@ -41,6 +41,11 @@ export const API = Object.freeze({
     administrationBackupRun(targetId) {
         return `/api/administration/plugins/backup/targets/${encodeURIComponent(targetId)}/run`;
     },
+    administrationWorkerPairings:
+        "/api/administration/workers/pairings",
+    administrationWorkerPairingAction(pairingId, action) {
+        return `${this.administrationWorkerPairings}/${encodeURIComponent(pairingId)}/${action}`;
+    },
 });
 
 /**

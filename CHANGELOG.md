@@ -6,6 +6,16 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.15.0] — Appairage Katsuyu — 2026-08-20
+
+## Ajouté
+
+- La configuration expose une page **Workers Katsuyu** qui liste les demandes
+  en attente et permet de les autoriser ou de les refuser après comparaison du
+  code affiché sur Bubule.
+- Vision relaie uniquement le contrat d'administration Agent existant et ne
+  reçoit jamais le secret de sondage ni le jeton worker.
+
 # [1.14.4] — Rafraîchissement Hôte hors pool de workers — 2026-08-20
 
 ## Corrigé
