@@ -25,6 +25,13 @@ const LOG_SOURCE_LABELS = Object.freeze({
     "linky-01": "LINKY-01",
     "zwave-01": "ZWAVE-01",
 });
+const TERMINAL_JOB_STATUSES = new Set([
+    "SUCCEEDED",
+    "FAILED",
+    "CANCELLED",
+    "TIMEOUT",
+]);
+const JOB_POLL_INTERVAL_MS = 1000;
 const TREND_LABELS = Object.freeze({
     new: "nouvelle anomalie",
     known: "anomalie connue",
@@ -42,6 +49,7 @@ export class IncidentsController {
         this.details = new Map();
         this.summary = {};
         this.logHealth = null;
+        this.logCheckAvailable = false;
         this.filter = "active";
         this.loaded = false;
         this.elements = {
@@ -120,12 +128,18 @@ export class IncidentsController {
     async load() {
         this.showError("");
         try {
-            const payload = await fetchJson(`${API.tsunadeIncidents}?state=all`);
+            const [payload, capabilities] = await Promise.all([
+                fetchJson(`${API.tsunadeIncidents}?state=all`),
+                fetchJson(API.administrationCapabilities),
+            ]);
             this.incidents = Array.isArray(payload?.incidents) ? payload.incidents : [];
             this.summary = payload?.summary && typeof payload.summary === "object"
                 ? payload.summary
                 : {};
             this.logHealth = payload?.log_health ?? null;
+            this.logCheckAvailable = Array.isArray(capabilities?.operations)
+                && capabilities.operations.includes("incidents.logs.check");
+            this.updateLogCheckButton();
             this.loaded = true;
             this.render();
         } catch (error) {
@@ -331,14 +345,46 @@ export class IncidentsController {
         this.showError("");
         this.showCommandStatus("");
         try {
-            const job = await requestJson(API.tsunadeLogCheck, {method: "POST"});
-            this.showCommandStatus(
-                `Contrôle déterministe demandé à Katsuyu · job ${job.status ?? "QUEUED"}`,
-            );
+            const created = await requestJson(API.tsunadeLogCheck, {method: "POST"});
+            const job = await this.followJob(created, "Contrôle des journaux");
+            await this.load();
+            if (job.status === "SUCCEEDED") {
+                this.showCommandStatus("Contrôle des journaux terminé par Katsuyu.");
+            } else {
+                const reason = job.error?.message
+                    ? ` · ${job.error.message}`
+                    : "";
+                this.showError(
+                    `Contrôle des journaux ${this.jobStatusLabel(job.status)}${reason}`,
+                );
+            }
         } catch (error) {
             this.showError(`Contrôle des journaux indisponible : ${this.errorMessage(error)}`);
         } finally {
-            button.disabled = false;
+            button.disabled = !this.logCheckAvailable;
+        }
+    }
+
+    async followJob(createdJob, label) {
+        if (!createdJob?.job_id) {
+            throw new Error("Ohana-Agent n’a pas renvoyé d’identifiant de job");
+        }
+        let job = createdJob;
+        while (true) {
+            this.logHealth = job;
+            this.renderLogHealth();
+            const percent = Number(job.progress?.percent);
+            const progress = Number.isFinite(percent)
+                ? ` · ${Math.round(percent)} %`
+                : "";
+            this.showCommandStatus(
+                `${label} · ${this.jobStatusLabel(job.status)}${progress}`,
+            );
+            if (TERMINAL_JOB_STATUSES.has(job.status)) {
+                return job;
+            }
+            await new Promise((resolve) => setTimeout(resolve, JOB_POLL_INTERVAL_MS));
+            job = await fetchJson(API.administrationJob(job.job_id));
         }
     }
 
@@ -451,6 +497,16 @@ export class IncidentsController {
                 ${Array.isArray(repair.consequences) && repair.consequences.length ? `<div><strong>Conséquences</strong><ul>${repair.consequences.map((consequence) => `<li>${escapeHtml(consequence)}</li>`).join("")}</ul></div>` : ""}
                 ${repair.result ? `<p class="incident-repair__result"><strong>${repair.status === "succeeded" ? "Réparation réussie" : "Résultat"}</strong> · ${escapeHtml(repair.result)}</p>` : ""}
             </article>`).join("")}</div>`;
+    }
+
+    updateLogCheckButton() {
+        if (!this.elements.logCheck) {
+            return;
+        }
+        this.elements.logCheck.disabled = !this.logCheckAvailable;
+        this.elements.logCheck.title = this.logCheckAvailable
+            ? "Demander un contrôle immédiat à Tsunade"
+            : "Le contrôle des journaux n’est pas activé dans Ohana-Agent";
     }
 
     renderLogHealth() {

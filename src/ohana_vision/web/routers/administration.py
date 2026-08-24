@@ -219,6 +219,13 @@ def request_tsunade_log_check(request: Request) -> dict[str, Any]:
     return _call(client.request_tsunade_log_check)
 
 
+@router.get("/jobs/{job_id}")
+def read_job(job_id: str, request: Request) -> dict[str, Any]:
+    """Follow one Agent-owned distributed job without duplicating its state."""
+    client = _client(request)
+    return _call(lambda: client.read_job(job_id))
+
+
 @router.post("/tsunade/incidents/{incident_id}/logs/investigate")
 def request_tsunade_log_investigation(
     incident_id: str, payload: dict[str, Any], request: Request

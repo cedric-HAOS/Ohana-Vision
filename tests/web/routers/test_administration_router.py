@@ -188,7 +188,18 @@ class FakeAdministrationClient:
         return {"incident_id": incident_id, "status": "AI_QUEUED"}
 
     def request_tsunade_log_check(self) -> dict[str, Any]:
-        return {"type": "logs.health_check", "status": "QUEUED"}
+        return {
+            "job_id": "55555555-5555-4555-8555-555555555555",
+            "type": "logs.health_check",
+            "status": "QUEUED",
+        }
+
+    def read_job(self, job_id: str) -> dict[str, Any]:
+        return {
+            "job_id": job_id,
+            "type": "logs.health_check",
+            "status": "SUCCEEDED",
+        }
 
     def request_tsunade_log_investigation(
         self, incident_id: str, payload: dict[str, Any]
@@ -282,6 +293,7 @@ def test_administration_routes_proxy_agent_documents() -> None:
         "11111111-1111-4111-8111-111111111111/diagnose"
     )
     log_check = client.post("/api/administration/tsunade/incidents/logs/check")
+    job = client.get("/api/administration/jobs/55555555-5555-4555-8555-555555555555")
     log_investigation = client.post(
         "/api/administration/tsunade/incidents/"
         "11111111-1111-4111-8111-111111111111/logs/investigate",
@@ -318,6 +330,8 @@ def test_administration_routes_proxy_agent_documents() -> None:
     assert incidents.json()["incidents"][0]["workflow_state"] == "in_progress"
     assert incident.json()["events"] == []
     assert diagnosis.json()["status"] == "AI_QUEUED"
+    assert log_check.json()["status"] == "QUEUED"
+    assert job.json()["status"] == "SUCCEEDED"
     assert log_check.json()["type"] == "logs.health_check"
     assert log_investigation.json()["parameters"]["pattern"] == "Node 17"
     assert repair_proposal.json()["status"] == "proposed"

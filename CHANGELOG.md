@@ -6,6 +6,15 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.21.1] — Suivi des contrôles de journaux — 2026-08-24
+
+## Corrigé
+
+- Vision suit désormais le job `logs.health_check` créé par Tsunade jusqu'à son
+  état terminal et affiche sa progression, son résultat ou son erreur.
+- La zone Santé des journaux reflète l'état durable du job pendant son exécution
+  au lieu de rester sans retour après la mise en file d'attente.
+
 # [1.21.0] — Administration Shizune et maîtrise du WAL — 2026-08-24
 
 ## Ajouté

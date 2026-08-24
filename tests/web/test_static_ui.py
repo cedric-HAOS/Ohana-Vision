@@ -314,6 +314,11 @@ def test_static_ui_exposes_incident_center() -> None:
     assert "API.tsunadeIncident" in script.text
     assert "API.tsunadeDiagnose" in script.text
     assert "API.tsunadeLogCheck" in script.text
+    assert "API.administrationJob" in script.text
+    assert "followJob" in script.text
+    assert "TERMINAL_JOB_STATUSES" in script.text
+    assert "incidents.logs.check" in script.text
+    assert "updateLogCheckButton" in script.text
     assert "API.tsunadeLogInvestigate" in script.text
     assert "API.tsunadeRepair" in script.text
     assert "API.tsunadeRepairAuthorize" in script.text

@@ -181,6 +181,10 @@ class AgentAdministrationClient:
         """Ask Agent/Tsunade to control every configured log source."""
         return self._request("POST", "/v1/incidents/logs/check")
 
+    def read_job(self, job_id: str) -> dict[str, Any]:
+        """Read one distributed job while Vision follows its durable state."""
+        return self._request("GET", f"/v1/jobs/{quote(job_id, safe='')}")
+
     def request_tsunade_log_investigation(
         self, incident_id: str, payload: dict[str, Any]
     ) -> dict[str, Any]:
