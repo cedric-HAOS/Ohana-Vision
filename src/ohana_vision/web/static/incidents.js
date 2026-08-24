@@ -346,7 +346,11 @@ export class IncidentsController {
         this.showCommandStatus("");
         try {
             const created = await requestJson(API.tsunadeLogCheck, {method: "POST"});
-            const job = await this.followJob(created, "Contrôle des journaux");
+            const job = await this.followJob(
+                created,
+                "Contrôle des journaux",
+                {projectLogHealth: true},
+            );
             await this.load();
             if (job.status === "SUCCEEDED") {
                 this.showCommandStatus("Contrôle des journaux terminé par Katsuyu.");
@@ -365,26 +369,43 @@ export class IncidentsController {
         }
     }
 
-    async followJob(createdJob, label) {
+    async followJob(
+        createdJob,
+        label,
+        {projectLogHealth = false} = {},
+    ) {
         if (!createdJob?.job_id) {
             throw new Error("Ohana-Agent n’a pas renvoyé d’identifiant de job");
         }
+
         let job = createdJob;
+
         while (true) {
-            this.logHealth = job;
-            this.renderLogHealth();
+            if (projectLogHealth) {
+                this.logHealth = job;
+                this.renderLogHealth();
+            }
+
             const percent = Number(job.progress?.percent);
             const progress = Number.isFinite(percent)
                 ? ` · ${Math.round(percent)} %`
                 : "";
+
             this.showCommandStatus(
                 `${label} · ${this.jobStatusLabel(job.status)}${progress}`,
             );
+
             if (TERMINAL_JOB_STATUSES.has(job.status)) {
                 return job;
             }
-            await new Promise((resolve) => setTimeout(resolve, JOB_POLL_INTERVAL_MS));
-            job = await fetchJson(API.administrationJob(job.job_id));
+
+            await new Promise(
+                (resolve) => setTimeout(resolve, JOB_POLL_INTERVAL_MS),
+            );
+
+            job = await fetchJson(
+                API.administrationJob(job.job_id),
+            );
         }
     }
 
@@ -392,26 +413,57 @@ export class IncidentsController {
         if (!incidentId) {
             return;
         }
+
         const button = form.querySelector("button[type='submit']");
-        const pattern = String(new FormData(form).get("pattern") ?? "").trim();
+        const pattern = String(
+            new FormData(form).get("pattern") ?? "",
+        ).trim();
+
         if (!pattern) {
             return;
         }
+
         button.disabled = true;
         this.showError("");
         this.showCommandStatus("");
+
         try {
-            const job = await requestJson(API.tsunadeLogInvestigate(incidentId), {
-                method: "POST",
-                body: JSON.stringify({pattern}),
-            });
-            this.details.delete(incidentId);
-            this.showCommandStatus(
-                `Investigation ciblée autorisée · job ${job.status ?? "QUEUED"}`,
+            const created = await requestJson(
+                API.tsunadeLogInvestigate(incidentId),
+                {
+                    method: "POST",
+                    body: JSON.stringify({pattern}),
+                },
             );
+
+            const job = await this.followJob(
+                created,
+                "Investigation ciblée",
+            );
+
+            this.details.delete(incidentId);
+
             await this.load();
+
+            if (job.status === "SUCCEEDED") {
+                this.showCommandStatus(
+                    "Investigation ciblée terminée par Katsuyu.",
+                );
+            } else {
+                const reason = job.error?.message
+                    ? ` · ${job.error.message}`
+                    : "";
+
+                this.showError(
+                    `Investigation des journaux `
+                    + `${this.jobStatusLabel(job.status)}${reason}`,
+                );
+            }
         } catch (error) {
-            this.showError(`Investigation des journaux indisponible : ${this.errorMessage(error)}`);
+            this.showError(
+                `Investigation des journaux indisponible : `
+                + `${this.errorMessage(error)}`,
+            );
         } finally {
             button.disabled = false;
         }

@@ -450,3 +450,21 @@
         flex-direction: column;
     }
 }
+
+@media (min-width: 1001px) {
+    .incidents-panel {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .incidents-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
+        scrollbar-gutter: stable;
+        align-content: start;
+    }
+}
