@@ -169,6 +169,47 @@ class AgentAdministrationClient:
             timeout_seconds=60.0,
         )
 
+    def request_tsunade_log_check(self) -> dict[str, Any]:
+        """Ask Agent/Tsunade to control every configured log source."""
+        return self._request("POST", "/v1/incidents/logs/check")
+
+    def request_tsunade_log_investigation(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Authorize one bounded log follow-up through Agent/Tsunade."""
+        return self._request(
+            "POST",
+            f"/v1/incidents/{quote(incident_id, safe='')}/logs/investigate",
+            payload=payload,
+        )
+
+    def propose_tsunade_repair(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            f"/v1/incidents/{quote(incident_id, safe='')}/repairs",
+            payload=payload,
+        )
+
+    def authorize_tsunade_repair(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            f"/v1/incidents/{quote(incident_id, safe='')}/repairs/authorize",
+            payload=payload,
+        )
+
+    def confirm_tsunade_experience(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            f"/v1/incidents/{quote(incident_id, safe='')}/experience",
+            payload=payload,
+        )
+
     def approve_worker_pairing(self, pairing_id: str) -> dict[str, Any]:
         """Approve one verification code displayed by the Katsuyu installer."""
         return self._request(

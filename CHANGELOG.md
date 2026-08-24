@@ -6,6 +6,38 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.20.0] — Cockpit Tsunade complet — 2026-08-24
+
+## Ajouté
+
+- La page **Tsunade** permet de proposer puis d’autoriser explicitement le
+  redémarrage supervisé de dnsmasq. Vision ne fait que transmettre la décision
+  et affiche ensuite la vérification de Shikamaru.
+- Après une réparation confirmée, Vision présente la demande manuelle
+  **Enregistrer comme réparation connue ?** et transmet la provenance de cette
+  validation à Agent.
+- La page **Tsunade** expose **Contrôler les journaux** pour demander à Agent
+  un contrôle déterministe immédiat des sources configurées.
+- Un incident `logs.health` actif expose **Approfondir les journaux** avec un
+  motif borné. Vision transmet l’autorisation à Agent/Tsunade et ne construit
+  ni n’exécute elle-même aucun job Katsuyu.
+
+## Modifié
+
+- Le cockpit utilise Konoha pour désigner l’infrastructure et Shikamaru pour la
+  supervision, tout en conservant Ohana-Vision et Ohana-Agent dans les
+  informations techniques et de version.
+- La page Tsunade affiche la santé quotidienne des journaux HA-01, LINKY-01 et
+  ZWAVE-01, la dernière analyse, les occurrences de référence et leur
+  évolution, sans présenter les lignes brutes.
+- Les réparations affichent leur risque, leurs conséquences, leur résultat et
+  les indicateurs historiques de réparations apprises et de réussite.
+
+## Corrigé
+
+- Les libellés de chronologie et les anciens messages de diagnostic connus sont
+  présentés en français.
+
 # [1.19.0] — Expertise Tsunade — 2026-08-24
 
 ## Ajouté

@@ -2,7 +2,9 @@
 
 > Visualiser l'état réel d'une infrastructure pilotée par capacités.
 
-Ohana-Vision est l'interface web de l'écosystème Ohana.
+Ohana-Vision est le cockpit technique de **Konoha**, l'infrastructure gérée par
+l'écosystème Ohana. Konoha désigne l'infrastructure ; ce nom ne remplace ni le
+dépôt, ni le package, ni le service Ohana-Vision.
 
 Il reçoit d'Ohana-Agent deux flux complémentaires :
 
@@ -10,6 +12,11 @@ Il reçoit d'Ohana-Agent deux flux complémentaires :
 - les **observations dynamiques** décrivant l'état réel des capacités dans le temps.
 
 Ohana-Agent reste la source de vérité de la configuration. Ohana-Vision valide, projette, historise et affiche les données reçues.
+
+Dans le cockpit, **Shikamaru** désigne la supervision, l'évaluation des états et
+leur vérification. **Tsunade** désigne les incidents, investigations,
+diagnostics et décisions. Ces deux rôles restent hébergés par Ohana-Agent ;
+Vision ne duplique pas leur état et ne contourne pas leurs autorisations.
 
 ---
 
@@ -128,6 +135,26 @@ Elle affiche séparément les faits confirmés par investigation et les hypothè
 Katsuyu AI, avec confiance et éléments concordants ou contradictoires. Les
 investigations suggérées restent non autorisées : Vision ne contourne jamais
 Tsunade ou Agent pour exécuter une opération.
+
+Le bouton **Contrôler les journaux** demande à Agent/Tsunade un contrôle
+déterministe immédiat de toutes les sources configurées. Lorsqu’un incident
+`logs.health` actif existe, **Approfondir les journaux** permet à l’opérateur
+d’autoriser un motif ciblé ; Agent fixe la source, la fenêtre, les limites et
+crée le job Katsuyu. Vision ne reçoit ni ne conserve les journaux bruts.
+
+Pour un incident DNS actif, Vision peut demander à Agent de proposer le
+redémarrage supervisé de dnsmasq, puis recueillir une validation explicite.
+Agent exécute l’opération autorisée et Shikamaru reste seul responsable de la
+confirmation du retour à l’état sain. Une réparation réussie n’est mémorisée
+qu’après une seconde confirmation utilisateur ; Vision ne stocke ni l’incident
+ni l’expérience et transmet la provenance de la validation à Agent.
+
+La page présente aussi la dernière santé quotidienne des journaux HA-01,
+LINKY-01 et ZWAVE-01. Une anomalie affiche sa signature, son nombre
+d’occurrences, la référence précédente et son évolution. Les réparations
+affichent action, risque, conséquences, provenance de validation et résultat ;
+les compteurs historiques indiquent contrôles, réparations apprises et taux de
+réussite. Aucun journal brut n’est affiché ou conservé par Vision.
 
 En production, observations et incidents utilisent par défaut
 `/var/lib/ohana-vision/vision.db`, configurable avec

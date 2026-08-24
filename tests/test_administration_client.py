@@ -38,6 +38,11 @@ def test_backup_operations_allow_slow_cold_icloud_startup(
     client.read_tsunade_incidents("all")
     client.read_tsunade_incident("incident id")
     client.diagnose_tsunade_incident("incident id")
+    client.request_tsunade_log_check()
+    client.request_tsunade_log_investigation("incident id", {"pattern": "Node 17"})
+    client.propose_tsunade_repair("incident id", {"operation": "restart_service"})
+    client.authorize_tsunade_repair("incident id", {"repair_id": "repair id"})
+    client.confirm_tsunade_experience("incident id", {"confirm": True})
     client.approve_worker_pairing("pairing id")
     client.reject_worker_pairing("pairing id")
 
@@ -56,6 +61,23 @@ def test_backup_operations_allow_slow_cold_icloud_startup(
         (
             "http://127.0.0.1:8765/v1/incidents/incident%20id/diagnose",
             60.0,
+        ),
+        ("http://127.0.0.1:8765/v1/incidents/logs/check", 10.0),
+        (
+            "http://127.0.0.1:8765/v1/incidents/incident%20id/logs/investigate",
+            10.0,
+        ),
+        (
+            "http://127.0.0.1:8765/v1/incidents/incident%20id/repairs",
+            10.0,
+        ),
+        (
+            "http://127.0.0.1:8765/v1/incidents/incident%20id/repairs/authorize",
+            10.0,
+        ),
+        (
+            "http://127.0.0.1:8765/v1/incidents/incident%20id/experience",
+            10.0,
         ),
         (
             "http://127.0.0.1:8765/v1/jobs/workers/pairings/pairing%20id/approve",

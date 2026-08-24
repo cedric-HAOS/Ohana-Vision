@@ -162,6 +162,34 @@ class FakeAdministrationClient:
     def diagnose_tsunade_incident(self, incident_id: str) -> dict[str, Any]:
         return {"incident_id": incident_id, "status": "AI_QUEUED"}
 
+    def request_tsunade_log_check(self) -> dict[str, Any]:
+        return {"type": "logs.health_check", "status": "QUEUED"}
+
+    def request_tsunade_log_investigation(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {
+            "incident_id": incident_id,
+            "type": "logs.investigate",
+            "status": "QUEUED",
+            "parameters": payload,
+        }
+
+    def propose_tsunade_repair(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {"incident_id": incident_id, "status": "proposed", **payload}
+
+    def authorize_tsunade_repair(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {"incident_id": incident_id, "status": "verifying", **payload}
+
+    def confirm_tsunade_experience(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {"incident_id": incident_id, "success_count": 1, **payload}
+
     def approve_worker_pairing(self, pairing_id: str) -> dict[str, Any]:
         return {"pairing_id": pairing_id, "status": "APPROVED"}
 
@@ -217,6 +245,27 @@ def test_administration_routes_proxy_agent_documents() -> None:
         "/api/administration/tsunade/incidents/"
         "11111111-1111-4111-8111-111111111111/diagnose"
     )
+    log_check = client.post("/api/administration/tsunade/incidents/logs/check")
+    log_investigation = client.post(
+        "/api/administration/tsunade/incidents/"
+        "11111111-1111-4111-8111-111111111111/logs/investigate",
+        json={"pattern": "Node 17"},
+    )
+    repair_proposal = client.post(
+        "/api/administration/tsunade/incidents/"
+        "11111111-1111-4111-8111-111111111111/repairs",
+        json={"operation": "restart_service"},
+    )
+    repair_authorization = client.post(
+        "/api/administration/tsunade/incidents/"
+        "11111111-1111-4111-8111-111111111111/repairs/authorize",
+        json={"repair_id": "22222222-2222-4222-8222-222222222222"},
+    )
+    experience = client.post(
+        "/api/administration/tsunade/incidents/"
+        "11111111-1111-4111-8111-111111111111/experience",
+        json={"confirm": True},
+    )
 
     assert capabilities.status_code == 200
     assert "dhcp.read" in capabilities.json()["operations"]
@@ -231,6 +280,11 @@ def test_administration_routes_proxy_agent_documents() -> None:
     assert incidents.json()["incidents"][0]["workflow_state"] == "in_progress"
     assert incident.json()["events"] == []
     assert diagnosis.json()["status"] == "AI_QUEUED"
+    assert log_check.json()["type"] == "logs.health_check"
+    assert log_investigation.json()["parameters"]["pattern"] == "Node 17"
+    assert repair_proposal.json()["status"] == "proposed"
+    assert repair_authorization.json()["status"] == "verifying"
+    assert experience.json()["success_count"] == 1
 
 
 def test_administration_routes_proxy_writes() -> None:

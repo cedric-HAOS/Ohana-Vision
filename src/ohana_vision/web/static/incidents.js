@@ -10,6 +10,29 @@ const WORKFLOW_LABELS = Object.freeze({
     treated: "Traité",
     resolved: "Résolu",
 });
+const EVENT_LABELS = Object.freeze({
+    opened: "Ouverture",
+    observed: "Observation",
+    escalated: "Aggravation",
+    investigation: "Investigation",
+    diagnostic: "Diagnostic",
+    action: "Action",
+    result: "Résultat",
+    resolved: "Résolution",
+});
+const LOG_SOURCE_LABELS = Object.freeze({
+    "ha-01": "HA-01",
+    "linky-01": "LINKY-01",
+    "zwave-01": "ZWAVE-01",
+});
+const TREND_LABELS = Object.freeze({
+    new: "nouvelle anomalie",
+    known: "anomalie connue",
+    stable: "stable",
+    increasing: "forte augmentation",
+    decreasing: "en diminution",
+    disappeared: "disparue",
+});
 
 /** Render Agent-owned Tsunade incidents without duplicating their lifecycle. */
 export class IncidentsController {
@@ -17,6 +40,8 @@ export class IncidentsController {
         this.state = state;
         this.incidents = [];
         this.details = new Map();
+        this.summary = {};
+        this.logHealth = null;
         this.filter = "active";
         this.loaded = false;
         this.elements = {
@@ -26,7 +51,13 @@ export class IncidentsController {
             newCount: document.querySelector("#incidents-unacknowledged-count"),
             treatedCount: document.querySelector("#incidents-silenced-count"),
             resolvedCount: document.querySelector("#incidents-resolved-count"),
+            logControlCount: document.querySelector("#incidents-log-control-count"),
+            learnedRepairCount: document.querySelector("#incidents-learned-repair-count"),
+            repairSuccessRate: document.querySelector("#incidents-repair-success-rate"),
+            logHealth: document.querySelector("#tsunade-log-health"),
             filters: Array.from(document.querySelectorAll("[data-incidents-filter]")),
+            logCheck: document.querySelector("#tsunade-log-check"),
+            commandStatus: document.querySelector("#incidents-command-status"),
         };
     }
 
@@ -37,6 +68,9 @@ export class IncidentsController {
                 this.render();
             });
         });
+        this.elements.logCheck?.addEventListener("click", () => {
+            void this.checkLogs(this.elements.logCheck);
+        });
         this.elements.list?.addEventListener("click", (event) => {
             const diagnoseButton = event.target.closest("[data-tsunade-diagnose]");
             if (diagnoseButton) {
@@ -46,10 +80,40 @@ export class IncidentsController {
                 );
                 return;
             }
+            const proposeButton = event.target.closest("[data-tsunade-repair-propose]");
+            if (proposeButton) {
+                void this.proposeRepair(proposeButton.dataset.tsunadeRepairPropose, proposeButton);
+                return;
+            }
+            const authorizeButton = event.target.closest("[data-tsunade-repair-authorize]");
+            if (authorizeButton) {
+                void this.authorizeRepair(
+                    authorizeButton.dataset.incidentId,
+                    authorizeButton.dataset.tsunadeRepairAuthorize,
+                    authorizeButton,
+                );
+                return;
+            }
+            const experienceButton = event.target.closest("[data-tsunade-experience]");
+            if (experienceButton) {
+                void this.confirmExperience(experienceButton.dataset.tsunadeExperience, experienceButton);
+                return;
+            }
             const button = event.target.closest("[data-tsunade-details]");
             if (button) {
                 void this.loadDetails(button.dataset.tsunadeDetails, button);
             }
+        });
+        this.elements.list?.addEventListener("submit", (event) => {
+            const form = event.target.closest("[data-tsunade-log-investigation]");
+            if (!form) {
+                return;
+            }
+            event.preventDefault();
+            void this.investigateLogs(
+                form.dataset.tsunadeLogInvestigation,
+                form,
+            );
         });
     }
 
@@ -58,6 +122,10 @@ export class IncidentsController {
         try {
             const payload = await fetchJson(`${API.tsunadeIncidents}?state=all`);
             this.incidents = Array.isArray(payload?.incidents) ? payload.incidents : [];
+            this.summary = payload?.summary && typeof payload.summary === "object"
+                ? payload.summary
+                : {};
+            this.logHealth = payload?.log_health ?? null;
             this.loaded = true;
             this.render();
         } catch (error) {
@@ -123,6 +191,15 @@ export class IncidentsController {
             this.elements.resolvedCount,
             this.incidents.filter((incident) => incident.state === "resolved").length,
         );
+        this.setCount(this.elements.logControlCount, this.summary.log_control_count ?? 0);
+        this.setCount(this.elements.learnedRepairCount, this.summary.learned_repair_count ?? 0);
+        this.setCount(
+            this.elements.repairSuccessRate,
+            this.summary.repair_success_rate == null
+                ? "—"
+                : `${Number(this.summary.repair_success_rate).toLocaleString("fr-FR")} %`,
+        );
+        this.renderLogHealth();
     }
 
     incidentCard(incident) {
@@ -130,9 +207,14 @@ export class IncidentsController {
         const workflow = String(incident.workflow_state ?? "new").toLowerCase();
         const expertiseState = String(incident.expertise_state ?? "idle").toLowerCase();
         const details = this.details.get(incident.incident_id);
-        const findings = Array.isArray(incident.context?.findings)
-            ? incident.context.findings.slice(0, 5)
-            : [];
+        const repairState = details ?? incident;
+        const repairs = Array.isArray(repairState.repairs) ? repairState.repairs : [];
+        const proposedRepair = repairs.find((repair) => repair.status === "proposed");
+        const repairSummary = repairs.length ? this.repairs(repairs) : "";
+        const experience = details?.experience_candidate;
+        const logSynthesis = incident.capability_id === "logs.health"
+            ? this.logSynthesis(incident.context)
+            : "";
         return `
             <article class="incident-card incident-card--${escapeHtml(severity)} ${incident.state === "resolved" ? "is-resolved" : "is-active"}">
                 <div class="incident-card__accent" aria-hidden="true"></div>
@@ -155,10 +237,21 @@ export class IncidentsController {
                         <div><dt>Récurrences</dt><dd>${escapeHtml(incident.recurrence_count ?? 0)}</dd></div>
                         ${incident.ended_at ? `<div><dt>Résolution</dt><dd>${escapeHtml(formatDate(incident.ended_at))}</dd></div>` : ""}
                     </dl>
-                    ${findings.length ? `<div class="incident-card__findings"><strong>Anomalies Katsuyu</strong><ul>${findings.map((finding) => `<li>${escapeHtml(finding.summary ?? finding.signature)}</li>`).join("")}</ul></div>` : ""}
+                    ${logSynthesis}
                     ${incident.final_result ? `<p class="incident-card__result"><strong>Résultat :</strong> ${escapeHtml(incident.final_result)}</p>` : ""}
+                    ${repairSummary}
+                    ${experience ? `<div class="incident-experience"><strong>${escapeHtml(experience.prompt)}</strong><button class="configuration-primary-button" data-tsunade-experience="${escapeHtml(incident.incident_id)}" type="button">Enregistrer la réparation connue</button></div>` : ""}
+                    ${incident.state === "active" && incident.capability_id === "logs.health" ? `
+                        <form class="incident-log-investigation" data-tsunade-log-investigation="${escapeHtml(incident.incident_id)}">
+                            <label>Motif à approfondir
+                                <input maxlength="160" name="pattern" placeholder="Ex. Node 17" required type="text">
+                            </label>
+                            <button class="configuration-primary-button" type="submit">Approfondir les journaux</button>
+                        </form>` : ""}
                     <div class="incident-card__actions">
                         ${incident.state === "active" ? `<button class="configuration-primary-button" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${expertiseState === "ai_queued" ? "Analyse Katsuyu en attente" : "Lancer le diagnostic"}</button>` : ""}
+                        ${incident.state === "active" && this.canRestartDnsmasq(incident) && repairs.length === 0 ? `<button class="configuration-secondary-button" data-tsunade-repair-propose="${escapeHtml(incident.incident_id)}" type="button">Proposer le redémarrage de dnsmasq</button>` : ""}
+                        ${proposedRepair && !proposedRepair.authorized_at ? `<button class="configuration-primary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-tsunade-repair-authorize="${escapeHtml(proposedRepair.repair_id)}" type="button">Autoriser depuis Vision</button>` : ""}
                         <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${details ? "Masquer l’évolution" : "Afficher l’évolution"}</button>
                     </div>
                     ${details ? this.evolution(details) : ""}
@@ -173,8 +266,8 @@ export class IncidentsController {
         }
         return `<ol class="incident-card__evolution">${events.map((event) => `
             <li><time>${escapeHtml(formatDate(event.occurred_at))}</time>
-            <strong>${escapeHtml(this.readableIdentifier(event.kind))}</strong>
-            <span>${escapeHtml(event.summary)}</span>
+            <strong>${escapeHtml(EVENT_LABELS[event.kind] ?? this.readableIdentifier(event.kind))}</strong>
+            <span>${escapeHtml(this.translatedSummary(event.summary))}</span>
             ${this.expertiseDetails(event.payload)}</li>`).join("")}</ol>`;
     }
 
@@ -197,6 +290,7 @@ export class IncidentsController {
             ? `<ul class="incident-hypotheses">${hypotheses.map((hypothesis) => `
                 <li><strong>${escapeHtml(Math.round(Number(hypothesis.confidence ?? 0) * 100))} %</strong>
                 ${escapeHtml(hypothesis.statement ?? "Hypothèse sans résumé")}
+                ${this.evidenceList("Causes possibles", hypothesis.possible_causes)}
                 ${this.evidenceList("Concordants", hypothesis.supporting_evidence)}
                 ${this.evidenceList("Contradictoires", hypothesis.contradicting_evidence)}</li>`).join("")}</ul>`
             : "";
@@ -230,6 +324,215 @@ export class IncidentsController {
         } finally {
             button.disabled = false;
         }
+    }
+
+    async checkLogs(button) {
+        button.disabled = true;
+        this.showError("");
+        this.showCommandStatus("");
+        try {
+            const job = await requestJson(API.tsunadeLogCheck, {method: "POST"});
+            this.showCommandStatus(
+                `Contrôle déterministe demandé à Katsuyu · job ${job.status ?? "QUEUED"}`,
+            );
+        } catch (error) {
+            this.showError(`Contrôle des journaux indisponible : ${this.errorMessage(error)}`);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    async investigateLogs(incidentId, form) {
+        if (!incidentId) {
+            return;
+        }
+        const button = form.querySelector("button[type='submit']");
+        const pattern = String(new FormData(form).get("pattern") ?? "").trim();
+        if (!pattern) {
+            return;
+        }
+        button.disabled = true;
+        this.showError("");
+        this.showCommandStatus("");
+        try {
+            const job = await requestJson(API.tsunadeLogInvestigate(incidentId), {
+                method: "POST",
+                body: JSON.stringify({pattern}),
+            });
+            this.details.delete(incidentId);
+            this.showCommandStatus(
+                `Investigation ciblée autorisée · job ${job.status ?? "QUEUED"}`,
+            );
+            await this.load();
+        } catch (error) {
+            this.showError(`Investigation des journaux indisponible : ${this.errorMessage(error)}`);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    async proposeRepair(incidentId, button) {
+        button.disabled = true;
+        this.showError("");
+        try {
+            await requestJson(API.tsunadeRepair(incidentId), {
+                method: "POST",
+                body: JSON.stringify({operation: "restart_service"}),
+            });
+            this.details.delete(incidentId);
+            await this.load();
+            await this.loadDetails(incidentId, button);
+        } catch (error) {
+            this.showError(`Proposition impossible : ${this.errorMessage(error)}`);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    async authorizeRepair(incidentId, repairId, button) {
+        button.disabled = true;
+        this.showError("");
+        try {
+            await requestJson(API.tsunadeRepairAuthorize(incidentId), {
+                method: "POST",
+                body: JSON.stringify({
+                    repair_id: repairId,
+                    source: "vision",
+                    authorized_by: "utilisateur Vision",
+                }),
+            });
+            this.details.delete(incidentId);
+            this.showCommandStatus("Réparation autorisée ; vérification Shikamaru en attente.");
+            await this.load();
+        } catch (error) {
+            this.showError(`Réparation impossible : ${this.errorMessage(error)}`);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    async confirmExperience(incidentId, button) {
+        button.disabled = true;
+        this.showError("");
+        try {
+            await requestJson(API.tsunadeExperience(incidentId), {
+                method: "POST",
+                body: JSON.stringify({
+                    confirm: true,
+                    source: "vision",
+                    confirmed_by: "utilisateur Vision",
+                }),
+            });
+            this.details.delete(incidentId);
+            this.showCommandStatus("Réparation enregistrée dans la mémoire de Tsunade.");
+            await this.load();
+        } catch (error) {
+            this.showError(`Mémorisation impossible : ${this.errorMessage(error)}`);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    repairs(repairs) {
+        const labels = {
+            proposed: "En attente de validation",
+            verifying: "Exécutée, vérification Shikamaru en attente",
+            succeeded: "Réussie et confirmée par Shikamaru",
+            failed: "Échec confirmé",
+        };
+        const riskLabels = {low: "Faible", medium: "Moyen", high: "Élevé"};
+        return `<div class="incident-repairs"><strong>Réparations supervisées</strong>${repairs.map((repair) => `
+            <article class="incident-repair">
+                <dl>
+                    <div><dt>Action proposée</dt><dd>${escapeHtml(this.readableIdentifier(repair.operation))} · ${escapeHtml(repair.target)}</dd></div>
+                    <div><dt>Niveau de risque</dt><dd>${escapeHtml(riskLabels[repair.risk] ?? repair.risk)}</dd></div>
+                    <div><dt>État</dt><dd>${escapeHtml(labels[repair.status] ?? repair.status)}${repair.authorization_source ? ` · autorisée depuis ${escapeHtml(repair.authorization_source)}` : ""}</dd></div>
+                </dl>
+                ${Array.isArray(repair.consequences) && repair.consequences.length ? `<div><strong>Conséquences</strong><ul>${repair.consequences.map((consequence) => `<li>${escapeHtml(consequence)}</li>`).join("")}</ul></div>` : ""}
+                ${repair.result ? `<p class="incident-repair__result"><strong>${repair.status === "succeeded" ? "Réparation réussie" : "Résultat"}</strong> · ${escapeHtml(repair.result)}</p>` : ""}
+            </article>`).join("")}</div>`;
+    }
+
+    renderLogHealth() {
+        if (!this.elements.logHealth) {
+            return;
+        }
+        if (!this.logHealth) {
+            this.elements.logHealth.innerHTML = "<p>Aucune analyse disponible.</p>";
+            return;
+        }
+        const result = this.logHealth.result;
+        if (!result || !Array.isArray(result.sources)) {
+            const error = this.logHealth.error?.message;
+            this.elements.logHealth.innerHTML = `<p>Dernier contrôle : ${escapeHtml(this.jobStatusLabel(this.logHealth.status))}${error ? ` · ${escapeHtml(error)}` : ""}</p>`;
+            return;
+        }
+        const bySource = new Map(result.sources.map((source) => [source.source, source]));
+        const rows = Object.entries(LOG_SOURCE_LABELS).map(([sourceId, label]) => {
+            const source = bySource.get(sourceId);
+            const healthy = source?.status === "OK";
+            const state = source ? (healthy ? "Sain" : "Anomalie") : "Non analysé";
+            return `<li class="${healthy ? "is-healthy" : source ? "is-unhealthy" : ""}"><strong>${escapeHtml(label)}</strong><span>${healthy ? "✓" : source ? "!" : "—"} ${escapeHtml(state)}</span></li>`;
+        }).join("");
+        this.elements.logHealth.innerHTML = `<ul>${rows}</ul><p>Dernière analyse : <strong>${escapeHtml(formatDate(result.analyzed_at ?? this.logHealth.finished_at))}</strong></p>`;
+    }
+
+    logSynthesis(context) {
+        if (!context || typeof context !== "object") {
+            return "";
+        }
+        const findings = Array.isArray(context.findings) ? context.findings.slice(0, 8) : [];
+        const source = LOG_SOURCE_LABELS[context.source] ?? this.readableIdentifier(context.source);
+        const state = context.status === "OK" ? "sain" : "anomalie";
+        const window = this.analysisWindow(context);
+        const items = findings.map((finding) => {
+            const reference = finding.reference_occurrences == null
+                ? "aucune référence antérieure"
+                : `${finding.reference_occurrences} / ${window}`;
+            const trend = TREND_LABELS[finding.trend] ?? this.readableIdentifier(finding.trend);
+            return `<li><strong>${escapeHtml(finding.signature ?? finding.summary)}</strong><span>${escapeHtml(finding.occurrences ?? 0)} occurrence(s) / ${escapeHtml(window)}</span><small>Référence : ${escapeHtml(reference)} · Évolution : ${escapeHtml(trend)}</small></li>`;
+        }).join("");
+        return `<section class="incident-log-synthesis"><header><strong>${escapeHtml(source)}</strong><span>État des journaux : ${escapeHtml(state)}</span></header>${items ? `<ul>${items}</ul>` : "<p>Aucune anomalie regroupée.</p>"}</section>`;
+    }
+
+    analysisWindow(context) {
+        const started = Date.parse(context.window_started_at ?? "");
+        const ended = Date.parse(context.window_ended_at ?? "");
+        if (!Number.isFinite(started) || !Number.isFinite(ended) || ended <= started) {
+            return "période analysée";
+        }
+        const hours = Math.round((ended - started) / 3_600_000);
+        return `${hours} h`;
+    }
+
+    jobStatusLabel(status) {
+        const labels = {
+            CREATED: "créé",
+            QUEUED: "en attente",
+            WAITING_WORKER: "Katsuyu indisponible",
+            RUNNING: "en cours",
+            SUCCEEDED: "terminé",
+            FAILED: "en échec",
+            CANCELLED: "annulé",
+            TIMEOUT: "délai dépassé",
+        };
+        return labels[status] ?? this.readableIdentifier(status);
+    }
+
+    canRestartDnsmasq(incident) {
+        return [incident.node_id, incident.service_id, incident.capability_id, incident.message]
+            .join(" ")
+            .toLowerCase()
+            .includes("dns");
+    }
+
+    translatedSummary(summary) {
+        const translations = new Map([
+            ["Deterministic evidence is insufficient; Katsuyu AI was requested.", "Les éléments déterministes sont insuffisants ; une analyse Katsuyu AI a été demandée."],
+            ["Optional Katsuyu AI inference failed; no decision was made.", "L’analyse Katsuyu AI facultative a échoué ; aucune décision n’a été prise."],
+            ["Capability returned to healthy state.", "La capacité est revenue à un état sain."],
+        ]);
+        return translations.get(String(summary ?? "")) ?? String(summary ?? "");
     }
 
     async loadDetails(incidentId, button) {
@@ -290,6 +593,13 @@ export class IncidentsController {
         if (this.elements.error) {
             this.elements.error.textContent = message;
             this.elements.error.classList.toggle("hidden", !message);
+        }
+    }
+
+    showCommandStatus(message) {
+        if (this.elements.commandStatus) {
+            this.elements.commandStatus.textContent = message;
+            this.elements.commandStatus.classList.toggle("hidden", !message);
         }
     }
 

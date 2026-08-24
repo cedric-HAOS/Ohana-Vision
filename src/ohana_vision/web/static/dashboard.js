@@ -10,8 +10,8 @@ import {
 
 const VIEW_HEADERS = Object.freeze({
     overview: {
-        kicker: "Supervision",
-        title: "Ohana-House",
+        kicker: "Shikamaru · Supervision",
+        title: "Konoha",
     },
     infrastructure: {
         kicker: "Infrastructure",
@@ -22,15 +22,15 @@ const VIEW_HEADERS = Object.freeze({
         title: "Carte des services",
     },
     host: {
-        kicker: "Supervision système",
+        kicker: "Shikamaru · Supervision système",
         title: "Santé de l’hôte Agent",
     },
     timeline: {
-        kicker: "Historique",
+        kicker: "Shikamaru · Historique",
         title: "Timeline de l’infrastructure",
     },
     observations: {
-        kicker: "Activité",
+        kicker: "Shikamaru · Activité",
         title: "Observations",
     },
     "configuration-workers": {

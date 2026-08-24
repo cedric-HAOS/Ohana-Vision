@@ -11,6 +11,15 @@ export const API = Object.freeze({
         `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}`,
     tsunadeDiagnose: (incidentId) =>
         `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/diagnose`,
+    tsunadeLogCheck: "/api/administration/tsunade/incidents/logs/check",
+    tsunadeLogInvestigate: (incidentId) =>
+        `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/logs/investigate`,
+    tsunadeRepair: (incidentId) =>
+        `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/repairs`,
+    tsunadeRepairAuthorize: (incidentId) =>
+        `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/repairs/authorize`,
+    tsunadeExperience: (incidentId) =>
+        `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/experience`,
     incidentAcknowledge(incidentId) {
         return `${this.incidents}/${encodeURIComponent(incidentId)}/acknowledge`;
     },

@@ -198,6 +198,49 @@ def diagnose_tsunade_incident(incident_id: str, request: Request) -> dict[str, A
     return _call(lambda: client.diagnose_tsunade_incident(incident_id))
 
 
+@router.post("/tsunade/incidents/logs/check")
+def request_tsunade_log_check(request: Request) -> dict[str, Any]:
+    """Request the deterministic log control owned by Agent/Tsunade."""
+    client = _client(request)
+    return _call(client.request_tsunade_log_check)
+
+
+@router.post("/tsunade/incidents/{incident_id}/logs/investigate")
+def request_tsunade_log_investigation(
+    incident_id: str, payload: dict[str, Any], request: Request
+) -> dict[str, Any]:
+    """Forward an explicit bounded authorization; Vision executes nothing."""
+    client = _client(request)
+    return _call(lambda: client.request_tsunade_log_investigation(incident_id, payload))
+
+
+@router.post("/tsunade/incidents/{incident_id}/repairs")
+def propose_tsunade_repair(
+    incident_id: str, payload: dict[str, Any], request: Request
+) -> dict[str, Any]:
+    """Forward a proposal only; Vision cannot execute it."""
+    client = _client(request)
+    return _call(lambda: client.propose_tsunade_repair(incident_id, payload))
+
+
+@router.post("/tsunade/incidents/{incident_id}/repairs/authorize")
+def authorize_tsunade_repair(
+    incident_id: str, payload: dict[str, Any], request: Request
+) -> dict[str, Any]:
+    """Record Vision as the explicit authorization source through Agent."""
+    client = _client(request)
+    return _call(lambda: client.authorize_tsunade_repair(incident_id, payload))
+
+
+@router.post("/tsunade/incidents/{incident_id}/experience")
+def confirm_tsunade_experience(
+    incident_id: str, payload: dict[str, Any], request: Request
+) -> dict[str, Any]:
+    """Confirm a known repair without storing Tsunade state in Vision."""
+    client = _client(request)
+    return _call(lambda: client.confirm_tsunade_experience(incident_id, payload))
+
+
 @router.post("/workers/pairings/{pairing_id}/approve")
 def approve_worker_pairing(pairing_id: str, request: Request) -> dict[str, Any]:
     """Approve a Katsuyu installer after comparing its verification code."""

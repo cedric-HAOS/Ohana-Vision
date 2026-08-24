@@ -10,8 +10,7 @@ def test_absent_backup_pre_action_stays_empty_in_editor() -> None:
     )
 
     empty_fallback = (
-        "target.pre_backup_action.domain}."
-        '${target.pre_backup_action.service}` : ""'
+        'target.pre_backup_action.domain}.${target.pre_backup_action.service}` : ""'
     )
     optional_placeholder = (
         'placeholder="Laisser vide avec la planification NVM de Z-Wave JS UI"'

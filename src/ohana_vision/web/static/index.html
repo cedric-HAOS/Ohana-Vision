@@ -27,13 +27,13 @@
        Ohana-Vision
       </strong>
       <span>
-       Ohana-House
+       Konoha
       </span>
      </div>
     </header>
     <nav aria-label="Navigation principale" class="sidebar-navigation">
      <p class="sidebar-navigation__title">
-      Supervision
+      Shikamaru
      </p>
      <button class="sidebar-navigation__item" data-navigation-target="overview" type="button">
       <span
@@ -167,10 +167,10 @@
     <header class="dashboard-header" id="overview">
      <div>
       <p class="dashboard-header__kicker">
-       Supervision
+       Shikamaru · Supervision
       </p>
       <h1>
-       Ohana-House
+       Konoha
       </h1>
      </div>
      <div class="dashboard-header__actions">
@@ -247,7 +247,7 @@
           Infrastructure temps réel
          </p>
          <h2 id="topology-heading">
-          Topologie Ohana-House
+          Topologie de Konoha
          </h2>
          <p class="panel-heading__description">
           Vue physique des équipements, de leurs connexions
@@ -809,15 +809,43 @@
           <strong id="incidents-resolved-count">0</strong>
           <small>dans l’historique chargé</small>
          </article>
+         <article class="incidents-summary-card">
+          <span>Contrôles des journaux</span>
+          <strong id="incidents-log-control-count">0</strong>
+          <small>exécutions historisées par Agent</small>
+         </article>
+         <article class="incidents-summary-card">
+          <span>Réparations apprises</span>
+          <strong id="incidents-learned-repair-count">0</strong>
+          <small>validées par un utilisateur</small>
+         </article>
+         <article class="incidents-summary-card">
+          <span>Taux de réussite</span>
+          <strong id="incidents-repair-success-rate">—</strong>
+          <small>réparations vérifiées</small>
+         </article>
         </div>
-        <div class="incidents-toolbar" aria-label="Filtrer les incidents">
-         <button aria-pressed="true" class="incidents-filter is-active" data-incidents-filter="active" type="button">Actifs</button>
-         <button aria-pressed="false" class="incidents-filter" data-incidents-filter="new" type="button">Nouveaux</button>
-         <button aria-pressed="false" class="incidents-filter" data-incidents-filter="in_progress" type="button">En cours</button>
-         <button aria-pressed="false" class="incidents-filter" data-incidents-filter="treated" type="button">Traités</button>
-         <button aria-pressed="false" class="incidents-filter" data-incidents-filter="resolved" type="button">Résolus</button>
-         <button aria-pressed="false" class="incidents-filter" data-incidents-filter="all" type="button">Tous</button>
+        <section aria-labelledby="tsunade-log-health-heading" class="incidents-log-health">
+         <div>
+          <p class="panel-heading__kicker">Contrôle quotidien</p>
+          <h3 id="tsunade-log-health-heading">Santé des journaux</h3>
+         </div>
+         <div aria-live="polite" class="incidents-log-health__content" id="tsunade-log-health">
+          <p>Aucune analyse disponible.</p>
+         </div>
+        </section>
+        <div class="incidents-toolbar">
+         <div aria-label="Filtrer les incidents" class="incidents-toolbar__filters">
+          <button aria-pressed="true" class="incidents-filter is-active" data-incidents-filter="active" type="button">Actifs</button>
+          <button aria-pressed="false" class="incidents-filter" data-incidents-filter="new" type="button">Nouveaux</button>
+          <button aria-pressed="false" class="incidents-filter" data-incidents-filter="in_progress" type="button">En cours</button>
+          <button aria-pressed="false" class="incidents-filter" data-incidents-filter="treated" type="button">Traités</button>
+          <button aria-pressed="false" class="incidents-filter" data-incidents-filter="resolved" type="button">Résolus</button>
+          <button aria-pressed="false" class="incidents-filter" data-incidents-filter="all" type="button">Tous</button>
+         </div>
+         <button class="configuration-primary-button" id="tsunade-log-check" type="button">Contrôler les journaux</button>
         </div>
+        <p aria-live="polite" class="incidents-command-status hidden" id="incidents-command-status"></p>
         <div class="alert alert--error hidden" id="incidents-error" role="alert"></div>
         <div aria-live="polite" class="incidents-list" id="incidents-list">
          <div class="incidents-empty-state">

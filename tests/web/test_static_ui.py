@@ -205,7 +205,9 @@ def test_static_ui_marks_topology_as_primary_content() -> None:
     assert "dashboard-primary--topology" in response.text
     assert 'id="topology-health-indicator"' in response.text
     assert 'id="topology-health-label"' in response.text
-    assert "Topologie Ohana-House" in response.text
+    assert "Topologie de Konoha" in response.text
+    assert ">\n       Konoha\n      </span>" in response.text
+    assert "Shikamaru · Supervision" in response.text
 
 
 def test_static_ui_contains_capability_distribution() -> None:
@@ -293,6 +295,10 @@ def test_static_ui_declares_all_navigation_views() -> None:
     assert 'data-view="incidents"' in content
     assert 'id="incidents-list"' in content
     assert 'id="incidents-active-count"' in content
+    assert 'id="tsunade-log-check"' in content
+    assert 'id="tsunade-log-health"' in content
+    assert 'id="incidents-learned-repair-count"' in content
+    assert 'id="incidents-repair-success-rate"' in content
 
 
 def test_static_ui_exposes_incident_center() -> None:
@@ -307,8 +313,22 @@ def test_static_ui_exposes_incident_center() -> None:
     assert "API.tsunadeIncidents" in script.text
     assert "API.tsunadeIncident" in script.text
     assert "API.tsunadeDiagnose" in script.text
+    assert "API.tsunadeLogCheck" in script.text
+    assert "API.tsunadeLogInvestigate" in script.text
+    assert "API.tsunadeRepair" in script.text
+    assert "API.tsunadeRepairAuthorize" in script.text
+    assert "API.tsunadeExperience" in script.text
     assert 'data-tsunade-details="' in script.text
     assert 'data-tsunade-diagnose="' in script.text
+    assert 'data-tsunade-log-investigation="' in script.text
+    assert 'data-tsunade-repair-propose="' in script.text
+    assert 'data-tsunade-repair-authorize="' in script.text
+    assert 'data-tsunade-experience="' in script.text
+    assert "Référence :" in script.text
+    assert "Évolution :" in script.text
+    assert "Causes possibles" in script.text
+    assert "Conséquences" in script.text
+    assert "Réparation réussie" in script.text
     assert "Hypothèses — décision Tsunade en attente" in script.text
     assert "in_progress" in script.text
     assert "resolved" in script.text
