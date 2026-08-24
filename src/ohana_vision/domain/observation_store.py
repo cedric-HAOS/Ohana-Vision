@@ -23,6 +23,8 @@ class DuplicateObservationError(ValueError):
 class ObservationStore:
     """Store immutable observations without materialising durable history."""
 
+    _PURGE_BATCH_SIZE = 1_000
+    _WAL_SIZE_LIMIT_BYTES = 16 * 1024 * 1024
     _SCHEMA_VERSION = 2
 
     def __init__(
@@ -300,11 +302,26 @@ class ObservationStore:
                     item.observation_id for item in self._observations
                 }
                 return removed
-            cursor = self._connection.execute(
-                "DELETE FROM observations WHERE observed_at < ?",
-                (cutoff,),
-            )
-            removed = max(cursor.rowcount, 0)
+            removed = 0
+            while True:
+                cursor = self._connection.execute(
+                    """
+                    DELETE FROM observations
+                    WHERE sequence IN (
+                        SELECT sequence FROM observations
+                        WHERE observed_at < ?
+                        ORDER BY observed_at, sequence
+                        LIMIT ?
+                    )
+                    """,
+                    (cutoff, self._PURGE_BATCH_SIZE),
+                )
+                batch_removed = max(cursor.rowcount, 0)
+                removed += batch_removed
+                self._connection.commit()
+                self._checkpoint_wal()
+                if batch_removed < self._PURGE_BATCH_SIZE:
+                    break
             if self._table_exists("incident_observations"):
                 self._connection.execute(
                     """
@@ -317,6 +334,7 @@ class ObservationStore:
                     """
                 )
             self._connection.commit()
+            self._checkpoint_wal()
             self._next_purge_at = monotonic() + self._purge_interval_seconds
             return removed
 
@@ -350,6 +368,7 @@ class ObservationStore:
         connection = sqlite3.connect(self._database_path, check_same_thread=False)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA journal_mode=WAL")
+        connection.execute(f"PRAGMA journal_size_limit={self._WAL_SIZE_LIMIT_BYTES}")
         connection.execute("PRAGMA synchronous=NORMAL")
         connection.execute("PRAGMA busy_timeout=5000")
         connection.execute("PRAGMA cache_size=-2048")
@@ -405,6 +424,13 @@ class ObservationStore:
         connection.execute(f"PRAGMA user_version={self._SCHEMA_VERSION}")
         connection.commit()
         self._connection = connection
+        self._checkpoint_wal()
+
+    def _checkpoint_wal(self) -> None:
+        """Checkpoint without waiting for readers or blocking observation writes."""
+        if self._connection is None:
+            return
+        self._connection.execute("PRAGMA wal_checkpoint(PASSIVE)").fetchone()
 
     def _persist(self, observation: Observation) -> None:
         if self._connection is None:

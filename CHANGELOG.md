@@ -6,6 +6,22 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.21.0] — Administration Shizune et maîtrise du WAL — 2026-08-24
+
+## Ajouté
+
+- La configuration expose les demandes d’association Shizune et permet leur
+  validation ou leur refus après comparaison du code et de l’empreinte TLS.
+- Les compagnons associés peuvent être révoqués depuis Vision sans fournir à
+  l’interface de voie d’exécution contournant Agent ou Tsunade.
+
+## Corrigé
+
+- La purge de rétention SQLite est découpée en lots et effectue des checkpoints
+  WAL passifs, afin d’éviter un journal volumineux et une longue contention au
+  moment où Agent prépare une sauvegarde distribuée.
+- La taille cible du WAL est bornée sans charger l’historique complet en mémoire.
+
 # [1.20.0] — Cockpit Tsunade complet — 2026-08-24
 
 ## Ajouté

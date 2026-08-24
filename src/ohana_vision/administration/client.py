@@ -142,6 +142,14 @@ class AgentAdministrationClient:
         """Read Katsuyu availability and Wake-on-LAN provenance."""
         return self._request("GET", "/v1/jobs/workers")
 
+    def read_companion_pairings(self) -> dict[str, Any]:
+        """Read pending Shizune pairings from Agent's existing control plane."""
+        return self._request("GET", "/v1/pairings/companions")
+
+    def read_companions(self) -> dict[str, Any]:
+        """Read revocable companion sessions without exposing their tokens."""
+        return self._request("GET", "/v1/companions")
+
     def read_tsunade_incidents(self, state: str = "all") -> dict[str, Any]:
         """Read the Agent-owned Tsunade incident lifecycle."""
         paths = {
@@ -222,6 +230,24 @@ class AgentAdministrationClient:
         return self._request(
             "POST",
             f"/v1/jobs/workers/pairings/{quote(pairing_id, safe='')}/reject",
+        )
+
+    def approve_companion_pairing(self, pairing_id: str) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            f"/v1/pairings/companions/{quote(pairing_id, safe='')}/approve",
+        )
+
+    def reject_companion_pairing(self, pairing_id: str) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            f"/v1/pairings/companions/{quote(pairing_id, safe='')}/reject",
+        )
+
+    def revoke_companion(self, device_id: str) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            f"/v1/companions/{quote(device_id, safe='')}/revoke",
         )
 
     def read_infrastructure(self) -> dict[str, Any]:

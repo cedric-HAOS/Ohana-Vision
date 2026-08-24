@@ -144,6 +144,31 @@ class FakeAdministrationClient:
             ],
         }
 
+    def read_companion_pairings(self) -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "pairings": [
+                {
+                    "pairing_id": "33333333-3333-4333-8333-333333333333",
+                    "device_name": "iPhone de Cédric",
+                    "verification_code": "OHANA-24",
+                    "status": "PENDING",
+                }
+            ],
+        }
+
+    def read_companions(self) -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "devices": [
+                {
+                    "device_id": "44444444-4444-4444-8444-444444444444",
+                    "device_name": "iPhone de Cédric",
+                    "status": "ACTIVE",
+                }
+            ],
+        }
+
     def read_tsunade_incidents(self, state: str = "all") -> dict[str, Any]:
         return {
             "schema_version": 1,
@@ -196,6 +221,15 @@ class FakeAdministrationClient:
     def reject_worker_pairing(self, pairing_id: str) -> dict[str, Any]:
         return {"pairing_id": pairing_id, "status": "REJECTED"}
 
+    def approve_companion_pairing(self, pairing_id: str) -> dict[str, Any]:
+        return {"pairing_id": pairing_id, "status": "APPROVED"}
+
+    def reject_companion_pairing(self, pairing_id: str) -> dict[str, Any]:
+        return {"pairing_id": pairing_id, "status": "REJECTED"}
+
+    def revoke_companion(self, device_id: str) -> dict[str, Any]:
+        return {"device_id": device_id, "status": "REVOKED"}
+
     def read_infrastructure(self) -> dict[str, Any]:
         return {
             "infrastructure": {
@@ -237,6 +271,8 @@ def test_administration_routes_proxy_agent_documents() -> None:
     plugin = client.get("/api/administration/plugins/dns")
     pairings = client.get("/api/administration/workers/pairings")
     workers = client.get("/api/administration/workers")
+    companion_pairings = client.get("/api/administration/companions/pairings")
+    companions = client.get("/api/administration/companions")
     incidents = client.get("/api/administration/tsunade/incidents?state=all")
     incident = client.get(
         "/api/administration/tsunade/incidents/11111111-1111-4111-8111-111111111111"
@@ -277,6 +313,8 @@ def test_administration_routes_proxy_agent_documents() -> None:
     assert plugin.json()["id"] == "dns"
     assert pairings.json()["pairings"][0]["worker_id"] == "katsuyu-bubule"
     assert workers.json()["workers"][0]["availability"] == "WAKING"
+    assert companion_pairings.json()["pairings"][0]["verification_code"] == ("OHANA-24")
+    assert companions.json()["devices"][0]["status"] == "ACTIVE"
     assert incidents.json()["incidents"][0]["workflow_state"] == "in_progress"
     assert incident.json()["events"] == []
     assert diagnosis.json()["status"] == "AI_QUEUED"
@@ -342,6 +380,16 @@ def test_administration_routes_proxy_writes() -> None:
     pairing_rejected = client.post(
         f"/api/administration/workers/pairings/{pairing_id}/reject"
     )
+    companion_pairing_id = "33333333-3333-4333-8333-333333333333"
+    companion_pairing_approved = client.post(
+        f"/api/administration/companions/pairings/{companion_pairing_id}/approve"
+    )
+    companion_pairing_rejected = client.post(
+        f"/api/administration/companions/pairings/{companion_pairing_id}/reject"
+    )
+    companion_revoked = client.post(
+        "/api/administration/companions/44444444-4444-4444-8444-444444444444/revoke"
+    )
 
     assert dhcp_response.json() == {"schema_version": 1}
     assert network_response.json()["transaction_id"] == "network-transaction"
@@ -371,6 +419,9 @@ def test_administration_routes_proxy_writes() -> None:
     }
     assert pairing_approved.json()["status"] == "APPROVED"
     assert pairing_rejected.json()["status"] == "REJECTED"
+    assert companion_pairing_approved.json()["status"] == "APPROVED"
+    assert companion_pairing_rejected.json()["status"] == "REJECTED"
+    assert companion_revoked.json()["status"] == "REVOKED"
 
 
 def test_administration_routes_translate_agent_errors() -> None:

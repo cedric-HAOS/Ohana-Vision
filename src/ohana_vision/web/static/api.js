@@ -62,6 +62,16 @@ export const API = Object.freeze({
     administrationWorkerPairingAction(pairingId, action) {
         return `${this.administrationWorkerPairings}/${encodeURIComponent(pairingId)}/${action}`;
     },
+    administrationCompanionPairings:
+        "/api/administration/companions/pairings",
+    administrationCompanions:
+        "/api/administration/companions",
+    administrationCompanionPairingAction(pairingId, action) {
+        return `${this.administrationCompanionPairings}/${encodeURIComponent(pairingId)}/${action}`;
+    },
+    administrationCompanionRevoke(deviceId) {
+        return `${this.administrationCompanions}/${encodeURIComponent(deviceId)}/revoke`;
+    },
 });
 
 /**

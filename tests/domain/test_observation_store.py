@@ -292,6 +292,38 @@ def test_sqlite_retention_purges_observations_and_reuses_database_pages(
     store.close()
 
 
+def test_sqlite_retention_purges_in_checkpointed_batches(
+    tmp_path: Path, monkeypatch
+) -> None:
+    now = datetime(2026, 8, 10, 12, 0, tzinfo=UTC)
+    monkeypatch.setattr(ObservationStore, "_PURGE_BATCH_SIZE", 2)
+    store = ObservationStore(tmp_path / "vision.db", retention_days=7)
+    store.add_many(
+        make_observation(
+            observed_at=now - timedelta(days=8, minutes=index),
+            capability_id=f"dns.expired.{index}",
+        )
+        for index in range(5)
+    )
+    assert store._connection is not None
+    statements: list[str] = []
+    store._connection.set_trace_callback(statements.append)
+
+    removed = store.purge_expired(now=now)
+
+    assert removed == 5
+    assert sum(statement == "COMMIT" for statement in statements) >= 3
+    assert (
+        sum(statement == "PRAGMA wal_checkpoint(PASSIVE)" for statement in statements)
+        >= 3
+    )
+    assert (
+        store._connection.execute("PRAGMA journal_size_limit").fetchone()[0]
+        == 16 * 1024 * 1024
+    )
+    store.close()
+
+
 def test_sqlite_capability_history_uses_a_dedicated_ordered_index(
     tmp_path: Path,
 ) -> None:

@@ -884,6 +884,11 @@
           <strong id="worker-availability-summary">—</strong>
           <small id="worker-wake-summary">état fourni par Tsunade</small>
          </article>
+         <article class="configuration-summary-card">
+          <span>Demandes Shizune</span>
+          <strong id="companion-pairings-pending-count">—</strong>
+          <small>association explicite requise</small>
+         </article>
         </div>
         <section class="configuration-card">
          <div class="configuration-card__heading">
@@ -917,6 +922,37 @@
            <tbody id="worker-pairings-table">
             <tr><td colspan="6">Chargement des demandes…</td></tr>
            </tbody>
+          </table>
+         </div>
+        </section>
+        <section class="configuration-card">
+         <div class="configuration-card__heading">
+          <div>
+           <p class="panel-heading__kicker">Tsunade</p>
+           <h2>Appairage Shizune</h2>
+           <p>Autorisez uniquement l’iPhone dont le code et l’empreinte courte correspondent exactement à ceux affichés dans Shizune.</p>
+          </div>
+          <button class="configuration-secondary-button" id="companion-pairings-refresh" type="button">Actualiser</button>
+         </div>
+         <div class="configuration-table-wrapper">
+          <table class="configuration-table">
+           <thead><tr><th>iPhone</th><th>Code</th><th>Empreinte TLS</th><th>Application</th><th>Expiration</th><th>Action</th></tr></thead>
+           <tbody id="companion-pairings-table"><tr><td colspan="6">Chargement des demandes…</td></tr></tbody>
+          </table>
+         </div>
+        </section>
+        <section class="configuration-card">
+         <div class="configuration-card__heading">
+          <div>
+           <p class="panel-heading__kicker">Sécurité</p>
+           <h2>iPhone associés</h2>
+           <p>Chaque session est limitée, expire automatiquement et peut être révoquée avec son jeton APNs.</p>
+          </div>
+         </div>
+         <div class="configuration-table-wrapper">
+          <table class="configuration-table">
+           <thead><tr><th>iPhone</th><th>Session</th><th>Dernière connexion</th><th>Expiration</th><th>Action</th></tr></thead>
+           <tbody id="companions-table"><tr><td colspan="5">Chargement des appareils…</td></tr></tbody>
           </table>
          </div>
         </section>

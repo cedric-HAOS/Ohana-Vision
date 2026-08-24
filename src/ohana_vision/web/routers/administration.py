@@ -174,6 +174,20 @@ def read_workers(request: Request) -> dict[str, Any]:
     return _call(client.read_workers)
 
 
+@router.get("/companions/pairings")
+def read_companion_pairings(request: Request) -> dict[str, Any]:
+    """List Shizune pairing requests through Agent's control contract."""
+    client = _client(request)
+    return _call(client.read_companion_pairings)
+
+
+@router.get("/companions")
+def read_companions(request: Request) -> dict[str, Any]:
+    """List companion sessions without duplicating credentials in Vision."""
+    client = _client(request)
+    return _call(client.read_companions)
+
+
 @router.get("/tsunade/incidents")
 def read_tsunade_incidents(
     request: Request,
@@ -253,6 +267,24 @@ def reject_worker_pairing(pairing_id: str, request: Request) -> dict[str, Any]:
     """Reject an unrecognized Katsuyu installer request."""
     client = _client(request)
     return _call(lambda: client.reject_worker_pairing(pairing_id))
+
+
+@router.post("/companions/pairings/{pairing_id}/approve")
+def approve_companion_pairing(pairing_id: str, request: Request) -> dict[str, Any]:
+    client = _client(request)
+    return _call(lambda: client.approve_companion_pairing(pairing_id))
+
+
+@router.post("/companions/pairings/{pairing_id}/reject")
+def reject_companion_pairing(pairing_id: str, request: Request) -> dict[str, Any]:
+    client = _client(request)
+    return _call(lambda: client.reject_companion_pairing(pairing_id))
+
+
+@router.post("/companions/{device_id}/revoke")
+def revoke_companion(device_id: str, request: Request) -> dict[str, Any]:
+    client = _client(request)
+    return _call(lambda: client.revoke_companion(device_id))
 
 
 @router.get("/infrastructure")
