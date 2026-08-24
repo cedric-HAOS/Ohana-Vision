@@ -1,46 +1,32 @@
 "use strict";
 
-import {
-    API,
-    fetchJson,
-    requestJson,
-} from "./api.js";
+import {API, fetchJson, requestJson} from "./api.js";
+import {escapeHtml, formatDate} from "./utils.js";
 
-import {
-    escapeHtml,
-    formatDate,
-} from "./utils.js";
-
-const STATUS_LABELS = Object.freeze({
-    degraded: "Dégradé",
-    stale: "Données obsolètes",
-    unavailable: "Indisponible",
+const SEVERITY_LABELS = Object.freeze({degraded: "Dégradé", critical: "Critique"});
+const WORKFLOW_LABELS = Object.freeze({
+    new: "Nouveau",
+    in_progress: "En cours",
+    treated: "Traité",
+    resolved: "Résolu",
 });
 
-/** Operate and render the persistent incident history. */
+/** Render Agent-owned Tsunade incidents without duplicating their lifecycle. */
 export class IncidentsController {
     constructor({state}) {
         this.state = state;
         this.incidents = [];
+        this.details = new Map();
         this.filter = "active";
         this.loaded = false;
-
         this.elements = {
             error: document.querySelector("#incidents-error"),
             list: document.querySelector("#incidents-list"),
             activeCount: document.querySelector("#incidents-active-count"),
-            unacknowledgedCount: document.querySelector(
-                "#incidents-unacknowledged-count",
-            ),
-            silencedCount: document.querySelector(
-                "#incidents-silenced-count",
-            ),
-            resolvedCount: document.querySelector(
-                "#incidents-resolved-count",
-            ),
-            filters: Array.from(
-                document.querySelectorAll("[data-incidents-filter]"),
-            ),
+            newCount: document.querySelector("#incidents-unacknowledged-count"),
+            treatedCount: document.querySelector("#incidents-silenced-count"),
+            resolvedCount: document.querySelector("#incidents-resolved-count"),
+            filters: Array.from(document.querySelectorAll("[data-incidents-filter]")),
         };
     }
 
@@ -51,36 +37,37 @@ export class IncidentsController {
                 this.render();
             });
         });
-
         this.elements.list?.addEventListener("click", (event) => {
-            const button = event.target.closest("[data-incident-action]");
-
-            if (!button) {
+            const diagnoseButton = event.target.closest("[data-tsunade-diagnose]");
+            if (diagnoseButton) {
+                void this.diagnose(
+                    diagnoseButton.dataset.tsunadeDiagnose,
+                    diagnoseButton,
+                );
                 return;
             }
-
-            void this.performAction(
-                button.dataset.incidentAction,
-                button.dataset.incidentId,
-                button,
-            );
+            const button = event.target.closest("[data-tsunade-details]");
+            if (button) {
+                void this.loadDetails(button.dataset.tsunadeDetails, button);
+            }
         });
     }
 
     async load() {
         this.showError("");
-
         try {
-            const payload = await fetchJson(
-                `${API.incidents}?state=all&limit=200`,
-            );
-            this.incidents = Array.isArray(payload) ? payload : [];
+            const payload = await fetchJson(`${API.tsunadeIncidents}?state=all`);
+            this.incidents = Array.isArray(payload?.incidents) ? payload.incidents : [];
             this.loaded = true;
             this.render();
         } catch (error) {
-            this.showError(
-                `Incidents indisponibles : ${this.errorMessage(error)}`,
-            );
+            this.showError(`Tsunade est indisponible : ${this.errorMessage(error)}`);
+            if (this.elements.list) {
+                this.elements.list.innerHTML = this.emptyState(
+                    "Incidents indisponibles",
+                    "La liste sera rechargée dès qu’Ohana-Agent répondra.",
+                );
+            }
         }
     }
 
@@ -91,184 +78,189 @@ export class IncidentsController {
             button.classList.toggle("is-active", active);
             button.setAttribute("aria-pressed", String(active));
         });
-
         if (!this.elements.list) {
             return;
         }
-
-        const visible = this.incidents.filter((incident) => {
-            return this.filter === "all" || incident.state === this.filter;
-        });
-
         if (!this.loaded) {
-            this.elements.list.innerHTML = `
-                <div class="incidents-empty-state">
-                    <span class="incidents-loading-indicator" aria-hidden="true"></span>
-                    <h3>Chargement des incidents…</h3>
-                </div>
-            `;
+            this.elements.list.innerHTML = this.emptyState(
+                "Chargement des incidents Tsunade…",
+            );
             return;
         }
-
+        const visible = this.incidents.filter((incident) => {
+            if (this.filter === "all") {
+                return true;
+            }
+            if (this.filter === "active") {
+                return incident.state === "active";
+            }
+            return incident.workflow_state === this.filter;
+        });
         if (visible.length === 0) {
-            this.elements.list.innerHTML = `
-                <div class="incidents-empty-state">
-                    <h3>Aucun incident ${this.filter === "active" ? "actif" : "résolu"}</h3>
-                    <p>Les dégradations détectées apparaîtront ici avec leur contexte.</p>
-                </div>
-            `;
+            this.elements.list.innerHTML = this.emptyState(
+                "Aucun incident dans cet état",
+                "Les décisions et investigations de Tsunade apparaîtront ici.",
+            );
             return;
         }
-
         this.elements.list.innerHTML = visible
             .map((incident) => this.incidentCard(incident))
             .join("");
     }
 
     renderSummary() {
-        const now = Date.now();
-        const active = this.incidents.filter(
-            (incident) => incident.state === "active",
-        );
-        const unacknowledged = active.filter(
-            (incident) => !incident.acknowledged_at,
-        );
-        const silenced = active.filter((incident) => {
-            return this.isSilenced(incident, now);
-        });
-        const resolved = this.incidents.filter(
-            (incident) => incident.state === "resolved",
-        );
-
+        const active = this.incidents.filter((incident) => incident.state === "active");
         this.setCount(this.elements.activeCount, active.length);
         this.setCount(
-            this.elements.unacknowledgedCount,
-            unacknowledged.length,
+            this.elements.newCount,
+            active.filter((incident) => incident.workflow_state === "new").length,
         );
-        this.setCount(this.elements.silencedCount, silenced.length);
-        this.setCount(this.elements.resolvedCount, resolved.length);
+        this.setCount(
+            this.elements.treatedCount,
+            this.incidents.filter((incident) => incident.workflow_state === "treated").length,
+        );
+        this.setCount(
+            this.elements.resolvedCount,
+            this.incidents.filter((incident) => incident.state === "resolved").length,
+        );
     }
 
     incidentCard(incident) {
-        const active = incident.state === "active";
-        const silenced = active && this.isSilenced(incident);
-        const equipment = this.equipmentLabel(incident.node_id);
-        const service = this.serviceLabel(
-            incident.node_id,
-            incident.service_id,
-        );
-        const status = String(incident.status ?? "unavailable").toLowerCase();
-        const occurrences = Number(incident.occurrence_count ?? 1);
-
+        const severity = String(incident.severity ?? "degraded").toLowerCase();
+        const workflow = String(incident.workflow_state ?? "new").toLowerCase();
+        const expertiseState = String(incident.expertise_state ?? "idle").toLowerCase();
+        const details = this.details.get(incident.incident_id);
+        const findings = Array.isArray(incident.context?.findings)
+            ? incident.context.findings.slice(0, 5)
+            : [];
         return `
-            <article class="incident-card incident-card--${escapeHtml(status)} ${active ? "is-active" : "is-resolved"}">
+            <article class="incident-card incident-card--${escapeHtml(severity)} ${incident.state === "resolved" ? "is-resolved" : "is-active"}">
                 <div class="incident-card__accent" aria-hidden="true"></div>
                 <div class="incident-card__body">
                     <header class="incident-card__header">
                         <div>
                             <div class="incident-card__badges">
-                                <span class="incident-status incident-status--${escapeHtml(status)}">${escapeHtml(STATUS_LABELS[status] ?? status)}</span>
-                                ${incident.acknowledged_at ? '<span class="incident-badge">Acquitté</span>' : ""}
-                                ${silenced ? '<span class="incident-badge incident-badge--silenced">Silencieux</span>' : ""}
-                                ${!active ? '<span class="incident-badge incident-badge--resolved">Résolu</span>' : ""}
+                                <span class="incident-status">${escapeHtml(SEVERITY_LABELS[severity] ?? severity)}</span>
+                                <span class="incident-badge incident-badge--${escapeHtml(workflow)}">${escapeHtml(WORKFLOW_LABELS[workflow] ?? workflow)}</span>
                             </div>
-                            <h3>${escapeHtml(equipment)}</h3>
-                            <p>${escapeHtml(service)} · ${escapeHtml(this.readableIdentifier(incident.capability_id))}</p>
+                            <h3>${escapeHtml(this.equipmentLabel(incident.node_id))}</h3>
+                            <p>${escapeHtml(this.serviceLabel(incident.node_id, incident.service_id))} · ${escapeHtml(this.readableIdentifier(incident.capability_id))}</p>
                         </div>
                         <span class="incident-card__duration">Depuis ${escapeHtml(formatDate(incident.started_at))}</span>
                     </header>
-                    ${incident.message ? `<p class="incident-card__message">${escapeHtml(incident.message)}</p>` : ""}
+                    <p class="incident-card__message">${escapeHtml(incident.message ?? "Incident sans résumé")}</p>
                     <dl class="incident-card__details">
-                        <div><dt>Dernière détection</dt><dd>${escapeHtml(formatDate(incident.last_observed_at))}</dd></div>
-                        <div><dt>Occurrences</dt><dd>${escapeHtml(occurrences)}</dd></div>
+                        <div><dt>Dernière évolution</dt><dd>${escapeHtml(formatDate(incident.last_observed_at))}</dd></div>
+                        <div><dt>Occurrences</dt><dd>${escapeHtml(incident.occurrence_count ?? 1)}</dd></div>
+                        <div><dt>Récurrences</dt><dd>${escapeHtml(incident.recurrence_count ?? 0)}</dd></div>
                         ${incident.ended_at ? `<div><dt>Résolution</dt><dd>${escapeHtml(formatDate(incident.ended_at))}</dd></div>` : ""}
-                        ${silenced ? `<div><dt>Silencieux jusqu’à</dt><dd>${escapeHtml(formatDate(incident.silenced_until))}</dd></div>` : ""}
                     </dl>
-                    ${active ? this.actions(incident, silenced) : ""}
+                    ${findings.length ? `<div class="incident-card__findings"><strong>Anomalies Katsuyu</strong><ul>${findings.map((finding) => `<li>${escapeHtml(finding.summary ?? finding.signature)}</li>`).join("")}</ul></div>` : ""}
+                    ${incident.final_result ? `<p class="incident-card__result"><strong>Résultat :</strong> ${escapeHtml(incident.final_result)}</p>` : ""}
+                    <div class="incident-card__actions">
+                        ${incident.state === "active" ? `<button class="configuration-primary-button" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${expertiseState === "ai_queued" ? "Analyse Katsuyu en attente" : "Lancer le diagnostic"}</button>` : ""}
+                        <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${details ? "Masquer l’évolution" : "Afficher l’évolution"}</button>
+                    </div>
+                    ${details ? this.evolution(details) : ""}
                 </div>
-            </article>
-        `;
+            </article>`;
     }
 
-    actions(incident, silenced) {
-        const id = escapeHtml(incident.incident_id);
-
-        return `
-            <div class="incident-card__actions">
-                ${incident.acknowledged_at ? "" : `<button class="button" data-incident-action="acknowledge" data-incident-id="${id}" type="button">Acquitter</button>`}
-                ${silenced
-                    ? `<button class="configuration-secondary-button" data-incident-action="resume" data-incident-id="${id}" type="button">Réactiver</button>`
-                    : `<button class="configuration-secondary-button" data-incident-action="silence" data-incident-id="${id}" type="button">Silence 1 h</button>`}
-            </div>
-        `;
+    evolution(incident) {
+        const events = Array.isArray(incident.events) ? incident.events : [];
+        if (events.length === 0) {
+            return '<p class="incident-card__evolution">Aucune évolution enregistrée.</p>';
+        }
+        return `<ol class="incident-card__evolution">${events.map((event) => `
+            <li><time>${escapeHtml(formatDate(event.occurred_at))}</time>
+            <strong>${escapeHtml(this.readableIdentifier(event.kind))}</strong>
+            <span>${escapeHtml(event.summary)}</span>
+            ${this.expertiseDetails(event.payload)}</li>`).join("")}</ol>`;
     }
 
-    async performAction(action, incidentId, button) {
-        if (!incidentId || !action) {
+    expertiseDetails(payload) {
+        if (!payload || typeof payload !== "object") {
+            return "";
+        }
+        const hypotheses = Array.isArray(payload.hypotheses)
+            ? payload.hypotheses.slice(0, 8)
+            : [];
+        const proposals = Array.isArray(payload.proposals)
+            ? payload.proposals.slice(0, 16)
+            : [];
+        const status = payload.epistemic_status === "hypothesis"
+            ? '<span class="incident-evidence-status">Hypothèses — décision Tsunade en attente</span>'
+            : payload.epistemic_status === "confirmed_by_probe"
+                ? '<span class="incident-evidence-status is-confirmed">Confirmé par investigation déterministe</span>'
+                : "";
+        const hypothesisList = hypotheses.length
+            ? `<ul class="incident-hypotheses">${hypotheses.map((hypothesis) => `
+                <li><strong>${escapeHtml(Math.round(Number(hypothesis.confidence ?? 0) * 100))} %</strong>
+                ${escapeHtml(hypothesis.statement ?? "Hypothèse sans résumé")}
+                ${this.evidenceList("Concordants", hypothesis.supporting_evidence)}
+                ${this.evidenceList("Contradictoires", hypothesis.contradicting_evidence)}</li>`).join("")}</ul>`
+            : "";
+        const proposalList = proposals.length
+            ? `<div class="incident-proposals"><strong>Propositions non autorisées</strong><ul>${proposals.map((proposal) => `<li>${escapeHtml(proposal)}</li>`).join("")}</ul></div>`
+            : "";
+        return `${status}${hypothesisList}${proposalList}`;
+    }
+
+    evidenceList(label, values) {
+        if (!Array.isArray(values) || values.length === 0) {
+            return "";
+        }
+        return `<small><strong>${escapeHtml(label)} :</strong> ${values.slice(0, 8).map((value) => escapeHtml(value)).join(" · ")}</small>`;
+    }
+
+    async diagnose(incidentId, button) {
+        if (!incidentId) {
             return;
         }
-
         button.disabled = true;
         this.showError("");
-
         try {
-            let updated;
-
-            if (action === "acknowledge") {
-                updated = await requestJson(
-                    API.incidentAcknowledge(incidentId),
-                    {method: "POST", body: JSON.stringify({note: null})},
-                );
-            } else if (action === "silence") {
-                const until = new Date(Date.now() + 60 * 60 * 1000);
-                updated = await requestJson(
-                    API.incidentSilence(incidentId),
-                    {
-                        method: "POST",
-                        body: JSON.stringify({until: until.toISOString()}),
-                    },
-                );
-            } else if (action === "resume") {
-                updated = await requestJson(
-                    API.incidentSilence(incidentId),
-                    {method: "DELETE"},
-                );
-            }
-
-            if (updated) {
-                this.replaceIncident(updated);
-                this.render();
-            }
+            await requestJson(API.tsunadeDiagnose(incidentId), {
+                method: "POST",
+            });
+            this.details.delete(incidentId);
+            await this.load();
         } catch (error) {
-            this.showError(
-                `Action impossible : ${this.errorMessage(error)}`,
-            );
+            this.showError(`Diagnostic indisponible : ${this.errorMessage(error)}`);
         } finally {
             button.disabled = false;
         }
     }
 
-    replaceIncident(updated) {
-        const index = this.incidents.findIndex((incident) => {
-            return incident.incident_id === updated.incident_id;
-        });
-
-        if (index >= 0) {
-            this.incidents.splice(index, 1, updated);
-        } else {
-            this.incidents.unshift(updated);
+    async loadDetails(incidentId, button) {
+        if (!incidentId) {
+            return;
+        }
+        if (this.details.has(incidentId)) {
+            this.details.delete(incidentId);
+            this.render();
+            return;
+        }
+        button.disabled = true;
+        try {
+            this.details.set(
+                incidentId,
+                await fetchJson(API.tsunadeIncident(incidentId)),
+            );
+            this.render();
+        } catch (error) {
+            this.showError(`Évolution indisponible : ${this.errorMessage(error)}`);
+        } finally {
+            button.disabled = false;
         }
     }
 
     equipmentLabel(nodeId) {
         const topology = this.state.topology?.topology ?? this.state.topology;
-        const devices = Array.isArray(topology?.devices)
-            ? topology.devices
-            : [];
-        const device = devices.find((candidate) => {
-            return String(candidate.node ?? candidate.node_id ?? "") === nodeId;
-        });
-
+        const devices = Array.isArray(topology?.devices) ? topology.devices : [];
+        const device = devices.find(
+            (candidate) => String(candidate.node ?? candidate.node_id ?? "") === nodeId,
+        );
         return String(device?.label ?? nodeId ?? "Équipement inconnu");
     }
 
@@ -276,42 +268,29 @@ export class IncidentsController {
         const nodes = Array.isArray(this.state.topology?.nodes)
             ? this.state.topology.nodes
             : [];
-        const node = nodes.find((candidate) => {
-            return String(candidate.id ?? candidate.node_id ?? "") === nodeId;
-        });
-        const services = Array.isArray(node?.services) ? node.services : [];
-        const service = services.find((candidate) => {
-            return String(candidate.id ?? candidate.service_id ?? "") === serviceId;
-        });
-
-        return String(
-            service?.name
-            ?? service?.label
-            ?? this.readableIdentifier(serviceId),
+        const node = nodes.find(
+            (candidate) => String(candidate.id ?? candidate.node_id ?? "") === nodeId,
         );
+        const services = Array.isArray(node?.services) ? node.services : [];
+        const service = services.find(
+            (candidate) => String(candidate.id ?? candidate.service_id ?? "") === serviceId,
+        );
+        return String(service?.name ?? service?.label ?? this.readableIdentifier(serviceId));
     }
 
     readableIdentifier(value) {
-        return String(value ?? "—")
-            .replaceAll("_", " ")
-            .replaceAll("-", " ");
+        return String(value ?? "—").replaceAll("_", " ").replaceAll("-", " ");
     }
 
-    isSilenced(incident, now = Date.now()) {
-        if (!incident.silenced_until) {
-            return false;
-        }
-
-        return new Date(incident.silenced_until).getTime() > now;
+    emptyState(title, message = "") {
+        return `<div class="incidents-empty-state"><h3>${escapeHtml(title)}</h3>${message ? `<p>${escapeHtml(message)}</p>` : ""}</div>`;
     }
 
     showError(message) {
-        if (!this.elements.error) {
-            return;
+        if (this.elements.error) {
+            this.elements.error.textContent = message;
+            this.elements.error.classList.toggle("hidden", !message);
         }
-
-        this.elements.error.textContent = message;
-        this.elements.error.classList.toggle("hidden", !message);
     }
 
     setCount(element, value) {

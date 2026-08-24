@@ -86,7 +86,7 @@
      </button>
      <button class="sidebar-navigation__item" data-navigation-target="incidents" type="button">
       <span aria-hidden="true" class="sidebar-navigation__icon sidebar-navigation__icon--incidents"></span>
-      <span>Incidents</span>
+      <span>Tsunade</span>
      </button>
      <p class="sidebar-navigation__title">
       Configuration
@@ -783,9 +783,9 @@
        <section class="incidents-panel">
         <div class="panel-heading">
          <div>
-          <p class="panel-heading__kicker">Exploitation</p>
-          <h2 id="incidents-heading">Centre d’incidents</h2>
-          <p>Suivez chaque dégradation jusqu’à sa résolution et maîtrisez ses notifications.</p>
+          <p class="panel-heading__kicker">Tsunade</p>
+          <h2 id="incidents-heading">Moteur d’incidents</h2>
+          <p>Suivez les incidents détectés par Shikamaru, leurs investigations, décisions et résolutions.</p>
          </div>
         </div>
         <div class="incidents-summary" aria-label="Synthèse des incidents">
@@ -795,14 +795,14 @@
           <small>dégradations en cours</small>
          </article>
          <article class="incidents-summary-card">
-          <span>À acquitter</span>
+          <span>Nouveaux</span>
           <strong id="incidents-unacknowledged-count">0</strong>
-          <small>non encore examinés</small>
+          <small>en attente de traitement</small>
          </article>
          <article class="incidents-summary-card">
-          <span>Silencieux</span>
+          <span>Traités</span>
           <strong id="incidents-silenced-count">0</strong>
-          <small>notifications suspendues</small>
+          <small>avec un résultat Tsunade</small>
          </article>
          <article class="incidents-summary-card">
           <span>Résolus</span>
@@ -812,6 +812,9 @@
         </div>
         <div class="incidents-toolbar" aria-label="Filtrer les incidents">
          <button aria-pressed="true" class="incidents-filter is-active" data-incidents-filter="active" type="button">Actifs</button>
+         <button aria-pressed="false" class="incidents-filter" data-incidents-filter="new" type="button">Nouveaux</button>
+         <button aria-pressed="false" class="incidents-filter" data-incidents-filter="in_progress" type="button">En cours</button>
+         <button aria-pressed="false" class="incidents-filter" data-incidents-filter="treated" type="button">Traités</button>
          <button aria-pressed="false" class="incidents-filter" data-incidents-filter="resolved" type="button">Résolus</button>
          <button aria-pressed="false" class="incidents-filter" data-incidents-filter="all" type="button">Tous</button>
         </div>

@@ -6,6 +6,31 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.19.0] — Expertise Tsunade — 2026-08-24
+
+## Ajouté
+
+- Un incident actif peut demander à Agent d'exécuter le cycle de diagnostic
+  Tsunade ; Vision ne lance directement ni investigation ni job Katsuyu.
+- La chronologie distingue les diagnostics déterministes confirmés des
+  hypothèses Katsuyu AI en attente de décision.
+- Chaque hypothèse expose confiance, causes possibles, éléments concordants et
+  contradictoires, ainsi que les investigations seulement proposées.
+- L'état d'expertise indique notamment qu'une analyse Katsuyu est déjà en file
+  et empêche une demande concurrente depuis l'interface.
+
+# [1.18.0] — Incidents Tsunade — 2026-08-24
+
+## Ajouté
+
+- La page **Incidents** affiche désormais la source de vérité Tsunade détenue
+  par Agent : nouveaux incidents, traitements en cours, résultats et
+  résolutions.
+- Chaque carte expose la sévérité, les occurrences, les récurrences, les
+  anomalies compactes de Katsuyu et l'évolution détaillée chargée à la demande.
+- Vision réutilise son proxy d'administration authentifié et ne duplique aucun
+  état d'incident dans une nouvelle base.
+
 # [1.17.0] — Disponibilité énergétique de Katsuyu — 2026-08-20
 
 ## Ajouté

@@ -142,6 +142,33 @@ class AgentAdministrationClient:
         """Read Katsuyu availability and Wake-on-LAN provenance."""
         return self._request("GET", "/v1/jobs/workers")
 
+    def read_tsunade_incidents(self, state: str = "all") -> dict[str, Any]:
+        """Read the Agent-owned Tsunade incident lifecycle."""
+        paths = {
+            "active": "/v1/incidents",
+            "resolved": "/v1/incidents/resolved",
+            "all": "/v1/incidents/all",
+        }
+        try:
+            path = paths[state]
+        except KeyError as error:
+            raise ValueError(
+                "incident state must be active, resolved, or all"
+            ) from error
+        return self._request("GET", path)
+
+    def read_tsunade_incident(self, incident_id: str) -> dict[str, Any]:
+        """Read one Tsunade incident with its bounded evolution."""
+        return self._request("GET", f"/v1/incidents/{quote(incident_id, safe='')}")
+
+    def diagnose_tsunade_incident(self, incident_id: str) -> dict[str, Any]:
+        """Ask Agent/Tsunade to run its deterministic-first expertise cycle."""
+        return self._request(
+            "POST",
+            f"/v1/incidents/{quote(incident_id, safe='')}/diagnose",
+            timeout_seconds=60.0,
+        )
+
     def approve_worker_pairing(self, pairing_id: str) -> dict[str, Any]:
         """Approve one verification code displayed by the Katsuyu installer."""
         return self._request(

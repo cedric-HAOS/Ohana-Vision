@@ -6,6 +6,11 @@ export const API = Object.freeze({
     observations: "/api/observations",
     hostHealth: "/api/host-health",
     incidents: "/api/incidents",
+    tsunadeIncidents: "/api/administration/tsunade/incidents",
+    tsunadeIncident: (incidentId) =>
+        `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}`,
+    tsunadeDiagnose: (incidentId) =>
+        `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/diagnose`,
     incidentAcknowledge(incidentId) {
         return `${this.incidents}/${encodeURIComponent(incidentId)}/acknowledge`;
     },

@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from ohana_vision.administration import (
     AgentAdministrationClient,
@@ -172,6 +172,30 @@ def read_workers(request: Request) -> dict[str, Any]:
     """Expose Agent-owned Katsuyu availability without duplicating state."""
     client = _client(request)
     return _call(client.read_workers)
+
+
+@router.get("/tsunade/incidents")
+def read_tsunade_incidents(
+    request: Request,
+    state: str = Query(default="all", pattern="^(active|resolved|all)$"),
+) -> dict[str, Any]:
+    """Expose Agent-owned incidents without duplicating their state in Vision."""
+    client = _client(request)
+    return _call(lambda: client.read_tsunade_incidents(state))
+
+
+@router.get("/tsunade/incidents/{incident_id}")
+def read_tsunade_incident(incident_id: str, request: Request) -> dict[str, Any]:
+    """Expose one incident evolution through the existing administration proxy."""
+    client = _client(request)
+    return _call(lambda: client.read_tsunade_incident(incident_id))
+
+
+@router.post("/tsunade/incidents/{incident_id}/diagnose")
+def diagnose_tsunade_incident(incident_id: str, request: Request) -> dict[str, Any]:
+    """Request expertise through Agent; Vision never executes an operation."""
+    client = _client(request)
+    return _call(lambda: client.diagnose_tsunade_incident(incident_id))
 
 
 @router.post("/workers/pairings/{pairing_id}/approve")

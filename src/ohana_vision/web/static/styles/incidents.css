@@ -113,6 +113,34 @@
     margin: 0;
 }
 
+.incident-card__findings,
+.incident-card__result,
+.incident-card__evolution {
+    margin: 1rem 0 0;
+    color: var(--ohana-text-secondary);
+}
+
+.incident-card__findings ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.incident-card__evolution {
+    display: grid;
+    gap: 0.65rem;
+    padding-left: 1.25rem;
+}
+
+.incident-card__evolution li {
+    display: grid;
+    grid-template-columns: minmax(10rem, auto) minmax(7rem, auto) 1fr;
+    gap: 0.75rem;
+}
+
+.incident-card__evolution time {
+    color: var(--ohana-text-muted);
+}
+
 .incident-card__header p,
 .incident-card__duration {
     color: var(--ohana-text-muted);
@@ -179,6 +207,42 @@
     color: var(--ohana-text-secondary);
     font-family: var(--ohana-font-family-mono);
     font-size: var(--ohana-font-size-xs);
+}
+
+.incident-evidence-status {
+    display: block;
+    margin-top: var(--ohana-space-2);
+    color: var(--ohana-health-degraded);
+    font-size: var(--ohana-font-size-xs);
+    font-weight: var(--ohana-font-weight-semibold);
+}
+
+.incident-evidence-status.is-confirmed {
+    color: var(--ohana-health-healthy);
+}
+
+.incident-hypotheses,
+.incident-proposals ul {
+    margin: var(--ohana-space-2) 0 0;
+    padding-left: var(--ohana-space-5);
+}
+
+.incident-hypotheses li {
+    margin-bottom: var(--ohana-space-2);
+}
+
+.incident-hypotheses small {
+    display: block;
+    margin-top: var(--ohana-space-1);
+    color: var(--ohana-text-muted);
+}
+
+.incident-proposals {
+    margin-top: var(--ohana-space-2);
+    padding: var(--ohana-space-3);
+    border: 1px solid var(--ohana-border-subtle);
+    border-radius: var(--ohana-radius-md);
+    background: var(--ohana-background-canvas);
 }
 
 .incidents-empty-state {

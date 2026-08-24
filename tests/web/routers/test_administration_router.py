@@ -144,6 +144,24 @@ class FakeAdministrationClient:
             ],
         }
 
+    def read_tsunade_incidents(self, state: str = "all") -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "state": state,
+            "incidents": [
+                {
+                    "incident_id": "11111111-1111-4111-8111-111111111111",
+                    "workflow_state": "in_progress",
+                }
+            ],
+        }
+
+    def read_tsunade_incident(self, incident_id: str) -> dict[str, Any]:
+        return {"incident_id": incident_id, "events": []}
+
+    def diagnose_tsunade_incident(self, incident_id: str) -> dict[str, Any]:
+        return {"incident_id": incident_id, "status": "AI_QUEUED"}
+
     def approve_worker_pairing(self, pairing_id: str) -> dict[str, Any]:
         return {"pairing_id": pairing_id, "status": "APPROVED"}
 
@@ -191,6 +209,14 @@ def test_administration_routes_proxy_agent_documents() -> None:
     plugin = client.get("/api/administration/plugins/dns")
     pairings = client.get("/api/administration/workers/pairings")
     workers = client.get("/api/administration/workers")
+    incidents = client.get("/api/administration/tsunade/incidents?state=all")
+    incident = client.get(
+        "/api/administration/tsunade/incidents/11111111-1111-4111-8111-111111111111"
+    )
+    diagnosis = client.post(
+        "/api/administration/tsunade/incidents/"
+        "11111111-1111-4111-8111-111111111111/diagnose"
+    )
 
     assert capabilities.status_code == 200
     assert "dhcp.read" in capabilities.json()["operations"]
@@ -202,6 +228,9 @@ def test_administration_routes_proxy_agent_documents() -> None:
     assert plugin.json()["id"] == "dns"
     assert pairings.json()["pairings"][0]["worker_id"] == "katsuyu-bubule"
     assert workers.json()["workers"][0]["availability"] == "WAKING"
+    assert incidents.json()["incidents"][0]["workflow_state"] == "in_progress"
+    assert incident.json()["events"] == []
+    assert diagnosis.json()["status"] == "AI_QUEUED"
 
 
 def test_administration_routes_proxy_writes() -> None:

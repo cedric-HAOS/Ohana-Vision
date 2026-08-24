@@ -296,7 +296,7 @@ def test_static_ui_declares_all_navigation_views() -> None:
 
 
 def test_static_ui_exposes_incident_center() -> None:
-    """The incident center must be packaged with its operator actions."""
+    """The incident center must project Agent-owned Tsunade state."""
     client = make_client()
     script = client.get("/ui/incidents.js")
     stylesheet = client.get("/ui/styles/incidents.css")
@@ -304,10 +304,14 @@ def test_static_ui_exposes_incident_center() -> None:
     assert script.status_code == 200
     assert stylesheet.status_code == 200
     assert "IncidentsController" in script.text
-    assert "API.incidentAcknowledge" in script.text
-    assert "API.incidentSilence" in script.text
-    assert 'data-incident-action="acknowledge"' in script.text
-    assert 'data-incident-action="silence"' in script.text
+    assert "API.tsunadeIncidents" in script.text
+    assert "API.tsunadeIncident" in script.text
+    assert "API.tsunadeDiagnose" in script.text
+    assert 'data-tsunade-details="' in script.text
+    assert 'data-tsunade-diagnose="' in script.text
+    assert "Hypothèses — décision Tsunade en attente" in script.text
+    assert "in_progress" in script.text
+    assert "resolved" in script.text
 
 
 def test_static_ui_exposes_graphical_configuration_views() -> None:

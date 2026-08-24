@@ -116,11 +116,18 @@ au redémarrage. Elles présentent notamment :
 
 ### Centre d'incidents
 
-La page **Incidents** suit chaque dégradation continue d'une capacité jusqu'à
-sa résolution. Elle regroupe le contexte de l'équipement et du service, le
-statut, le message, les dates et le nombre d'occurrences. Un opérateur peut
-acquitter un incident ou rendre ses notifications silencieuses pendant une
-heure ; ces décisions restent persistantes après un redémarrage.
+La page **Incidents** projette la source de vérité Tsunade exposée par Agent.
+Elle distingue les incidents nouveaux, en cours, traités et résolus, puis
+affiche équipement, capacité, sévérité, occurrences, récurrences, anomalies
+Katsuyu et résultat final. L'évolution détaillée est chargée à la demande par
+le proxy d'administration existant ; Vision ne crée aucune seconde base
+d'incidents Tsunade.
+
+Pour un incident actif, l'interface peut demander le cycle d'expertise à Agent.
+Elle affiche séparément les faits confirmés par investigation et les hypothèses
+Katsuyu AI, avec confiance et éléments concordants ou contradictoires. Les
+investigations suggérées restent non autorisées : Vision ne contourne jamais
+Tsunade ou Agent pour exécuter une opération.
 
 En production, observations et incidents utilisent par défaut
 `/var/lib/ohana-vision/vision.db`, configurable avec
