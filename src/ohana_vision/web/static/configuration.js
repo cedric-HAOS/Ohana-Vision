@@ -148,6 +148,7 @@ export class ConfigurationController {
         this.workerPairingsLoadError = null;
         this.workerWakeOnLan = null;
         this.workerWakeOnLanAvailable = false;
+        this.workerWakeWriteAvailable = false;
         this.workerWakeAvailable = false;
         this.workerWakeOnLanLoadError = null;
         this.companionPairings = [];
@@ -310,6 +311,8 @@ export class ConfigurationController {
                 byId("worker-wake-heartbeat"),
             workerWakePolicyNotice:
                 byId("worker-wake-policy-notice"),
+            workerWakeToggle:
+                byId("worker-wake-toggle"),
             companionPairingsTable:
                 byId("companion-pairings-table"),
             companionPairingsPendingCount:
@@ -373,6 +376,11 @@ export class ConfigurationController {
                     void this.testWorkerWake(button.dataset.workerWake);
                 }
             });
+        this.elements.workerWakeToggle
+            ?.addEventListener(
+                "click",
+                () => void this.toggleWakeOnLan(),
+            );
         this.elements.companionPairingsRefresh
             ?.addEventListener(
                 "click",
@@ -838,6 +846,9 @@ export class ConfigurationController {
             this.workerWakeOnLanAvailable = operations.includes(
                 "jobs.wake_on_lan.read",
             );
+            this.workerWakeWriteAvailable = operations.includes(
+                "jobs.wake_on_lan.write",
+            );
             this.workerWakeAvailable = operations.includes(
                 "jobs.workers.wake",
             );
@@ -1063,34 +1074,185 @@ export class ConfigurationController {
 
     renderWakeOnLan() {
         const policy = this.workerWakeOnLan;
+        const hasWakeMac = this.workers.some(
+            (worker) => Boolean(worker.wake_on_lan_mac_address),
+        );
+
         if (this.elements.workerWakePolicyNotice) {
-            const message = this.workerWakeOnLanLoadError
-                ?? (policy?.enabled
-                    ? "Politique fournie par Agent/Tsunade. La MAC reste annoncée par Katsuyu."
-                    : "Wake-on-LAN est désactivé dans la configuration Agent.");
+            let message;
+
+            if (this.workerWakeOnLanLoadError) {
+                message = this.workerWakeOnLanLoadError;
+            } else if (policy?.enabled) {
+                message =
+                    "Politique fournie par Agent/Tsunade. "
+                    + "La MAC reste annoncée par Katsuyu.";
+            } else if (!hasWakeMac) {
+                message =
+                    "Wake-on-LAN désactivé. Katsuyu doit d’abord "
+                    + "annoncer une adresse MAC compatible WOL.";
+            } else {
+                message =
+                    "Wake-on-LAN désactivé. "
+                    + "Vous pouvez l’activer pour permettre à Tsunade "
+                    + "de réveiller Katsuyu.";
+            }
+
             this.elements.workerWakePolicyNotice.textContent = message;
         }
+
         if (this.elements.workerWakeEnabled) {
             this.elements.workerWakeEnabled.textContent = policy
                 ? (policy.enabled ? "Activé" : "Désactivé")
                 : "—";
         }
+
         if (this.elements.workerWakeBroadcast) {
             this.elements.workerWakeBroadcast.textContent =
                 policy?.broadcast_address ?? "—";
         }
+
         if (this.elements.workerWakePort) {
-            this.elements.workerWakePort.textContent = policy?.port ?? "—";
+            this.elements.workerWakePort.textContent =
+                policy?.port ?? "—";
         }
+
         if (this.elements.workerWakeTimeout) {
             this.elements.workerWakeTimeout.textContent = policy
                 ? `${policy.wait_timeout_seconds} s`
                 : "—";
         }
+
         if (this.elements.workerWakeHeartbeat) {
             this.elements.workerWakeHeartbeat.textContent = policy
                 ? `${policy.available_for_seconds} s`
                 : "—";
+        }
+
+        const toggle = this.elements.workerWakeToggle;
+
+        if (!toggle) {
+            return;
+        }
+
+        if (!policy || !this.workerWakeWriteAvailable) {
+            toggle.textContent = "Configuration indisponible";
+            toggle.disabled = true;
+            toggle.title =
+                "Cette version d’Agent ne permet pas de modifier "
+                + "la politique Wake-on-LAN.";
+            return;
+        }
+
+        if (policy.enabled) {
+            toggle.textContent = "Désactiver le Wake-on-LAN";
+            toggle.disabled = false;
+            toggle.title = "";
+            return;
+        }
+
+        toggle.textContent = "Activer le Wake-on-LAN";
+        toggle.disabled = !hasWakeMac;
+
+        toggle.title = hasWakeMac
+            ? ""
+            : "Katsuyu doit d’abord annoncer une adresse MAC WOL.";
+    }
+
+    async toggleWakeOnLan() {
+        const policy = this.workerWakeOnLan;
+
+        if (
+            !policy
+            || !this.workerWakeWriteAvailable
+        ) {
+            return;
+        }
+
+        const enabled = !policy.enabled;
+
+        if (enabled) {
+            const hasWakeMac = this.workers.some(
+                (worker) =>
+                    Boolean(worker.wake_on_lan_mac_address),
+            );
+
+            if (!hasWakeMac) {
+                showError(
+                    this.elements.error,
+                    "Impossible d’activer le Wake-on-LAN : "
+                    + "aucun worker Katsuyu n’a encore annoncé "
+                    + "d’adresse MAC WOL.",
+                );
+                return;
+            }
+        }
+
+        const confirmation = enabled
+            ? (
+                "Activer le Wake-on-LAN ?\n\n"
+                + "Tsunade pourra réveiller Bubule lorsqu’un job "
+                + "nécessitant Katsuyu doit être exécuté."
+            )
+            : (
+                "Désactiver le Wake-on-LAN ?\n\n"
+                + "Tsunade ne pourra plus démarrer Bubule "
+                + "automatiquement."
+            );
+
+        if (!window.confirm(confirmation)) {
+            return;
+        }
+
+        hideError(this.elements.error);
+
+        if (this.elements.workerWakeToggle) {
+            this.elements.workerWakeToggle.disabled = true;
+        }
+
+        try {
+            this.workerWakeOnLan = await requestJson(
+                API.administrationWakeOnLan,
+                {
+                    method: "PUT",
+                    body: JSON.stringify({
+                        enabled,
+                    }),
+                },
+            );
+
+            /*
+            * Agent rend l'opération de réveil disponible
+            * lorsque la politique WOL est active.
+            *
+            * Sans cette mise à jour locale, le bouton
+            * "Tester le réveil" resterait indisponible
+            * jusqu'au prochain rechargement complet.
+            */
+            this.workerWakeAvailable = enabled;
+
+            this.renderWakeOnLan();
+            this.renderWorkers();
+
+            this.showNotice(
+                enabled
+                    ? (
+                        "Wake-on-LAN activé. "
+                        + "Tsunade peut maintenant réveiller Bubule."
+                    )
+                    : (
+                        "Wake-on-LAN désactivé. "
+                        + "Bubule ne sera plus réveillé automatiquement."
+                    ),
+            );
+        } catch (error) {
+            showError(
+                this.elements.error,
+                "Impossible de modifier le Wake-on-LAN : "
+                + this.errorMessage(error),
+            );
+
+            this.renderWakeOnLan();
         }
     }
 

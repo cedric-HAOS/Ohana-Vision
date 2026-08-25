@@ -334,7 +334,7 @@ def test_static_ui_exposes_incident_center() -> None:
     assert "Causes possibles" in script.text
     assert "Conséquences" in script.text
     assert "Réparation réussie" in script.text
-    assert "Hypothèses — décision Tsunade en attente" in script.text
+    assert "Analyse Katsuyu utilisée par Tsunade" in script.text
     assert "in_progress" in script.text
     assert "resolved" in script.text
 

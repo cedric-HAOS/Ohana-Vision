@@ -68,6 +68,20 @@ def write_dhcp(
     )
 
 
+@router.put("/workers/wake-on-lan")
+def write_wake_on_lan(
+    payload: dict[str, Any],
+    request: Request,
+) -> dict[str, Any]:
+    """Enable or disable Agent-owned Wake-on-LAN."""
+    client = _client(request)
+    return _call(
+        lambda: client.write_wake_on_lan(
+            payload.get("enabled"),
+        )
+    )
+
+
 @router.get("/network")
 def read_network(request: Request) -> dict[str, Any]:
     """Read the Agent host NetworkManager state."""

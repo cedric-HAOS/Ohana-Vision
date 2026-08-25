@@ -358,6 +358,14 @@ class AgentAdministrationClient:
 
         return token
 
+    def write_wake_on_lan(self, enabled: bool) -> dict[str, Any]:
+        """Enable or disable Agent-owned Wake-on-LAN."""
+        return self._request(
+            "PUT",
+            "/v1/jobs/wake-on-lan",
+            {"enabled": enabled},
+        )
+
     @staticmethod
     def _http_error_detail(error: HTTPError) -> str:
         try:

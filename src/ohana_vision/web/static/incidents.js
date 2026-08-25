@@ -40,6 +40,18 @@ const TREND_LABELS = Object.freeze({
     decreasing: "en diminution",
     disappeared: "disparue",
 });
+const TSUNADE_DECISION_LABELS = Object.freeze({
+    stable: "Situation stable",
+    watch: "Surveillance",
+    investigate: "À approfondir",
+    action_required: "Action nécessaire",
+});
+
+const TSUNADE_DECISION_SOURCE_LABELS = Object.freeze({
+    deterministic: "Analyse déterministe",
+    katsuyu_ai: "Analyse Katsuyu",
+    fallback: "Décision de repli",
+});
 
 /** Render Agent-owned Tsunade incidents without duplicating their lifecycle. */
 export class IncidentsController {
@@ -252,6 +264,7 @@ export class IncidentsController {
                         ${incident.ended_at ? `<div><dt>Résolution</dt><dd>${escapeHtml(formatDate(incident.ended_at))}</dd></div>` : ""}
                     </dl>
                     ${logSynthesis}
+                    ${details ? this.tsunadeDecision(details) : ""}
                     ${incident.final_result ? `<p class="incident-card__result"><strong>Résultat :</strong> ${escapeHtml(incident.final_result)}</p>` : ""}
                     ${repairSummary}
                     ${experience ? `<div class="incident-experience"><strong>${escapeHtml(experience.prompt)}</strong><button class="configuration-primary-button" data-tsunade-experience="${escapeHtml(incident.incident_id)}" type="button">Enregistrer la réparation connue</button></div>` : ""}
@@ -271,6 +284,81 @@ export class IncidentsController {
                     ${details ? this.evolution(details) : ""}
                 </div>
             </article>`;
+    }
+
+    latestTsunadeDecision(incident) {
+        const events = Array.isArray(incident?.events)
+            ? incident.events
+            : [];
+
+        for (let index = events.length - 1; index >= 0; index -= 1) {
+            const payload = events[index]?.payload;
+
+            if (
+                payload
+                && typeof payload === "object"
+                && payload.decision
+                && payload.decision !== "pending"
+            ) {
+                return payload;
+            }
+        }
+
+        return null;
+    }
+
+    tsunadeDecision(incident) {
+        const decision = this.latestTsunadeDecision(incident);
+
+        if (!decision) {
+            return "";
+        }
+
+        const value = String(decision.decision ?? "watch");
+        const source = String(decision.decision_source ?? "deterministic");
+        const confidence = Number(decision.confidence);
+
+        const confidenceLabel = Number.isFinite(confidence)
+            ? `${Math.round(confidence * 100)} %`
+            : "—";
+
+        const reevaluation = decision.reevaluate_after === "next_logs_health_check"
+            ? "Au prochain contrôle des journaux"
+            : decision.reevaluate_after
+                ? this.readableIdentifier(decision.reevaluate_after)
+                : "Selon évolution";
+
+        return `
+            <section class="incident-tsunade-decision incident-tsunade-decision--${escapeHtml(value)}">
+                <header>
+                    <div>
+                        <span>Décision Tsunade</span>
+                        <strong>${escapeHtml(
+                            TSUNADE_DECISION_LABELS[value] ?? this.readableIdentifier(value)
+                        )}</strong>
+                    </div>
+                    <small>${escapeHtml(
+                        TSUNADE_DECISION_SOURCE_LABELS[source] ?? this.readableIdentifier(source)
+                    )} · confiance ${escapeHtml(confidenceLabel)}</small>
+                </header>
+
+                ${decision.conclusion
+                    ? `<p>${escapeHtml(decision.conclusion)}</p>`
+                    : ""}
+
+                <dl>
+                    ${decision.reason
+                        ? `<div><dt>Justification</dt><dd>${escapeHtml(decision.reason)}</dd></div>`
+                        : ""}
+                    ${decision.recommended_action
+                        ? `<div><dt>Suite recommandée</dt><dd>${escapeHtml(decision.recommended_action)}</dd></div>`
+                        : ""}
+                    <div>
+                        <dt>Réévaluation</dt>
+                        <dd>${escapeHtml(reevaluation)}</dd>
+                    </div>
+                </dl>
+            </section>`;
     }
 
     evolution(incident) {
@@ -296,7 +384,7 @@ export class IncidentsController {
             ? payload.proposals.slice(0, 16)
             : [];
         const status = payload.epistemic_status === "hypothesis"
-            ? '<span class="incident-evidence-status">Hypothèses — décision Tsunade en attente</span>'
+            ? '<span class="incident-evidence-status">Analyse Katsuyu utilisée par Tsunade</span>'
             : payload.epistemic_status === "confirmed_by_probe"
                 ? '<span class="incident-evidence-status is-confirmed">Confirmé par investigation déterministe</span>'
                 : "";

@@ -1206,3 +1206,54 @@
     border-radius: var(--ohana-radius-md);
     padding: 0.75rem;
 }
+
+/* Workers Katsuyu -------------------------------------------------------- */
+
+#workers-configuration-panel {
+    align-content: start;
+    gap: var(--ohana-space-3);
+}
+
+/*
+ * Les résumés Workers contiennent davantage d'informations que les autres
+ * pages de configuration :
+ * - 4 indicateurs généraux ;
+ * - 5 paramètres Wake-on-LAN.
+ *
+ * La grille s'adapte donc à l'espace disponible au lieu d'être limitée
+ * aux 3 colonnes du composant générique.
+ */
+#workers-configuration-panel .configuration-summary {
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(11rem, 1fr)
+        );
+    gap: var(--ohana-space-2);
+}
+
+#workers-configuration-panel .configuration-summary-card {
+    gap: 0.2rem;
+    padding:
+        var(--ohana-space-3)
+        var(--ohana-space-3);
+}
+
+#workers-configuration-panel .configuration-card {
+    padding: var(--ohana-space-3);
+}
+
+#workers-configuration-panel .configuration-card__heading {
+    margin-bottom: var(--ohana-space-2);
+}
+
+#workers-configuration-panel
+.configuration-card__heading
+p:not(.panel-heading__kicker) {
+    margin-top: 0.2rem;
+}
+
+#workers-configuration-panel .configuration-table th,
+#workers-configuration-panel .configuration-table td {
+    padding: 0.55rem 0.5rem;
+}
