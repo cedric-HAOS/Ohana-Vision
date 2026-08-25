@@ -174,6 +174,20 @@ def read_workers(request: Request) -> dict[str, Any]:
     return _call(client.read_workers)
 
 
+@router.get("/workers/wake-on-lan")
+def read_wake_on_lan(request: Request) -> dict[str, Any]:
+    """Expose Agent's effective Wake-on-LAN policy without owning it in Vision."""
+    client = _client(request)
+    return _call(client.read_wake_on_lan)
+
+
+@router.post("/workers/{worker_id}/wake")
+def wake_worker(worker_id: str, request: Request) -> dict[str, Any]:
+    """Ask Agent/Tsunade to send one explicit Wake-on-LAN test."""
+    client = _client(request)
+    return _call(lambda: client.wake_worker(worker_id))
+
+
 @router.get("/companions/pairings")
 def read_companion_pairings(request: Request) -> dict[str, Any]:
     """List Shizune pairing requests through Agent's control contract."""

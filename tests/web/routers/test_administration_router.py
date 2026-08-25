@@ -144,6 +144,23 @@ class FakeAdministrationClient:
             ],
         }
 
+    def read_wake_on_lan(self) -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "enabled": True,
+            "broadcast_address": "192.168.1.255",
+            "port": 9,
+            "wait_timeout_seconds": 180,
+            "available_for_seconds": 30,
+        }
+
+    def wake_worker(self, worker_id: str) -> dict[str, Any]:
+        return {
+            "worker_id": worker_id,
+            "availability": "WAKING",
+            "woken_by_ohana": True,
+        }
+
     def read_companion_pairings(self) -> dict[str, Any]:
         return {
             "schema_version": 1,
@@ -282,6 +299,8 @@ def test_administration_routes_proxy_agent_documents() -> None:
     plugin = client.get("/api/administration/plugins/dns")
     pairings = client.get("/api/administration/workers/pairings")
     workers = client.get("/api/administration/workers")
+    wake_on_lan = client.get("/api/administration/workers/wake-on-lan")
+    wake_test = client.post("/api/administration/workers/katsuyu-bubule/wake")
     companion_pairings = client.get("/api/administration/companions/pairings")
     companions = client.get("/api/administration/companions")
     incidents = client.get("/api/administration/tsunade/incidents?state=all")
@@ -325,6 +344,9 @@ def test_administration_routes_proxy_agent_documents() -> None:
     assert plugin.json()["id"] == "dns"
     assert pairings.json()["pairings"][0]["worker_id"] == "katsuyu-bubule"
     assert workers.json()["workers"][0]["availability"] == "WAKING"
+    assert wake_on_lan.json()["broadcast_address"] == "192.168.1.255"
+    assert wake_test.json()["worker_id"] == "katsuyu-bubule"
+    assert wake_test.json()["availability"] == "WAKING"
     assert companion_pairings.json()["pairings"][0]["verification_code"] == ("OHANA-24")
     assert companions.json()["devices"][0]["status"] == "ACTIVE"
     assert incidents.json()["incidents"][0]["workflow_state"] == "in_progress"

@@ -101,6 +101,21 @@ et la destination peuvent être changées : un équipement peut ainsi être reli
 à la box, à un commutateur déterminé, à un point d'accès ou à tout autre
 équipement déclaré.
 
+## Gérer les workers et le Wake-on-LAN
+
+L'onglet **Workers** conserve Agent comme source de vérité. Vision affiche :
+
+- l'état `AVAILABLE`, `UNAVAILABLE` ou `WAKING` calculé par Agent ;
+- la MAC Wake-on-LAN annoncée par Katsuyu ;
+- la provenance et la date du dernier réveil ;
+- la dernière connexion et les capacités du worker ;
+- la politique WOL effective : activation, broadcast, port et délais.
+
+Lorsque le Wake-on-LAN est activé, qu'une MAC est connue et que le worker est
+`UNAVAILABLE`, **Tester le réveil** demande à Agent/Tsunade d'envoyer un seul
+Magic Packet. Vision n'envoie jamais elle-même de paquet réseau et ne stocke
+aucune copie de la MAC ou de la politique WOL.
+
 ## États et erreurs
 
 L'interface distingue :

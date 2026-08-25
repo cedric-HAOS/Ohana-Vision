@@ -35,6 +35,8 @@ def test_backup_operations_allow_slow_cold_icloud_startup(
     client.run_backup("ha-01")
     client.read_worker_pairings()
     client.read_workers()
+    client.read_wake_on_lan()
+    client.wake_worker("katsuyu bubule")
     client.read_companion_pairings()
     client.read_companions()
     client.read_tsunade_incidents("all")
@@ -62,6 +64,11 @@ def test_backup_operations_allow_slow_cold_icloud_startup(
         ),
         ("http://127.0.0.1:8765/v1/jobs/workers/pairings", 10.0),
         ("http://127.0.0.1:8765/v1/jobs/workers", 10.0),
+        ("http://127.0.0.1:8765/v1/jobs/wake-on-lan", 10.0),
+        (
+            "http://127.0.0.1:8765/v1/jobs/workers/katsuyu%20bubule/wake",
+            10.0,
+        ),
         ("http://127.0.0.1:8765/v1/pairings/companions", 10.0),
         ("http://127.0.0.1:8765/v1/companions", 10.0),
         ("http://127.0.0.1:8765/v1/incidents/all", 10.0),

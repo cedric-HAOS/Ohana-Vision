@@ -894,14 +894,50 @@
          <div class="configuration-card__heading">
           <div>
            <p class="panel-heading__kicker">Tsunade</p>
+           <h2>Wake-on-LAN</h2>
+           <p id="worker-wake-policy-notice">Politique de réveil fournie par Agent.</p>
+          </div>
+         </div>
+         <div class="configuration-summary">
+          <article class="configuration-summary-card">
+           <span>Activation</span>
+           <strong id="worker-wake-enabled">—</strong>
+           <small>politique Agent</small>
+          </article>
+          <article class="configuration-summary-card">
+           <span>Broadcast</span>
+           <strong id="worker-wake-broadcast">—</strong>
+           <small>réseau Konoha</small>
+          </article>
+          <article class="configuration-summary-card">
+           <span>Port UDP</span>
+           <strong id="worker-wake-port">—</strong>
+           <small>Magic Packet</small>
+          </article>
+          <article class="configuration-summary-card">
+           <span>Attente réveil</span>
+           <strong id="worker-wake-timeout">—</strong>
+           <small>avant abandon</small>
+          </article>
+          <article class="configuration-summary-card">
+           <span>Fenêtre disponible</span>
+           <strong id="worker-wake-heartbeat">—</strong>
+           <small>présence Katsuyu</small>
+          </article>
+         </div>
+        </section>
+        <section class="configuration-card">
+         <div class="configuration-card__heading">
+          <div>
+           <p class="panel-heading__kicker">Tsunade</p>
            <h2>Workers enregistrés</h2>
-           <p>Disponibilité calculée par Agent et provenance du dernier réveil.</p>
+           <p>Disponibilité calculée par Agent, MAC annoncée par Katsuyu et provenance du dernier réveil.</p>
           </div>
          </div>
          <div class="configuration-table-wrapper">
           <table class="configuration-table">
-           <thead><tr><th>Worker</th><th>État</th><th>Réveil</th><th>Dernière connexion</th><th>Capacités</th></tr></thead>
-           <tbody id="workers-table"><tr><td colspan="5">Chargement des workers…</td></tr></tbody>
+           <thead><tr><th>Worker</th><th>État</th><th>MAC WOL</th><th>Réveil</th><th>Dernier réveil</th><th>Dernière connexion</th><th>Capacités</th><th>Action</th></tr></thead>
+           <tbody id="workers-table"><tr><td colspan="8">Chargement des workers…</td></tr></tbody>
           </table>
          </div>
         </section>

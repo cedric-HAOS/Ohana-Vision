@@ -6,6 +6,18 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.22.0] — Wake-on-LAN des workers — 2026-08-25
+
+## Ajouté
+
+- **Configuration > Workers** affiche la politique Wake-on-LAN effective fournie
+  par Agent : activation, broadcast, port, délai de réveil et fenêtre de présence.
+- Chaque worker affiche la MAC WOL annoncée par Katsuyu, son état
+  `AVAILABLE` / `UNAVAILABLE` / `WAKING`, la provenance et la date du dernier
+  réveil ainsi que sa dernière connexion.
+- Un worker indisponible et compatible expose **Tester le réveil**, action qui
+  reste exécutée par Agent/Tsunade et ne duplique aucune logique WOL dans Vision.
+
 # [1.21.1] — Suivi des contrôles de journaux — 2026-08-24
 
 ## Corrigé

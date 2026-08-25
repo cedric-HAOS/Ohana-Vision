@@ -61,6 +61,11 @@ export const API = Object.freeze({
         "/api/administration/workers/pairings",
     administrationWorkers:
         "/api/administration/workers",
+    administrationWakeOnLan:
+        "/api/administration/workers/wake-on-lan",
+    administrationWorkerWake(workerId) {
+        return `${this.administrationWorkers}/${encodeURIComponent(workerId)}/wake`;
+    },
     administrationWorkerPairingAction(pairingId, action) {
         return `${this.administrationWorkerPairings}/${encodeURIComponent(pairingId)}/${action}`;
     },

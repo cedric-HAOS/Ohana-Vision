@@ -142,6 +142,17 @@ class AgentAdministrationClient:
         """Read Katsuyu availability and Wake-on-LAN provenance."""
         return self._request("GET", "/v1/jobs/workers")
 
+    def read_wake_on_lan(self) -> dict[str, Any]:
+        """Read Agent's effective Wake-on-LAN policy."""
+        return self._request("GET", "/v1/jobs/wake-on-lan")
+
+    def wake_worker(self, worker_id: str) -> dict[str, Any]:
+        """Ask Agent/Tsunade to send one explicit WOL test to a worker."""
+        return self._request(
+            "POST",
+            f"/v1/jobs/workers/{quote(worker_id, safe='')}/wake",
+        )
+
     def read_companion_pairings(self) -> dict[str, Any]:
         """Read pending Shizune pairings from Agent's existing control plane."""
         return self._request("GET", "/v1/pairings/companions")

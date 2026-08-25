@@ -146,6 +146,10 @@ export class ConfigurationController {
         this.workers = [];
         this.workerPairingsAvailable = false;
         this.workerPairingsLoadError = null;
+        this.workerWakeOnLan = null;
+        this.workerWakeOnLanAvailable = false;
+        this.workerWakeAvailable = false;
+        this.workerWakeOnLanLoadError = null;
         this.companionPairings = [];
         this.companions = [];
         this.companionsAvailable = false;
@@ -294,6 +298,18 @@ export class ConfigurationController {
                 byId("worker-availability-summary"),
             workerWakeSummary:
                 byId("worker-wake-summary"),
+            workerWakeEnabled:
+                byId("worker-wake-enabled"),
+            workerWakeBroadcast:
+                byId("worker-wake-broadcast"),
+            workerWakePort:
+                byId("worker-wake-port"),
+            workerWakeTimeout:
+                byId("worker-wake-timeout"),
+            workerWakeHeartbeat:
+                byId("worker-wake-heartbeat"),
+            workerWakePolicyNotice:
+                byId("worker-wake-policy-notice"),
             companionPairingsTable:
                 byId("companion-pairings-table"),
             companionPairingsPendingCount:
@@ -348,6 +364,15 @@ export class ConfigurationController {
                     }
                 },
             );
+        this.elements.workersTable
+            ?.addEventListener("click", (event) => {
+                const button = event.target.closest(
+                    "[data-worker-wake]",
+                );
+                if (button) {
+                    void this.testWorkerWake(button.dataset.workerWake);
+                }
+            });
         this.elements.companionPairingsRefresh
             ?.addEventListener(
                 "click",
@@ -810,7 +835,15 @@ export class ConfigurationController {
             this.workerPairingsAvailable = operations.includes(
                 "jobs.workers.pairings.read",
             );
+            this.workerWakeOnLanAvailable = operations.includes(
+                "jobs.wake_on_lan.read",
+            );
+            this.workerWakeAvailable = operations.includes(
+                "jobs.workers.wake",
+            );
             this.workerPairingsLoadError = null;
+            this.workerWakeOnLanLoadError = null;
+            this.workerWakeOnLan = null;
             if (this.workerPairingsAvailable) {
                 try {
                     const [pairingPayload, workersPayload] = await Promise.all([
@@ -828,6 +861,19 @@ export class ConfigurationController {
                 )
                     ? "Les jobs distribués Katsuyu sont désactivés dans la configuration d’Agent."
                     : "Cette version d’Agent ne prend pas en charge l’appairage Katsuyu.";
+            }
+
+            if (this.workerWakeOnLanAvailable) {
+                try {
+                    this.workerWakeOnLan = await fetchJson(
+                        API.administrationWakeOnLan,
+                    );
+                } catch (error) {
+                    this.workerWakeOnLanLoadError = this.errorMessage(error);
+                }
+            } else {
+                this.workerWakeOnLanLoadError =
+                    "Cette version d’Agent n’expose pas encore la politique Wake-on-LAN.";
             }
 
             this.companionPairings = [];
@@ -858,6 +904,7 @@ export class ConfigurationController {
             this.renderPlugins();
             this.renderWorkerPairings();
             this.renderWorkers();
+            this.renderWakeOnLan();
             this.renderCompanions();
 
             if (this.dhcp) {
@@ -954,12 +1001,24 @@ export class ConfigurationController {
             this.workerPairings = pairingPayload.pairings ?? [];
             this.workers = workersPayload.workers ?? [];
             this.workerPairingsLoadError = null;
+            if (this.workerWakeOnLanAvailable) {
+                try {
+                    this.workerWakeOnLan = await fetchJson(
+                        API.administrationWakeOnLan,
+                    );
+                    this.workerWakeOnLanLoadError = null;
+                } catch (error) {
+                    this.workerWakeOnLanLoadError = this.errorMessage(error);
+                }
+            }
             this.renderWorkerPairings();
             this.renderWorkers();
+            this.renderWakeOnLan();
         } catch (error) {
             this.workerPairingsLoadError = this.errorMessage(error);
             this.renderWorkerPairings();
             this.renderWorkers();
+            this.renderWakeOnLan();
         }
     }
 
@@ -1002,17 +1061,50 @@ export class ConfigurationController {
         }).join("");
     }
 
+    renderWakeOnLan() {
+        const policy = this.workerWakeOnLan;
+        if (this.elements.workerWakePolicyNotice) {
+            const message = this.workerWakeOnLanLoadError
+                ?? (policy?.enabled
+                    ? "Politique fournie par Agent/Tsunade. La MAC reste annoncée par Katsuyu."
+                    : "Wake-on-LAN est désactivé dans la configuration Agent.");
+            this.elements.workerWakePolicyNotice.textContent = message;
+        }
+        if (this.elements.workerWakeEnabled) {
+            this.elements.workerWakeEnabled.textContent = policy
+                ? (policy.enabled ? "Activé" : "Désactivé")
+                : "—";
+        }
+        if (this.elements.workerWakeBroadcast) {
+            this.elements.workerWakeBroadcast.textContent =
+                policy?.broadcast_address ?? "—";
+        }
+        if (this.elements.workerWakePort) {
+            this.elements.workerWakePort.textContent = policy?.port ?? "—";
+        }
+        if (this.elements.workerWakeTimeout) {
+            this.elements.workerWakeTimeout.textContent = policy
+                ? `${policy.wait_timeout_seconds} s`
+                : "—";
+        }
+        if (this.elements.workerWakeHeartbeat) {
+            this.elements.workerWakeHeartbeat.textContent = policy
+                ? `${policy.available_for_seconds} s`
+                : "—";
+        }
+    }
+
     renderWorkers() {
         const table = this.elements.workersTable;
         if (!table) {
             return;
         }
         if (this.workerPairingsLoadError) {
-            table.innerHTML = `<tr><td colspan="5">${escapeHtml(this.workerPairingsLoadError)}</td></tr>`;
+            table.innerHTML = `<tr><td colspan="8">${escapeHtml(this.workerPairingsLoadError)}</td></tr>`;
             return;
         }
         if (!this.workers.length) {
-            table.innerHTML = '<tr><td colspan="5">Aucun worker enregistré.</td></tr>';
+            table.innerHTML = '<tr><td colspan="8">Aucun worker enregistré.</td></tr>';
             this.elements.workerAvailabilitySummary.textContent = "UNAVAILABLE";
             this.elements.workerWakeSummary.textContent = "aucun worker connu";
             return;
@@ -1023,16 +1115,68 @@ export class ConfigurationController {
             ? "réveillé par Ohana"
             : "démarrage non déclenché par Ohana";
         table.innerHTML = this.workers.map((worker) => {
-            const lastSeen = new Date(worker.last_seen_at).toLocaleString("fr-FR");
+            const lastSeen = worker.last_seen_at
+                ? new Date(worker.last_seen_at).toLocaleString("fr-FR")
+                : "Jamais";
+            const lastWake = worker.wake_requested_at
+                ? new Date(worker.wake_requested_at).toLocaleString("fr-FR")
+                : "—";
             const wake = worker.woken_by_ohana ? "Ohana" : "Humain / système";
+            const mac = worker.wake_on_lan_mac_address ?? "Non détectée";
+            const canWake = this.workerWakeAvailable
+                && this.workerWakeOnLan?.enabled
+                && worker.availability === "UNAVAILABLE"
+                && Boolean(worker.wake_on_lan_mac_address);
+            let wakeAction = "—";
+            if (worker.availability === "WAKING") {
+                wakeAction = '<button class="configuration-secondary-button" type="button" disabled>Réveil en cours</button>';
+            } else if (worker.availability === "AVAILABLE") {
+                wakeAction = '<button class="configuration-secondary-button" type="button" disabled>Déjà disponible</button>';
+            } else if (canWake) {
+                wakeAction = `<button class="configuration-secondary-button" data-worker-wake="${escapeHtml(worker.worker_id)}" type="button">Tester le réveil</button>`;
+            } else if (!worker.wake_on_lan_mac_address) {
+                wakeAction = "MAC WOL indisponible";
+            } else if (!this.workerWakeOnLan?.enabled) {
+                wakeAction = "WOL désactivé";
+            }
             return `<tr>
                 <td><strong>${escapeHtml(worker.worker_id)}</strong><small>${escapeHtml(worker.platform)} · ${escapeHtml(worker.worker_version)}</small></td>
                 <td><strong>${escapeHtml(worker.availability)}</strong></td>
+                <td><code>${escapeHtml(mac)}</code></td>
                 <td>${escapeHtml(wake)}</td>
+                <td>${escapeHtml(lastWake)}</td>
                 <td>${escapeHtml(lastSeen)}</td>
                 <td>${escapeHtml((worker.capabilities ?? []).join(", "))}</td>
+                <td>${wakeAction}</td>
             </tr>`;
         }).join("");
+    }
+
+    async testWorkerWake(workerId) {
+        if (!workerId || !this.workerWakeAvailable) {
+            return;
+        }
+        const worker = this.workers.find(
+            (candidate) => candidate.worker_id === workerId,
+        );
+        if (!worker || worker.availability !== "UNAVAILABLE") {
+            return;
+        }
+        try {
+            const result = await requestJson(
+                API.administrationWorkerWake(workerId),
+                { method: "POST" },
+            );
+            this.showNotice(
+                `Wake-on-LAN envoyé à ${workerId}. État : ${result.availability ?? "WAKING"}.`,
+            );
+            await this.refreshWorkerPairings();
+        } catch (error) {
+            showError(
+                this.elements.error,
+                `Impossible de réveiller ${workerId} : ${this.errorMessage(error)}`,
+            );
+        }
     }
 
     async decideWorkerPairing(pairingId, action) {

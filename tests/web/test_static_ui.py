@@ -2999,3 +2999,16 @@ def test_device_details_supports_manual_infra_01_backup() -> None:
     assert response.status_code == 200
     assert 'device.device_id === "infra-01"' in response.text
     assert "plugin.configuration.infra_01" in response.text
+
+
+def test_workers_configuration_exposes_wake_on_lan_controls() -> None:
+    client = make_client()
+    page = client.get("/")
+    script = client.get("/ui/configuration.js")
+
+    assert page.status_code == 200
+    assert 'id="worker-wake-enabled"' in page.text
+    assert 'id="worker-wake-broadcast"' in page.text
+    assert "Tester le réveil" in script.text
+    assert "administrationWorkerWake" in script.text
+    assert "wake_on_lan_mac_address" in script.text
