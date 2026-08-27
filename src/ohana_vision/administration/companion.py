@@ -72,6 +72,14 @@ class AgentCompanionClient:
             token=token,
         )
 
+    def read_suggestions(self, device_id: str, token: str) -> dict[str, Any]:
+        return self._request(
+            "GET",
+            "/v1/incidents/suggestions",
+            device_id=device_id,
+            token=token,
+        )
+
     def respond(
         self,
         request_id: str,

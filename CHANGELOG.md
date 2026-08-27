@@ -6,6 +6,20 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.22.6] — Tsunade exploitable — 2026-08-27
+
+## Ajouté
+
+- La page incident Tsunade met en avant l'analyse Katsuyu AI hors de la frise
+  et affiche les hypothèses avec leurs preuves et niveaux de confiance.
+- La passerelle Shizune relaie les suggestions d'investigation copiables fournies
+  par Agent.
+
+## Ergonomie
+
+- Les commandes proposées sont présentées dans des blocs dédiés avec copie en un
+  geste, afin de pouvoir les lancer manuellement sur la machine cible.
+
 # [1.22.5] — Passerelle Shizune PWA — 2026-08-27
 
 ## Ajouté

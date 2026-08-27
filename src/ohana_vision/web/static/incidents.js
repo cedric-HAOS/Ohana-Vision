@@ -93,6 +93,12 @@ export class IncidentsController {
             void this.checkLogs(this.elements.logCheck);
         });
         this.elements.list?.addEventListener("click", (event) => {
+            const copyButton = event.target.closest("[data-tsunade-copy-command]");
+            if (copyButton) {
+                void this.copyCommand(copyButton);
+                return;
+            }
+
             const diagnoseButton = event.target.closest("[data-tsunade-diagnose]");
             if (diagnoseButton) {
                 void this.diagnose(
@@ -266,6 +272,7 @@ export class IncidentsController {
                         ${incident.ended_at ? `<div><dt>Résolution</dt><dd>${escapeHtml(formatDate(incident.ended_at))}</dd></div>` : ""}
                     </dl>
                     ${logSynthesis}
+                    ${this.tsunadeExpertise(details ?? incident)}
                     ${this.tsunadeDecision(details ?? incident)}
                     ${incident.final_result ? `<p class="incident-card__result"><strong>Résultat :</strong> ${escapeHtml(incident.final_result)}</p>` : ""}
                     ${repairSummary}
@@ -366,16 +373,82 @@ export class IncidentsController {
             </section>`;
     }
 
+    latestTsunadeExpertise(incident) {
+        const events = Array.isArray(incident?.events)
+            ? incident.events
+            : [];
+
+        for (let index = events.length - 1; index >= 0; index -= 1) {
+            const payload = events[index]?.payload;
+
+            if (
+                payload
+                && typeof payload === "object"
+                && (
+                    Array.isArray(payload.hypotheses)
+                    || Array.isArray(payload.proposals)
+                )
+            ) {
+                return {
+                    occurredAt: events[index]?.occurred_at,
+                    payload,
+                };
+            }
+        }
+
+        const decision = this.latestTsunadeDecision(incident);
+        if (
+            decision
+            && (
+                Array.isArray(decision.hypotheses)
+                || Array.isArray(decision.proposals)
+            )
+        ) {
+            return {
+                occurredAt: null,
+                payload: decision,
+            };
+        }
+
+        return null;
+    }
+
+    tsunadeExpertise(incident) {
+        const expertise = this.latestTsunadeExpertise(incident);
+
+        if (!expertise) {
+            return "";
+        }
+
+        return `
+            <section class="incident-katsuyu-analysis">
+                <header>
+                    <div>
+                        <span>Analyse Katsuyu</span>
+                        <strong>Hypothèses exploitables</strong>
+                    </div>
+                    ${expertise.occurredAt
+                        ? `<time>${escapeHtml(formatDate(expertise.occurredAt))}</time>`
+                        : ""}
+                </header>
+                ${this.expertiseDetails(expertise.payload)}
+            </section>`;
+    }
+
     evolution(incident) {
         const events = Array.isArray(incident.events) ? incident.events : [];
         if (events.length === 0) {
             return '<p class="incident-card__evolution">Aucune évolution enregistrée.</p>';
         }
         return `<ol class="incident-card__evolution">${events.map((event) => `
-            <li><time>${escapeHtml(formatDate(event.occurred_at))}</time>
-            <strong>${escapeHtml(EVENT_LABELS[event.kind] ?? this.readableIdentifier(event.kind))}</strong>
-            <span>${escapeHtml(this.translatedSummary(event.summary))}</span>
-            ${this.expertiseDetails(event.payload)}</li>`).join("")}</ol>`;
+            <li>
+                <header>
+                    <time>${escapeHtml(formatDate(event.occurred_at))}</time>
+                    <strong>${escapeHtml(EVENT_LABELS[event.kind] ?? this.readableIdentifier(event.kind))}</strong>
+                </header>
+                <p>${escapeHtml(this.translatedSummary(event.summary))}</p>
+                ${this.expertiseDetails(event.payload)}
+            </li>`).join("")}</ol>`;
     }
 
     expertiseDetails(payload) {
@@ -388,23 +461,72 @@ export class IncidentsController {
         const proposals = Array.isArray(payload.proposals)
             ? payload.proposals.slice(0, 16)
             : [];
+        const commands = Array.isArray(payload.investigation_commands)
+            ? payload.investigation_commands.slice(0, 8)
+            : [];
         const status = payload.epistemic_status === "hypothesis"
             ? '<span class="incident-evidence-status">Analyse Katsuyu utilisée par Tsunade</span>'
             : payload.epistemic_status === "confirmed_by_probe"
                 ? '<span class="incident-evidence-status is-confirmed">Confirmé par investigation déterministe</span>'
                 : "";
         const hypothesisList = hypotheses.length
-            ? `<ul class="incident-hypotheses">${hypotheses.map((hypothesis) => `
-                <li><strong>${escapeHtml(Math.round(Number(hypothesis.confidence ?? 0) * 100))} %</strong>
-                ${escapeHtml(hypothesis.statement ?? "Hypothèse sans résumé")}
-                ${this.evidenceList("Causes possibles", hypothesis.possible_causes)}
-                ${this.evidenceList("Concordants", hypothesis.supporting_evidence)}
-                ${this.evidenceList("Contradictoires", hypothesis.contradicting_evidence)}</li>`).join("")}</ul>`
+            ? `<ol class="incident-hypotheses">${hypotheses.map((hypothesis, index) => `
+                <li>
+                    <header>
+                        <span>Hypothèse ${escapeHtml(index + 1)}</span>
+                        <strong>${escapeHtml(Math.round(Number(hypothesis.confidence ?? 0) * 100))} %</strong>
+                    </header>
+                    <p>${escapeHtml(hypothesis.statement ?? "Hypothèse sans résumé")}</p>
+                    ${this.evidenceList("Causes possibles", hypothesis.possible_causes)}
+                    ${this.evidenceList("Indices concordants", hypothesis.supporting_evidence)}
+                    ${this.evidenceList("Indices contradictoires", hypothesis.contradicting_evidence)}
+                </li>`).join("")}</ol>`
             : "";
         const proposalList = proposals.length
             ? `<div class="incident-proposals"><strong>Propositions non autorisées</strong><ul>${proposals.map((proposal) => `<li>${escapeHtml(proposal)}</li>`).join("")}</ul></div>`
             : "";
-        return `${status}${hypothesisList}${proposalList}`;
+        const commandList = commands.length
+            ? `<div class="incident-command-proposals">
+                <strong>Commandes proposées</strong>
+                ${commands.map((command) => this.commandProposal(command)).join("")}
+            </div>`
+            : "";
+        return `${status}${hypothesisList}${proposalList}${commandList}`;
+    }
+
+    commandProposal(command) {
+        if (!command || typeof command !== "object") {
+            return "";
+        }
+        const commandText = String(command.command ?? "").trim();
+
+        if (!commandText) {
+            return "";
+        }
+
+        const encodedCommand = window.btoa(
+            unescape(encodeURIComponent(commandText)),
+        );
+
+        return `
+            <article class="incident-command-proposal">
+                <header>
+                    <div>
+                        <span>${escapeHtml(command.safety ?? "Lecture seule")}</span>
+                        <strong>${escapeHtml(command.title ?? "Commande proposée")}</strong>
+                    </div>
+                    <small>${escapeHtml(command.target ?? "Cible à confirmer")}</small>
+                </header>
+                ${command.expected
+                    ? `<p>${escapeHtml(command.expected)}</p>`
+                    : ""}
+                <pre><code>${escapeHtml(commandText)}</code></pre>
+                <button
+                    class="configuration-secondary-button"
+                    data-tsunade-copy-command="${escapeHtml(encodedCommand)}"
+                    type="button"
+                >Copier la commande</button>
+            </article>`;
     }
 
     evidenceList(label, values) {
@@ -412,6 +534,25 @@ export class IncidentsController {
             return "";
         }
         return `<small><strong>${escapeHtml(label)} :</strong> ${values.slice(0, 8).map((value) => escapeHtml(value)).join(" · ")}</small>`;
+    }
+
+    async copyCommand(button) {
+        const encodedCommand = button.dataset.tsunadeCopyCommand;
+
+        if (!encodedCommand) {
+            return;
+        }
+
+        const command = decodeURIComponent(
+            escape(window.atob(encodedCommand)),
+        );
+        await navigator.clipboard.writeText(command);
+        const previousLabel = button.textContent;
+
+        button.textContent = "Commande copiée";
+        window.setTimeout(() => {
+            button.textContent = previousLabel;
+        }, 1600);
     }
 
     async diagnose(incidentId, button) {
