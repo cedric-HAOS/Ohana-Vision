@@ -17,6 +17,7 @@ from ohana_vision.web.routers.observations import (
 from ohana_vision.web.routers.runtime import (
     router as runtime_router,
 )
+from ohana_vision.web.routers.shizune import router as shizune_router
 from ohana_vision.web.routers.timeline import (
     router as timeline_router,
 )
@@ -58,3 +59,4 @@ router.include_router(infrastructure_router)
 router.include_router(incidents_router)
 router.include_router(host_router)
 router.include_router(administration_router)
+router.include_router(shizune_router)

@@ -21,6 +21,13 @@ def test_application_configuration_has_safe_defaults() -> None:
     assert configuration.server.log_level == "info"
     assert configuration.web.documentation_enabled is True
     assert configuration.storage.database_path is None
+    assert configuration.agent.companion_enabled is False
+    assert str(configuration.agent.companion_url) == (
+        "https://infra-01.ohana.lan:8767/"
+    )
+    assert configuration.agent.companion_ca_file.as_posix() == (
+        "/etc/ohana-vision/companion-ca.crt"
+    )
 
 
 def test_application_configuration_is_immutable() -> None:

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
-from ohana_vision.administration import AgentAdministrationClient
+from ohana_vision.administration import AgentAdministrationClient, AgentCompanionClient
 from ohana_vision.configuration import (
     ApplicationConfiguration,
     ConfigurationLoader,
@@ -91,6 +91,7 @@ def build_application(
         history_max_rows=resolved_configuration.storage.history_max_rows,
     )
     administration_client = None
+    companion_client = None
 
     if resolved_configuration.agent.administration_enabled:
         administration_client = AgentAdministrationClient(
@@ -99,10 +100,18 @@ def build_application(
             timeout_seconds=(resolved_configuration.agent.timeout_seconds),
         )
 
+    if resolved_configuration.agent.companion_enabled:
+        companion_client = AgentCompanionClient(
+            base_url=str(resolved_configuration.agent.companion_url),
+            ca_certificate_file=resolved_configuration.agent.companion_ca_file,
+            timeout_seconds=resolved_configuration.agent.timeout_seconds,
+        )
+
     return create_app(
         context=context,
         configuration=resolved_configuration,
         administration_client=administration_client,
+        companion_client=companion_client,
     )
 
 

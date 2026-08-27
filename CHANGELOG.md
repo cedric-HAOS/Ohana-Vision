@@ -6,6 +6,21 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.22.5] — Passerelle Shizune PWA — 2026-08-27
+
+## Ajouté
+
+- exposition de la PWA installée sous `/shizune/` sur le listener Vision ;
+- passerelle de même origine `/api/shizune` vers le contrat compagnon borné
+  d’Agent/Tsunade ;
+- affichage de la version Shizune dans le pied de page de Vision.
+
+## Sécurité
+
+- aucune conservation du jeton compagnon dans Vision ;
+- vérification TLS du listener Agent avec une CA dédiée ;
+- réponses privées marquées `Cache-Control: no-store`.
+
 # [1.22.0] — Wake-on-LAN des workers — 2026-08-25
 
 ## Ajouté

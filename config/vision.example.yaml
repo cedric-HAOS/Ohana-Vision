@@ -21,3 +21,6 @@ agent:
   administration_url: http://127.0.0.1:8765
   token_file: /etc/ohana-vision/management.token
   timeout_seconds: 10.0
+  companion_enabled: true
+  companion_url: https://infra-01.ohana.lan:8767
+  companion_ca_file: /etc/ohana-vision/companion-ca.crt
