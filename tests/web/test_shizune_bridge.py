@@ -34,10 +34,6 @@ class FakeCompanionClient:
         self.calls.append(("activity", device_id, token))
         return {"schema_version": 1, "activity": []}
 
-    def read_suggestions(self, device_id: str, token: str) -> dict[str, Any]:
-        self.calls.append(("suggestions", device_id, token))
-        return {"schema_version": 1, "suggestions": []}
-
     def respond(
         self,
         request_id: str,
@@ -88,25 +84,6 @@ def test_private_summary_requires_and_forwards_companion_identity() -> None:
     assert response.headers["cache-control"] == "no-store"
     assert response.json()["konoha_state"] == "healthy"
     assert companion.calls == [("summary", "pwa-device", "scoped-secret")]
-
-
-def test_private_suggestions_requires_and_forwards_companion_identity() -> None:
-    client, companion = make_client()
-
-    unauthorized = client.get("/api/shizune/suggestions")
-    response = client.get(
-        "/api/shizune/suggestions",
-        headers={
-            "Authorization": "Bearer scoped-secret",
-            "X-Ohana-Companion-Id": "pwa-device",
-        },
-    )
-
-    assert unauthorized.status_code == 401
-    assert response.status_code == 200
-    assert response.headers["cache-control"] == "no-store"
-    assert response.json()["suggestions"] == []
-    assert companion.calls == [("suggestions", "pwa-device", "scoped-secret")]
 
 
 def test_structured_response_is_forwarded_without_free_form_action() -> None:

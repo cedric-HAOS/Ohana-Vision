@@ -6,6 +6,15 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.22.7] — Commandes réservées à Tsunade — 2026-08-27
+
+## Corrigé
+
+- La passerelle Shizune n’expose plus les commandes d’investigation destinées à
+  être copiées depuis un poste d’administration.
+- La page incident Tsunade reste le point de consultation et de copie des modèles
+  Home Assistant ciblés produits par Agent.
+
 # [1.22.6] — Tsunade exploitable — 2026-08-27
 
 ## Ajouté

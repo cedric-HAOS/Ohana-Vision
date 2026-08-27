@@ -91,16 +91,6 @@ def read_activity(
     return _call(lambda: _client(request).read_activity(device_id, token))
 
 
-@router.get("/suggestions")
-def read_suggestions(
-    request: Request,
-    authorization: str | None = Header(default=None),
-    companion_id: str | None = Header(default=None, alias="X-Ohana-Companion-Id"),
-) -> JSONResponse:
-    device_id, token = _identity(authorization, companion_id)
-    return _call(lambda: _client(request).read_suggestions(device_id, token))
-
-
 @router.post("/requests/{request_id}/response")
 def respond(
     request_id: str,
