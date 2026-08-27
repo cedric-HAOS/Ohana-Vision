@@ -3012,3 +3012,6 @@ def test_workers_configuration_exposes_wake_on_lan_controls() -> None:
     assert "Tester le réveil" in script.text
     assert "administrationWorkerWake" in script.text
     assert "wake_on_lan_mac_address" in script.text
+    assert "watchWakingWorkers()" in script.text
+    assert "workerAvailabilityRefreshIntervalMs = 5000" in script.text
+    assert 'worker.availability === "WAKING"' in script.text

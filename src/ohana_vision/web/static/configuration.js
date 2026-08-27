@@ -151,6 +151,9 @@ export class ConfigurationController {
         this.workerWakeWriteAvailable = false;
         this.workerWakeAvailable = false;
         this.workerWakeOnLanLoadError = null;
+        this.workerAvailabilityRefreshTimer = null;
+        this.workerAvailabilityRefreshDeadline = 0;
+        this.workerAvailabilityRefreshIntervalMs = 5000;
         this.companionPairings = [];
         this.companions = [];
         this.companionsAvailable = false;
@@ -1262,10 +1265,12 @@ export class ConfigurationController {
             return;
         }
         if (this.workerPairingsLoadError) {
+            this.clearWorkerAvailabilityRefresh();
             table.innerHTML = `<tr><td colspan="8">${escapeHtml(this.workerPairingsLoadError)}</td></tr>`;
             return;
         }
         if (!this.workers.length) {
+            this.clearWorkerAvailabilityRefresh();
             table.innerHTML = '<tr><td colspan="8">Aucun worker enregistré.</td></tr>';
             this.elements.workerAvailabilitySummary.textContent = "UNAVAILABLE";
             this.elements.workerWakeSummary.textContent = "aucun worker connu";
@@ -1312,6 +1317,7 @@ export class ConfigurationController {
                 <td>${wakeAction}</td>
             </tr>`;
         }).join("");
+        this.watchWakingWorkers();
     }
 
     async testWorkerWake(workerId) {
@@ -1332,6 +1338,7 @@ export class ConfigurationController {
             this.showNotice(
                 `Wake-on-LAN envoyé à ${workerId}. État : ${result.availability ?? "WAKING"}.`,
             );
+            this.resetWorkerAvailabilityRefreshDeadline();
             await this.refreshWorkerPairings();
         } catch (error) {
             showError(
@@ -1339,6 +1346,72 @@ export class ConfigurationController {
                 `Impossible de réveiller ${workerId} : ${this.errorMessage(error)}`,
             );
         }
+    }
+
+    hasWakingWorker() {
+        return this.workers.some(
+            (worker) => worker.availability === "WAKING",
+        );
+    }
+
+    resetWorkerAvailabilityRefreshDeadline() {
+        const timeoutSeconds =
+            this.workerWakeOnLan?.wait_timeout_seconds
+            ?? 180;
+        this.workerAvailabilityRefreshDeadline =
+            Date.now() + timeoutSeconds * 1000;
+    }
+
+    clearWorkerAvailabilityRefresh() {
+        if (this.workerAvailabilityRefreshTimer) {
+            window.clearTimeout(
+                this.workerAvailabilityRefreshTimer,
+            );
+            this.workerAvailabilityRefreshTimer = null;
+        }
+        this.workerAvailabilityRefreshDeadline = 0;
+    }
+
+    watchWakingWorkers() {
+        if (
+            !this.workerPairingsAvailable
+            || !this.hasWakingWorker()
+        ) {
+            this.clearWorkerAvailabilityRefresh();
+            return;
+        }
+
+        if (!this.workerAvailabilityRefreshDeadline) {
+            this.resetWorkerAvailabilityRefreshDeadline();
+        }
+
+        if (
+            Date.now()
+            >= this.workerAvailabilityRefreshDeadline
+        ) {
+            this.clearWorkerAvailabilityRefresh();
+            return;
+        }
+
+        if (this.workerAvailabilityRefreshTimer) {
+            return;
+        }
+
+        this.workerAvailabilityRefreshTimer =
+            window.setTimeout(
+                async () => {
+                    this.workerAvailabilityRefreshTimer = null;
+                    if (!this.hasWakingWorker()) {
+                        this.clearWorkerAvailabilityRefresh();
+                        return;
+                    }
+                    await this.refreshWorkerPairings();
+                    if (this.hasWakingWorker()) {
+                        this.watchWakingWorkers();
+                    }
+                },
+                this.workerAvailabilityRefreshIntervalMs,
+            );
     }
 
     async decideWorkerPairing(pairingId, action) {
