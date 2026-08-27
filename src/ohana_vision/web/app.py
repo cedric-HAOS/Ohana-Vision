@@ -25,6 +25,7 @@ from ohana_vision.web.websocket_hub import WebSocketHub
 APPLICATION_NAME = "Ohana Vision"
 
 STATIC_DIRECTORY = Path(__file__).parent / "static"
+SHIZUNE_DIRECTORY = Path("/var/www/shizune")
 
 
 def create_app(
@@ -76,6 +77,18 @@ def create_app(
             html=True,
         ),
         name="ui",
+    )
+
+    # Shizune is a static PWA installed by Ohana-Installer.  It deliberately
+    # shares Vision's listener so no additional port or service is required.
+    app.mount(
+        "/shizune",
+        StaticFiles(
+            directory=SHIZUNE_DIRECTORY,
+            html=True,
+            check_dir=False,
+        ),
+        name="shizune",
     )
 
     app.include_router(topology_router)

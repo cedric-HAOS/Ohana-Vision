@@ -2706,6 +2706,15 @@ def test_sidebar_exposes_agent_version_placeholder() -> None:
     assert 'id="agent-version"' in response.text
 
 
+def test_sidebar_exposes_shizune_version_placeholder() -> None:
+    """Sidebar must reserve a line for the installed Shizune PWA version."""
+    response = make_client().get("/ui/")
+
+    assert response.status_code == 200
+    assert "Ohana-Shizune" in response.text
+    assert 'id="shizune-version"' in response.text
+
+
 def test_application_loads_agent_version_from_capabilities() -> None:
     """Frontend must read the Agent version from its administration contract."""
     response = make_client().get("/ui/application.js")
@@ -2714,6 +2723,16 @@ def test_application_loads_agent_version_from_capabilities() -> None:
     assert "async loadAgentVersion()" in response.text
     assert "API.administrationCapabilities" in response.text
     assert "capabilities?.agent_version" in response.text
+
+
+def test_application_loads_shizune_version_from_installed_pwa() -> None:
+    """Frontend must read Shizune's version from its installed manifest."""
+    response = make_client().get("/ui/application.js")
+
+    assert response.status_code == 200
+    assert "async loadShizuneVersion()" in response.text
+    assert "API.shizuneVersion" in response.text
+    assert "payload?.version" in response.text
     assert '"indisponible"' in response.text
 
 

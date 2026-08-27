@@ -48,6 +48,24 @@ def test_root_endpoint_opens_web_interface() -> None:
     assert response.headers["location"] == "/ui/"
 
 
+def test_shizune_is_exposed_under_vision_listener(monkeypatch, tmp_path) -> None:
+    """The installed Shizune PWA is served without a second listener."""
+    from ohana_vision.web import app as app_module
+
+    shizune_directory = tmp_path / "shizune"
+    shizune_directory.mkdir()
+    (shizune_directory / "index.html").write_text(
+        "<title>Shizune</title>",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(app_module, "SHIZUNE_DIRECTORY", shizune_directory)
+
+    response = TestClient(create_app()).get("/shizune/")
+
+    assert response.status_code == 200
+    assert "Shizune" in response.text
+
+
 def test_api_endpoint_returns_api_status() -> None:
     """The application must expose the API router."""
     client = TestClient(create_app())

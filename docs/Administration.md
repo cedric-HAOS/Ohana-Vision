@@ -8,6 +8,13 @@ d'Ohana-Agent. Agent valide, écrit et applique seul la configuration.
 ## Ouvrir la configuration
 
 1. Ouvrir `http://ADRESSE_DU_SERVEUR:8000`.
+
+La PWA Shizune installée par Ohana-Installer est accessible sur le même
+serveur, sans utiliser un second port :
+
+```text
+http://ADRESSE_DU_SERVEUR:8000/shizune/
+```
 2. Choisir **Configuration** dans la barre latérale.
 3. Choisir **Réseau Agent**, **Baux DHCP**, **Architecture** ou **Plugins**.
 

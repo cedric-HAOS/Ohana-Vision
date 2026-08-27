@@ -103,6 +103,10 @@ export class ApplicationController {
                 document.querySelector(
                     "#agent-version",
                 ),
+            shizuneVersion:
+                document.querySelector(
+                    "#shizune-version",
+                ),
         };
 
         this.handleNavigationChanged =
@@ -124,6 +128,7 @@ export class ApplicationController {
         this.initializeControllers();
 
         void this.loadVisionVersion();
+        void this.loadShizuneVersion();
         void this.refresh();
         this.websocket.initialize();
     }
@@ -648,6 +653,33 @@ export class ApplicationController {
                     : "inconnue";
         } catch {
             this.elements.agentVersion.textContent =
+                "indisponible";
+        }
+    }
+
+    /**
+     * Load the version exposed by the installed Shizune PWA.
+     */
+    async loadShizuneVersion() {
+        if (!this.elements.shizuneVersion) {
+            return;
+        }
+
+        try {
+            const payload = await fetchJson(
+                API.shizuneVersion,
+            );
+            const version = String(
+                payload?.version
+                ?? "",
+            ).trim();
+
+            this.elements.shizuneVersion.textContent =
+                version && version !== "unknown"
+                    ? `v${version}`
+                    : "inconnue";
+        } catch {
+            this.elements.shizuneVersion.textContent =
                 "indisponible";
         }
     }
