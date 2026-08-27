@@ -469,6 +469,12 @@ export class IncidentsController {
             : payload.epistemic_status === "confirmed_by_probe"
                 ? '<span class="incident-evidence-status is-confirmed">Confirmé par investigation déterministe</span>'
                 : "";
+        const failure = payload.cycle_status === "ai_failed" && payload.error
+            ? `<div class="incident-ai-failure">
+                <strong>Erreur technique Katsuyu</strong>
+                <code>${escapeHtml(payload.error)}</code>
+            </div>`
+            : "";
         const hypothesisList = hypotheses.length
             ? `<ol class="incident-hypotheses">${hypotheses.map((hypothesis, index) => `
                 <li>
@@ -491,7 +497,7 @@ export class IncidentsController {
                 ${commands.map((command) => this.commandProposal(command)).join("")}
             </div>`
             : "";
-        return `${status}${hypothesisList}${proposalList}${commandList}`;
+        return `${status}${failure}${hypothesisList}${proposalList}${commandList}`;
     }
 
     commandProposal(command) {

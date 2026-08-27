@@ -390,6 +390,26 @@
     color: var(--ohana-health-healthy);
 }
 
+.incident-ai-failure {
+    display: grid;
+    gap: var(--ohana-space-2);
+    margin-top: var(--ohana-space-2);
+    padding: var(--ohana-space-3);
+    border: var(--ohana-border-width-thin) solid var(--ohana-health-critical);
+    border-radius: var(--ohana-radius-sm);
+    background: var(--ohana-background-surface-raised);
+}
+
+.incident-ai-failure strong {
+    color: var(--ohana-health-critical);
+}
+
+.incident-ai-failure code {
+    overflow-wrap: anywhere;
+    color: var(--ohana-text-primary);
+    white-space: pre-wrap;
+}
+
 .incident-hypotheses,
 .incident-proposals ul {
     margin: var(--ohana-space-2) 0 0;

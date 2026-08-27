@@ -6,6 +6,15 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.22.8] — Échecs Katsuyu visibles — 2026-08-27
+
+## Corrigé
+
+- La page Tsunade affiche l’erreur technique exacte lorsqu’une analyse Katsuyu
+  échoue, au lieu de laisser croire qu’aucune nouvelle information n’existe.
+- Le détail reste attaché au bloc d’analyse concerné et ne fournit aucune voie
+  d’exécution depuis Shizune.
+
 # [1.22.7] — Commandes réservées à Tsunade — 2026-08-27
 
 ## Corrigé

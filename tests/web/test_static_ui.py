@@ -335,6 +335,8 @@ def test_static_ui_exposes_incident_center() -> None:
     assert "Conséquences" in script.text
     assert "Réparation réussie" in script.text
     assert "Analyse Katsuyu utilisée par Tsunade" in script.text
+    assert "Erreur technique Katsuyu" in script.text
+    assert 'payload.cycle_status === "ai_failed"' in script.text
     assert "in_progress" in script.text
     assert "resolved" in script.text
 
