@@ -1214,16 +1214,7 @@
     gap: var(--ohana-space-3);
 }
 
-/*
- * Les résumés Workers contiennent davantage d'informations que les autres
- * pages de configuration :
- * - 4 indicateurs généraux ;
- * - 5 paramètres Wake-on-LAN.
- *
- * La grille s'adapte donc à l'espace disponible au lieu d'être limitée
- * aux 3 colonnes du composant générique.
- */
-#workers-configuration-panel .configuration-summary {
+#workers-configuration-panel > .configuration-summary {
     grid-template-columns:
         repeat(
             auto-fit,
@@ -1232,7 +1223,7 @@
     gap: var(--ohana-space-2);
 }
 
-#workers-configuration-panel .configuration-summary-card {
+#workers-configuration-panel > .configuration-summary .configuration-summary-card {
     gap: 0.2rem;
     padding:
         var(--ohana-space-3)
@@ -1256,4 +1247,191 @@ p:not(.panel-heading__kicker) {
 #workers-configuration-panel .configuration-table th,
 #workers-configuration-panel .configuration-table td {
     padding: 0.55rem 0.5rem;
+}
+
+.worker-control-grid {
+    display: grid;
+    grid-template-columns: minmax(24rem, 0.9fr) minmax(30rem, 1.1fr);
+    gap: var(--ohana-space-3);
+    align-items: stretch;
+}
+
+.worker-control-card {
+    display: grid;
+    align-content: start;
+    gap: var(--ohana-space-2);
+}
+
+.worker-control-card .configuration-card__heading {
+    margin-bottom: 0;
+    padding-bottom: var(--ohana-space-2);
+    border-bottom:
+        var(--ohana-border-width-thin)
+        solid
+        var(--ohana-border-subtle);
+}
+
+.worker-control-card .configuration-card__heading .configuration-secondary-button {
+    flex-shrink: 0;
+    align-self: flex-start;
+    min-height: 2.2rem;
+    padding: 0.45rem 0.75rem;
+}
+
+.worker-metric-list {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--ohana-space-2);
+}
+
+.worker-metric-list article {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+    padding: 0.55rem 0;
+    border-bottom:
+        var(--ohana-border-width-thin)
+        solid
+        var(--ohana-border-subtle);
+}
+
+.worker-metric-list span,
+.worker-log-form label,
+.worker-log-form small,
+.worker-log-sources legend {
+    color: var(--ohana-text-muted);
+    font-size: var(--ohana-font-size-sm);
+}
+
+.worker-metric-list strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--ohana-text-primary);
+    font-size: var(--ohana-font-size-md);
+}
+
+.worker-log-form {
+    display: grid;
+    grid-template-columns:
+        minmax(11rem, 1fr)
+        minmax(10rem, 1fr)
+        minmax(16rem, 1.3fr);
+    gap: var(--ohana-space-3);
+    align-items: start;
+}
+
+.worker-log-form label,
+.worker-log-window {
+    display: grid;
+    gap: var(--ohana-space-1);
+    min-width: 0;
+}
+
+.worker-log-window {
+    grid-row: span 2;
+}
+
+.worker-log-form input {
+    width: 100%;
+    min-height: 2.45rem;
+    padding: 0.55rem 0.65rem;
+    border:
+        var(--ohana-border-width-thin)
+        solid
+        var(--ohana-border-default);
+    border-radius: var(--ohana-radius-sm);
+    color: var(--ohana-text-primary);
+    background: var(--ohana-background-canvas);
+}
+
+.worker-log-toggle {
+    align-self: stretch;
+    align-items: center;
+    min-height: 2.45rem;
+    padding: 0.55rem 0.75rem;
+    border:
+        var(--ohana-border-width-thin)
+        solid
+        var(--ohana-border-subtle);
+    border-radius: var(--ohana-radius-sm);
+    background: var(--ohana-background-canvas);
+}
+
+.worker-log-toggle input {
+    width: auto;
+    min-height: auto;
+}
+
+.worker-log-sources {
+    display: grid;
+    gap: var(--ohana-space-1);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.worker-log-sources > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ohana-space-2);
+}
+
+.worker-log-source {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--ohana-space-1);
+    min-width: 6.75rem;
+    min-height: 2.15rem;
+    padding: 0.45rem 0.8rem;
+    border:
+        var(--ohana-border-width-thin)
+        solid
+        var(--ohana-border-default);
+    border-radius: var(--ohana-radius-sm);
+    color: var(--ohana-text-secondary);
+    background: var(--ohana-background-canvas);
+}
+
+.worker-log-source:has(input:checked) {
+    border-color:
+        color-mix(
+            in srgb,
+            var(--ohana-brand-primary) 55%,
+            var(--ohana-border-default)
+        );
+    color: var(--ohana-text-primary);
+    background:
+        color-mix(
+            in srgb,
+            var(--ohana-brand-primary) 10%,
+            var(--ohana-background-canvas)
+        );
+}
+
+.worker-log-source input {
+    width: 1rem;
+    min-height: auto;
+}
+
+@media (max-width: 84rem) {
+    .worker-control-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .worker-metric-list {
+        grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    }
+}
+
+@media (max-width: 52rem) {
+    .worker-metric-list,
+    .worker-log-form {
+        grid-template-columns: 1fr;
+    }
+
+    .worker-log-window {
+        grid-row: auto;
+    }
 }

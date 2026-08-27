@@ -211,6 +211,23 @@ class FakeAdministrationClient:
             "status": "QUEUED",
         }
 
+    def read_tsunade_log_policy(self) -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "enabled": True,
+            "schedule": "0 5 * * *",
+            "sources": ["ha-01", "linky-01", "zwave-01"],
+            "window_hours": 24,
+            "max_bytes_per_source": 2097152,
+            "timeout_seconds": 900,
+        }
+
+    def write_tsunade_log_policy(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            **payload,
+        }
+
     def read_job(self, job_id: str) -> dict[str, Any]:
         return {
             "job_id": job_id,
@@ -312,6 +329,7 @@ def test_administration_routes_proxy_agent_documents() -> None:
         "11111111-1111-4111-8111-111111111111/diagnose"
     )
     log_check = client.post("/api/administration/tsunade/incidents/logs/check")
+    log_policy = client.get("/api/administration/tsunade/incidents/logs")
     job = client.get("/api/administration/jobs/55555555-5555-4555-8555-555555555555")
     log_investigation = client.post(
         "/api/administration/tsunade/incidents/"
@@ -353,6 +371,7 @@ def test_administration_routes_proxy_agent_documents() -> None:
     assert incident.json()["events"] == []
     assert diagnosis.json()["status"] == "AI_QUEUED"
     assert log_check.json()["status"] == "QUEUED"
+    assert log_policy.json()["schedule"] == "0 5 * * *"
     assert job.json()["status"] == "SUCCEEDED"
     assert log_check.json()["type"] == "logs.health_check"
     assert log_investigation.json()["parameters"]["pattern"] == "Node 17"
@@ -409,6 +428,17 @@ def test_administration_routes_proxy_writes() -> None:
     backup_response = client.post(
         "/api/administration/plugins/backup/targets/ha-01/run",
     )
+    log_policy_response = client.put(
+        "/api/administration/tsunade/incidents/logs",
+        json={
+            "enabled": True,
+            "schedule": "30 6 * * *",
+            "sources": ["ha-01"],
+            "window_hours": 12,
+            "max_bytes_per_source": 1048576,
+            "timeout_seconds": 600,
+        },
+    )
     pairing_id = "11111111-1111-4111-8111-111111111111"
     pairing_approved = client.post(
         f"/api/administration/workers/pairings/{pairing_id}/approve"
@@ -453,6 +483,7 @@ def test_administration_routes_proxy_writes() -> None:
         "target_id": "ha-01",
         "status": "accepted",
     }
+    assert log_policy_response.json()["schedule"] == "30 6 * * *"
     assert pairing_approved.json()["status"] == "APPROVED"
     assert pairing_rejected.json()["status"] == "REJECTED"
     assert companion_pairing_approved.json()["status"] == "APPROVED"

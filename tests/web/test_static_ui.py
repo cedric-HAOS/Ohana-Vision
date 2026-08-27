@@ -2670,7 +2670,7 @@ def test_plugin_ui_configures_haos_backups() -> None:
     assert "plugin-backup-destination-path" in response.text
     assert "plugin-backup-target-${index}-enabled" in response.text
     assert "plugin-backup-target-${index}-url" in response.text
-    assert "plugin-backup-target-${index}-time" in response.text
+    assert "plugin-backup-target-${index}`" in response.text
     assert "token_configured" in response.text
     assert "password_configured" in response.text
     assert "plugin-backup-target-${index}-token" in response.text
@@ -2990,6 +2990,12 @@ def test_backup_ui_exposes_infra_01_encryption_and_schedule() -> None:
     assert "configuration.infra_01" in response.text
     assert "delete configuration.infra_01.backup_in_progress" in response.text
     assert "delete configuration.infra_01.age_recipient" in response.text
+    assert "backupFrequencyControl" in response.text
+    assert "backupSchedulePayload" in response.text
+    assert "Hebdomadaire" in response.text
+    assert "Mensuel" in response.text
+    assert 'backupFrequencyControl("plugin-backup-infra"' in response.text
+    assert "plugin-backup-target-${index}`" in response.text
 
 
 def test_device_details_supports_manual_infra_01_backup() -> None:
@@ -3009,9 +3015,15 @@ def test_workers_configuration_exposes_wake_on_lan_controls() -> None:
     assert page.status_code == 200
     assert 'id="worker-wake-enabled"' in page.text
     assert 'id="worker-wake-broadcast"' in page.text
+    assert 'id="tsunade-log-enabled"' in page.text
+    assert 'id="tsunade-log-save"' in page.text
     assert "Tester le réveil" in script.text
     assert "administrationWorkerWake" in script.text
     assert "wake_on_lan_mac_address" in script.text
+    assert "tsunadeLogPolicy" in script.text
+    assert "API.tsunadeLogPolicy" in script.text
+    assert "incidents.logs.read" in script.text
+    assert "incidents.logs.write" in script.text
     assert "watchWakingWorkers()" in script.text
     assert "workerAvailabilityRefreshIntervalMs = 5000" in script.text
     assert 'worker.availability === "WAKING"' in script.text

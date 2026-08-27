@@ -226,6 +226,30 @@ def read_tsunade_incidents(
     return _call(lambda: client.read_tsunade_incidents(state))
 
 
+@router.post("/tsunade/incidents/logs/check")
+def request_tsunade_log_check(request: Request) -> dict[str, Any]:
+    """Request the deterministic log control owned by Agent/Tsunade."""
+    client = _client(request)
+    return _call(client.request_tsunade_log_check)
+
+
+@router.get("/tsunade/incidents/logs")
+def read_tsunade_log_policy(request: Request) -> dict[str, Any]:
+    """Read Agent-owned scheduled log-control policy."""
+    client = _client(request)
+    return _call(client.read_tsunade_log_policy)
+
+
+@router.put("/tsunade/incidents/logs")
+def write_tsunade_log_policy(
+    payload: dict[str, Any],
+    request: Request,
+) -> dict[str, Any]:
+    """Apply Agent-owned scheduled log-control policy."""
+    client = _client(request)
+    return _call(lambda: client.write_tsunade_log_policy(payload))
+
+
 @router.get("/tsunade/incidents/{incident_id}")
 def read_tsunade_incident(incident_id: str, request: Request) -> dict[str, Any]:
     """Expose one incident evolution through the existing administration proxy."""
@@ -238,13 +262,6 @@ def diagnose_tsunade_incident(incident_id: str, request: Request) -> dict[str, A
     """Request expertise through Agent; Vision never executes an operation."""
     client = _client(request)
     return _call(lambda: client.diagnose_tsunade_incident(incident_id))
-
-
-@router.post("/tsunade/incidents/logs/check")
-def request_tsunade_log_check(request: Request) -> dict[str, Any]:
-    """Request the deterministic log control owned by Agent/Tsunade."""
-    client = _client(request)
-    return _call(client.request_tsunade_log_check)
 
 
 @router.get("/jobs/{job_id}")

@@ -890,52 +890,97 @@
           <small>association explicite requise</small>
          </article>
         </div>
-        <section class="configuration-card">
-         <div class="configuration-card__heading">
-          <div>
-           <p class="panel-heading__kicker">Tsunade</p>
-           <h2>Wake-on-LAN</h2>
-           <p id="worker-wake-policy-notice">Politique de réveil fournie par Agent.</p>
+        <div class="worker-control-grid" aria-label="Pilotage Tsunade">
+         <section class="configuration-card worker-control-card">
+          <div class="configuration-card__heading">
+           <div>
+            <p class="panel-heading__kicker">Tsunade</p>
+            <h2>Wake-on-LAN</h2>
+            <p id="worker-wake-policy-notice">Politique de réveil fournie par Agent.</p>
+           </div>
+           <button
+            id="worker-wake-toggle"
+            class="configuration-secondary-button"
+            type="button"
+            disabled
+           >
+            Activer le Wake-on-LAN
+           </button>
           </div>
-         </div>
-         <div class="configuration-summary">
-          <article class="configuration-summary-card">
-           <span>Activation</span>
-           <strong id="worker-wake-enabled">—</strong>
-           <small>politique Agent</small>
-          </article>
-          <article class="configuration-summary-card">
-           <span>Broadcast</span>
-           <strong id="worker-wake-broadcast">—</strong>
-           <small>réseau Konoha</small>
-          </article>
-          <article class="configuration-summary-card">
-           <span>Port UDP</span>
-           <strong id="worker-wake-port">—</strong>
-           <small>Magic Packet</small>
-          </article>
-          <article class="configuration-summary-card">
-           <span>Attente réveil</span>
-           <strong id="worker-wake-timeout">—</strong>
-           <small>avant abandon</small>
-          </article>
-          <article class="configuration-summary-card">
-           <span>Fenêtre disponible</span>
-           <strong id="worker-wake-heartbeat">—</strong>
-           <small>présence Katsuyu</small>
-          </article>
+          <div class="worker-metric-list">
+           <article>
+            <span>Activation</span>
+            <strong id="worker-wake-enabled">—</strong>
+           </article>
+           <article>
+            <span>Broadcast</span>
+            <strong id="worker-wake-broadcast">—</strong>
+           </article>
+           <article>
+            <span>Port UDP</span>
+            <strong id="worker-wake-port">—</strong>
+           </article>
+           <article>
+            <span>Attente réveil</span>
+            <strong id="worker-wake-timeout">—</strong>
+           </article>
+           <article>
+            <span>Fenêtre disponible</span>
+            <strong id="worker-wake-heartbeat">—</strong>
+           </article>
+          </div>
+         </section>
+         <section class="configuration-card worker-control-card">
+          <div class="configuration-card__heading">
+           <div>
+            <p class="panel-heading__kicker">Tsunade</p>
+            <h2>Contrôles de journaux</h2>
+            <p id="tsunade-log-policy-notice">Contrôle planifié fourni par Agent.</p>
+           </div>
+          </div>
+          <div class="worker-log-form">
+           <label class="configuration-check worker-log-toggle">
+            <input id="tsunade-log-enabled" type="checkbox">
+            Contrôle automatique activé
+           </label>
+           <label>
+           Heure quotidienne
+           <input id="tsunade-log-time" type="time" value="05:00" required>
+          </label>
+          <div class="worker-log-window">
+           <label>
+            Fenêtre analysée
+            <input id="tsunade-log-window-hours" type="number" min="1" max="48" step="1" value="24" required>
+            <small>heures</small>
+           </label>
+           <fieldset class="worker-log-sources">
+            <legend>Sources analysées</legend>
+            <div id="tsunade-log-sources"></div>
+           </fieldset>
+          </div>
+          <label>
+           Taille max
+           <input id="tsunade-log-max-mib" type="number" min="1" max="4" step="1" value="2" required>
+            <small>MiB par source</small>
+           </label>
+           <label>
+            Délai maximal
+            <input id="tsunade-log-timeout" type="number" min="60" max="3600" step="60" value="900" required>
+           <small>secondes</small>
+          </label>
          </div>
          <div class="configuration-actions">
-            <button
-                id="worker-wake-toggle"
-                class="configuration-secondary-button"
-                type="button"
-                disabled
-            >
-                Activer le Wake-on-LAN
-            </button>
-            </div>
-        </section>
+           <button
+            id="tsunade-log-save"
+            class="configuration-secondary-button"
+            type="button"
+            disabled
+           >
+            Enregistrer les contrôles
+           </button>
+          </div>
+         </section>
+        </div>
         <section class="configuration-card">
          <div class="configuration-card__heading">
           <div>

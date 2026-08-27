@@ -59,6 +59,7 @@ export class IncidentsController {
         this.state = state;
         this.incidents = [];
         this.details = new Map();
+        this.expandedDetails = new Set();
         this.summary = {};
         this.logHealth = null;
         this.logCheckAvailable = false;
@@ -145,6 +146,7 @@ export class IncidentsController {
                 fetchJson(API.administrationCapabilities),
             ]);
             this.incidents = Array.isArray(payload?.incidents) ? payload.incidents : [];
+            await this.loadDecisionDetails();
             this.summary = payload?.summary && typeof payload.summary === "object"
                 ? payload.summary
                 : {};
@@ -264,7 +266,7 @@ export class IncidentsController {
                         ${incident.ended_at ? `<div><dt>Résolution</dt><dd>${escapeHtml(formatDate(incident.ended_at))}</dd></div>` : ""}
                     </dl>
                     ${logSynthesis}
-                    ${details ? this.tsunadeDecision(details) : ""}
+                    ${this.tsunadeDecision(details ?? incident)}
                     ${incident.final_result ? `<p class="incident-card__result"><strong>Résultat :</strong> ${escapeHtml(incident.final_result)}</p>` : ""}
                     ${repairSummary}
                     ${experience ? `<div class="incident-experience"><strong>${escapeHtml(experience.prompt)}</strong><button class="configuration-primary-button" data-tsunade-experience="${escapeHtml(incident.incident_id)}" type="button">Enregistrer la réparation connue</button></div>` : ""}
@@ -279,14 +281,17 @@ export class IncidentsController {
                         ${incident.state === "active" ? `<button class="configuration-primary-button" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${expertiseState === "ai_queued" ? "Analyse Katsuyu en attente" : "Lancer le diagnostic"}</button>` : ""}
                         ${incident.state === "active" && this.canRestartDnsmasq(incident) && repairs.length === 0 ? `<button class="configuration-secondary-button" data-tsunade-repair-propose="${escapeHtml(incident.incident_id)}" type="button">Proposer le redémarrage de dnsmasq</button>` : ""}
                         ${proposedRepair && !proposedRepair.authorized_at ? `<button class="configuration-primary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-tsunade-repair-authorize="${escapeHtml(proposedRepair.repair_id)}" type="button">Autoriser depuis Vision</button>` : ""}
-                        <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${details ? "Masquer l’évolution" : "Afficher l’évolution"}</button>
+                        <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${this.expandedDetails.has(incident.incident_id) ? "Masquer l’évolution" : "Afficher l’évolution"}</button>
                     </div>
-                    ${details ? this.evolution(details) : ""}
+                    ${this.expandedDetails.has(incident.incident_id) && details ? this.evolution(details) : ""}
                 </div>
             </article>`;
     }
 
     latestTsunadeDecision(incident) {
+        if (incident?.latest_decision && typeof incident.latest_decision === "object") {
+            return incident.latest_decision;
+        }
         const events = Array.isArray(incident?.events)
             ? incident.events
             : [];
@@ -420,6 +425,7 @@ export class IncidentsController {
                 method: "POST",
             });
             this.details.delete(incidentId);
+            this.expandedDetails.delete(incidentId);
             await this.load();
         } catch (error) {
             this.showError(`Diagnostic indisponible : ${this.errorMessage(error)}`);
@@ -530,6 +536,7 @@ export class IncidentsController {
             );
 
             this.details.delete(incidentId);
+            this.expandedDetails.delete(incidentId);
 
             await this.load();
 
@@ -566,6 +573,7 @@ export class IncidentsController {
                 body: JSON.stringify({operation: "restart_service"}),
             });
             this.details.delete(incidentId);
+            this.expandedDetails.delete(incidentId);
             await this.load();
             await this.loadDetails(incidentId, button);
         } catch (error) {
@@ -588,6 +596,7 @@ export class IncidentsController {
                 }),
             });
             this.details.delete(incidentId);
+            this.expandedDetails.delete(incidentId);
             this.showCommandStatus("Réparation autorisée ; vérification Shikamaru en attente.");
             await this.load();
         } catch (error) {
@@ -610,6 +619,7 @@ export class IncidentsController {
                 }),
             });
             this.details.delete(incidentId);
+            this.expandedDetails.delete(incidentId);
             this.showCommandStatus("Réparation enregistrée dans la mémoire de Tsunade.");
             await this.load();
         } catch (error) {
@@ -735,8 +745,13 @@ export class IncidentsController {
         if (!incidentId) {
             return;
         }
+        if (this.expandedDetails.has(incidentId)) {
+            this.expandedDetails.delete(incidentId);
+            this.render();
+            return;
+        }
         if (this.details.has(incidentId)) {
-            this.details.delete(incidentId);
+            this.expandedDetails.add(incidentId);
             this.render();
             return;
         }
@@ -746,12 +761,31 @@ export class IncidentsController {
                 incidentId,
                 await fetchJson(API.tsunadeIncident(incidentId)),
             );
+            this.expandedDetails.add(incidentId);
             this.render();
         } catch (error) {
             this.showError(`Évolution indisponible : ${this.errorMessage(error)}`);
         } finally {
             button.disabled = false;
         }
+    }
+
+    async loadDecisionDetails() {
+        const pending = this.incidents.filter(
+            (incident) => !this.details.has(incident.incident_id),
+        );
+        const results = await Promise.allSettled(
+            pending.map(async (incident) => [
+                incident.incident_id,
+                await fetchJson(API.tsunadeIncident(incident.incident_id)),
+            ]),
+        );
+        results.forEach((result) => {
+            if (result.status === "fulfilled") {
+                const [incidentId, details] = result.value;
+                this.details.set(incidentId, details);
+            }
+        });
     }
 
     equipmentLabel(nodeId) {

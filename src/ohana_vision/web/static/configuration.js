@@ -25,6 +25,21 @@ const ARCHITECTURE_MINIMUM_COLUMNS = 15;
 const ARCHITECTURE_MINIMUM_ROWS = 10;
 const DNS_NAME_PATTERN =
     /^(?=.{1,253}$)(?!-)[A-Za-z0-9-]+(?:\.(?!-)[A-Za-z0-9-]+)*$/;
+const BACKUP_WEEKDAYS = Object.freeze([
+    ["0", "Lundi"],
+    ["1", "Mardi"],
+    ["2", "Mercredi"],
+    ["3", "Jeudi"],
+    ["4", "Vendredi"],
+    ["5", "Samedi"],
+    ["6", "Dimanche"],
+]);
+const BACKUP_MONTH_DAYS = Object.freeze(
+    Array.from(
+        {length: 31},
+        (_, index) => String(index + 1),
+    ),
+);
 
 function formatTlsFingerprint(value) {
     const normalized = String(value ?? "").toLowerCase();
@@ -151,6 +166,10 @@ export class ConfigurationController {
         this.workerWakeWriteAvailable = false;
         this.workerWakeAvailable = false;
         this.workerWakeOnLanLoadError = null;
+        this.tsunadeLogPolicy = null;
+        this.tsunadeLogPolicyAvailable = false;
+        this.tsunadeLogPolicyWriteAvailable = false;
+        this.tsunadeLogPolicyLoadError = null;
         this.workerAvailabilityRefreshTimer = null;
         this.workerAvailabilityRefreshDeadline = 0;
         this.workerAvailabilityRefreshIntervalMs = 5000;
@@ -316,6 +335,22 @@ export class ConfigurationController {
                 byId("worker-wake-policy-notice"),
             workerWakeToggle:
                 byId("worker-wake-toggle"),
+            tsunadeLogPolicyNotice:
+                byId("tsunade-log-policy-notice"),
+            tsunadeLogEnabled:
+                byId("tsunade-log-enabled"),
+            tsunadeLogTime:
+                byId("tsunade-log-time"),
+            tsunadeLogWindowHours:
+                byId("tsunade-log-window-hours"),
+            tsunadeLogMaxMiB:
+                byId("tsunade-log-max-mib"),
+            tsunadeLogTimeout:
+                byId("tsunade-log-timeout"),
+            tsunadeLogSources:
+                byId("tsunade-log-sources"),
+            tsunadeLogSave:
+                byId("tsunade-log-save"),
             companionPairingsTable:
                 byId("companion-pairings-table"),
             companionPairingsPendingCount:
@@ -383,6 +418,11 @@ export class ConfigurationController {
             ?.addEventListener(
                 "click",
                 () => void this.toggleWakeOnLan(),
+            );
+        this.elements.tsunadeLogSave
+            ?.addEventListener(
+                "click",
+                () => void this.saveTsunadeLogPolicy(),
             );
         this.elements.companionPairingsRefresh
             ?.addEventListener(
@@ -855,9 +895,17 @@ export class ConfigurationController {
             this.workerWakeAvailable = operations.includes(
                 "jobs.workers.wake",
             );
+            this.tsunadeLogPolicyAvailable = operations.includes(
+                "incidents.logs.read",
+            );
+            this.tsunadeLogPolicyWriteAvailable = operations.includes(
+                "incidents.logs.write",
+            );
             this.workerPairingsLoadError = null;
             this.workerWakeOnLanLoadError = null;
             this.workerWakeOnLan = null;
+            this.tsunadeLogPolicyLoadError = null;
+            this.tsunadeLogPolicy = null;
             if (this.workerPairingsAvailable) {
                 try {
                     const [pairingPayload, workersPayload] = await Promise.all([
@@ -890,6 +938,19 @@ export class ConfigurationController {
                     "Cette version d’Agent n’expose pas encore la politique Wake-on-LAN.";
             }
 
+            if (this.tsunadeLogPolicyAvailable) {
+                try {
+                    this.tsunadeLogPolicy = await fetchJson(
+                        API.tsunadeLogPolicy,
+                    );
+                } catch (error) {
+                    this.tsunadeLogPolicyLoadError = this.errorMessage(error);
+                }
+            } else {
+                this.tsunadeLogPolicyLoadError =
+                    "Cette version d’Agent n’expose pas encore la configuration des contrôles de journaux.";
+            }
+
             this.companionPairings = [];
             this.companions = [];
             this.companionsAvailable = operations.includes(
@@ -919,6 +980,7 @@ export class ConfigurationController {
             this.renderWorkerPairings();
             this.renderWorkers();
             this.renderWakeOnLan();
+            this.renderTsunadeLogPolicy();
             this.renderCompanions();
 
             if (this.dhcp) {
@@ -1025,14 +1087,26 @@ export class ConfigurationController {
                     this.workerWakeOnLanLoadError = this.errorMessage(error);
                 }
             }
+            if (this.tsunadeLogPolicyAvailable) {
+                try {
+                    this.tsunadeLogPolicy = await fetchJson(
+                        API.tsunadeLogPolicy,
+                    );
+                    this.tsunadeLogPolicyLoadError = null;
+                } catch (error) {
+                    this.tsunadeLogPolicyLoadError = this.errorMessage(error);
+                }
+            }
             this.renderWorkerPairings();
             this.renderWorkers();
             this.renderWakeOnLan();
+            this.renderTsunadeLogPolicy();
         } catch (error) {
             this.workerPairingsLoadError = this.errorMessage(error);
             this.renderWorkerPairings();
             this.renderWorkers();
             this.renderWakeOnLan();
+            this.renderTsunadeLogPolicy();
         }
     }
 
@@ -1256,6 +1330,146 @@ export class ConfigurationController {
             );
 
             this.renderWakeOnLan();
+        }
+    }
+
+    renderTsunadeLogPolicy() {
+        const policy = this.tsunadeLogPolicy;
+        const disabled =
+            !policy
+            || !this.tsunadeLogPolicyWriteAvailable;
+
+        if (this.elements.tsunadeLogPolicyNotice) {
+            this.elements.tsunadeLogPolicyNotice.textContent =
+                this.tsunadeLogPolicyLoadError
+                    ?? (
+                        policy?.enabled
+                            ? "Contrôle planifié par Agent/Tsunade."
+                            : "Contrôle automatique désactivé."
+                    );
+        }
+
+        if (this.elements.tsunadeLogEnabled) {
+            this.elements.tsunadeLogEnabled.checked =
+                policy?.enabled === true;
+            this.elements.tsunadeLogEnabled.disabled = disabled;
+        }
+
+        if (this.elements.tsunadeLogTime) {
+            const draft = this.backupScheduleDraft(
+                policy?.schedule ?? "0 5 * * *",
+            );
+            this.elements.tsunadeLogTime.value = draft.time;
+            this.elements.tsunadeLogTime.disabled = disabled;
+        }
+
+        if (this.elements.tsunadeLogWindowHours) {
+            this.elements.tsunadeLogWindowHours.value =
+                String(policy?.window_hours ?? 24);
+            this.elements.tsunadeLogWindowHours.disabled = disabled;
+        }
+
+        if (this.elements.tsunadeLogMaxMiB) {
+            this.elements.tsunadeLogMaxMiB.value = String(
+                Math.max(
+                    1,
+                    Math.round(
+                        (policy?.max_bytes_per_source ?? 2097152)
+                        / 1048576,
+                    ),
+                ),
+            );
+            this.elements.tsunadeLogMaxMiB.disabled = disabled;
+        }
+
+        if (this.elements.tsunadeLogTimeout) {
+            this.elements.tsunadeLogTimeout.value =
+                String(policy?.timeout_seconds ?? 900);
+            this.elements.tsunadeLogTimeout.disabled = disabled;
+        }
+
+        if (this.elements.tsunadeLogSources) {
+            const selectedSources = new Set(
+                policy?.sources ?? [],
+            );
+            const sources = policy?.sources?.length
+                ? policy.sources
+                : ["ha-01", "linky-01", "zwave-01"];
+            this.elements.tsunadeLogSources.innerHTML = sources.map(
+                (source) => `
+                    <label class="configuration-check worker-log-source">
+                        <input
+                            data-tsunade-log-source="${escapeHtml(source)}"
+                            type="checkbox"
+                            ${selectedSources.has(source) ? "checked" : ""}
+                            ${disabled ? "disabled" : ""}
+                        >
+                        ${escapeHtml(source)}
+                    </label>
+                `,
+            ).join("");
+        }
+
+        if (this.elements.tsunadeLogSave) {
+            this.elements.tsunadeLogSave.disabled = disabled;
+        }
+    }
+
+    async saveTsunadeLogPolicy() {
+        if (
+            !this.tsunadeLogPolicy
+            || !this.tsunadeLogPolicyWriteAvailable
+        ) {
+            return;
+        }
+
+        const [
+            hour,
+            minute,
+        ] = this.value("tsunade-log-time").split(":").map(Number);
+        const sources = Array.from(
+            this.elements.tsunadeLogSources?.querySelectorAll(
+                "[data-tsunade-log-source]",
+            ) ?? [],
+        )
+            .filter((element) => element.checked)
+            .map((element) => element.dataset.tsunadeLogSource);
+
+        hideError(this.elements.error);
+
+        try {
+            this.tsunadeLogPolicy = await requestJson(
+                API.tsunadeLogPolicy,
+                {
+                    method: "PUT",
+                    body: JSON.stringify({
+                        enabled: this.checked("tsunade-log-enabled"),
+                        schedule: `${minute} ${hour} * * *`,
+                        sources,
+                        window_hours: Number(
+                            this.value("tsunade-log-window-hours"),
+                        ),
+                        max_bytes_per_source:
+                            Number(this.value("tsunade-log-max-mib"))
+                            * 1048576,
+                        timeout_seconds: Number(
+                            this.value("tsunade-log-timeout"),
+                        ),
+                    }),
+                },
+            );
+            this.tsunadeLogPolicyLoadError = null;
+            this.renderTsunadeLogPolicy();
+            this.showNotice(
+                "Contrôles de journaux enregistrés.",
+            );
+        } catch (error) {
+            showError(
+                this.elements.error,
+                "Impossible d’enregistrer les contrôles de journaux : "
+                + this.errorMessage(error),
+            );
+            this.renderTsunadeLogPolicy();
         }
     }
 
@@ -5112,6 +5326,127 @@ export class ConfigurationController {
         return "Les serveurs et courtiers ciblés proviennent des services déclarés dans l’onglet Architecture.";
     }
 
+    backupScheduleDraft(schedule) {
+        const parts = String(schedule ?? "").trim().split(/\s+/);
+
+        if (parts.length !== 5) {
+            return {
+                frequency: "daily",
+                time: "00:00",
+                weekday: "0",
+                monthDay: "1",
+            };
+        }
+
+        const [
+            minute,
+            hour,
+            day,
+            month,
+            weekday,
+        ] = parts;
+        const time =
+            `${String(Number(hour)).padStart(2, "0")}:`
+            + String(Number(minute)).padStart(2, "0");
+
+        if (
+            day === "*"
+            && month === "*"
+            && weekday !== "*"
+        ) {
+            return {
+                frequency: "weekly",
+                time,
+                weekday,
+                monthDay: "1",
+            };
+        }
+
+        if (
+            day !== "*"
+            && month === "*"
+            && weekday === "*"
+        ) {
+            return {
+                frequency: "monthly",
+                time,
+                weekday: "0",
+                monthDay: day,
+            };
+        }
+
+        return {
+            frequency: "daily",
+            time,
+            weekday: "0",
+            monthDay: "1",
+        };
+    }
+
+    backupFrequencyControl(prefix, schedule) {
+        const draft = this.backupScheduleDraft(schedule);
+        const weekdayOptions = BACKUP_WEEKDAYS.map(
+            ([value, label]) => `
+                <option value="${value}" ${draft.weekday === value ? "selected" : ""}>
+                    ${label}
+                </option>
+            `,
+        ).join("");
+        const monthDayOptions = BACKUP_MONTH_DAYS.map(
+            (value) => `
+                <option value="${value}" ${draft.monthDay === value ? "selected" : ""}>
+                    ${value}
+                </option>
+            `,
+        ).join("");
+
+        return `
+            <label>
+                Périodicité
+                <select id="${prefix}-frequency">
+                    <option value="daily" ${draft.frequency === "daily" ? "selected" : ""}>Quotidien</option>
+                    <option value="weekly" ${draft.frequency === "weekly" ? "selected" : ""}>Hebdomadaire</option>
+                    <option value="monthly" ${draft.frequency === "monthly" ? "selected" : ""}>Mensuel</option>
+                </select>
+            </label>
+            <label>
+                Heure
+                <input id="${prefix}-time" type="time" value="${escapeHtml(draft.time)}" required>
+            </label>
+            <label>
+                Jour hebdomadaire
+                <select id="${prefix}-weekday">
+                    ${weekdayOptions}
+                </select>
+            </label>
+            <label>
+                Jour mensuel
+                <select id="${prefix}-month-day">
+                    ${monthDayOptions}
+                </select>
+            </label>
+        `;
+    }
+
+    backupSchedulePayload(prefix) {
+        const time = this.value(`${prefix}-time`);
+        const [
+            hour,
+            minute,
+        ] = time.split(":").map(Number);
+        const frequency = this.value(`${prefix}-frequency`);
+
+        if (frequency === "weekly") {
+            return `${minute} ${hour} * * ${this.value(`${prefix}-weekday`)}`;
+        }
+
+        if (frequency === "monthly") {
+            return `${minute} ${hour} ${this.value(`${prefix}-month-day`)} * *`;
+        }
+
+        return `${minute} ${hour} * * *`;
+    }
+
     updatePluginConfigurationAvailability() {
         const plugin = this.selectedPlugin();
         const activationControl =
@@ -5196,13 +5531,6 @@ export class ConfigurationController {
                     verify_tls: true,
                     timeout: id === "ha-01" ? 900 : 600,
                 }));
-            const scheduleTime = (schedule) => {
-                const parts = String(schedule ?? "").trim().split(/\s+/);
-                if (parts.length !== 5 || parts[2] !== "*" || parts[3] !== "*" || parts[4] !== "*") {
-                    return "00:00";
-                }
-                return `${String(Number(parts[1])).padStart(2, "0")}:${String(Number(parts[0])).padStart(2, "0")}`;
-            };
             const icloud = configuration.icloud ?? {};
             const infra = configuration.infra_01 ?? {};
             const destinationPath = String(
@@ -5263,10 +5591,7 @@ export class ConfigurationController {
                         <input id="plugin-backup-infra-enabled" type="checkbox" ${infra.enabled === true ? "checked" : ""}>
                         Sauvegarder les configurations d’INFRA-01
                     </label>
-                    <label>
-                        Heure quotidienne
-                        <input id="plugin-backup-infra-time" type="time" value="${escapeHtml(scheduleTime(infra.schedule ?? "0 1 * * *"))}" required>
-                    </label>
+                    ${this.backupFrequencyControl("plugin-backup-infra", infra.schedule ?? "0 1 * * *")}
                     <p>
                         Chiffrement age géré automatiquement
                         <small>
@@ -5295,10 +5620,7 @@ export class ConfigurationController {
                             Nom affiché
                             <input id="plugin-backup-target-${index}-label" type="text" value="${escapeHtml(target.label ?? target.id)}" required>
                         </label>
-                        <label>
-                            Heure quotidienne
-                            <input id="plugin-backup-target-${index}-time" type="time" value="${escapeHtml(scheduleTime(target.schedule))}" required>
-                        </label>
+                        ${this.backupFrequencyControl(`plugin-backup-target-${index}`, target.schedule)}
                         <label class="configuration-span-2">
                             Adresse HAOS
                             <input id="plugin-backup-target-${index}-url" type="url" value="${escapeHtml(target.url ?? `http://${target.id}.ohana.lan:8123`)}" placeholder="http://${escapeHtml(target.id)}.ohana.lan:8123" required>
@@ -5642,12 +5964,10 @@ export class ConfigurationController {
         );
         if (plugin.id === "backup") {
             configuration.rclone_remote = `${configuration.icloud?.remote_name ?? "icloud"}:${this.value("plugin-backup-destination-path")}`;
-            const infraTime = this.value("plugin-backup-infra-time");
-            const [infraHour, infraMinute] = infraTime.split(":").map(Number);
             configuration.infra_01 = {
                 ...(plugin.configuration?.infra_01 ?? {}),
                 enabled: this.checked("plugin-backup-infra-enabled"),
-                schedule: `${infraMinute} ${infraHour} * * *`,
+                schedule: this.backupSchedulePayload("plugin-backup-infra"),
                 age_binary: plugin.configuration?.infra_01?.age_binary ?? "/usr/bin/age",
                 remote_retention_count: Number(this.value("plugin-backup-infra-retention")),
             };
@@ -5658,8 +5978,6 @@ export class ConfigurationController {
             ).map((fieldset) => {
                 const index = fieldset.dataset.backupTargetIndex;
                 const original = (plugin.configuration?.targets ?? [])[index] ?? {};
-                const time = this.value(`plugin-backup-target-${index}-time`);
-                const [hour, minute] = time.split(":").map(Number);
                 const action = this.value(`plugin-backup-target-${index}-pre-action`);
                 const [domain, ...serviceParts] = action.split(".");
                 const target = {
@@ -5672,7 +5990,9 @@ export class ConfigurationController {
                     password: this.value(`plugin-backup-target-${index}-password`) || null,
                     token_environment_variable: original.token_environment_variable ?? null,
                     password_environment_variable: original.password_environment_variable ?? null,
-                    schedule: `${minute} ${hour} * * *`,
+                    schedule: this.backupSchedulePayload(
+                        `plugin-backup-target-${index}`,
+                    ),
                     verify_tls: this.checked(`plugin-backup-target-${index}-verify-tls`),
                     timeout: Number(this.value(`plugin-backup-target-${index}-timeout`)),
                 };
