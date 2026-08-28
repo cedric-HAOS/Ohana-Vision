@@ -329,6 +329,11 @@ def test_static_ui_exposes_incident_center() -> None:
     assert 'data-tsunade-repair-propose="' in script.text
     assert 'data-tsunade-repair-authorize="' in script.text
     assert 'data-tsunade-experience="' in script.text
+    assert 'data-tsunade-log-anomalies="' in script.text
+    assert "toggleLogAnomalies(incidentId)" in script.text
+    assert "this.expandedLogAnomalies = new Set();" in script.text
+    assert "Afficher les anomalies" in script.text
+    assert "Masquer les anomalies" in script.text
     assert "Référence :" in script.text
     assert "Évolution :" in script.text
     assert "Causes possibles" in script.text
@@ -337,6 +342,19 @@ def test_static_ui_exposes_incident_center() -> None:
     assert "Analyse Katsuyu utilisée par Tsunade" in script.text
     assert "Erreur technique Katsuyu" in script.text
     assert 'payload.cycle_status === "ai_failed"' in script.text
+    assert "displaySeverity(incident, severity)" in script.text
+    assert 'return {label: "À approfondir", tone: "degraded"};' in script.text
+    decision_index = script.text.index("${this.tsunadeDecision(details ?? incident)}")
+    actions_index = script.text.index('<div class="incident-card__actions">')
+    log_synthesis_index = script.text.index("${logSynthesis}")
+    expertise_index = script.text.index("${this.tsunadeExpertise(details ?? incident)}")
+    assert decision_index < actions_index
+    assert actions_index < log_synthesis_index
+    assert log_synthesis_index < expertise_index
+    assert (
+        'class="incident-log-synthesis ${expanded ? "is-expanded" : ""}"' in script.text
+    )
+    assert "? `<ul>${items}</ul>`" in script.text
     assert "in_progress" in script.text
     assert "resolved" in script.text
 

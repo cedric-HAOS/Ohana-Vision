@@ -63,6 +63,7 @@ export class IncidentsController {
         this.summary = {};
         this.logHealth = null;
         this.logCheckAvailable = false;
+        this.expandedLogAnomalies = new Set();
         this.filter = "active";
         this.loaded = false;
         this.elements = {
@@ -129,6 +130,16 @@ export class IncidentsController {
             const button = event.target.closest("[data-tsunade-details]");
             if (button) {
                 void this.loadDetails(button.dataset.tsunadeDetails, button);
+                return;
+            }
+
+            const logAnomaliesButton = event.target.closest(
+                "[data-tsunade-log-anomalies]",
+            );
+            if (logAnomaliesButton) {
+                this.toggleLogAnomalies(
+                    logAnomaliesButton.dataset.tsunadeLogAnomalies,
+                );
             }
         });
         this.elements.list?.addEventListener("submit", (event) => {
@@ -238,6 +249,7 @@ export class IncidentsController {
 
     incidentCard(incident) {
         const severity = String(incident.severity ?? "degraded").toLowerCase();
+        const displaySeverity = this.displaySeverity(incident, severity);
         const workflow = String(incident.workflow_state ?? "new").toLowerCase();
         const expertiseState = String(incident.expertise_state ?? "idle").toLowerCase();
         const details = this.details.get(incident.incident_id);
@@ -247,16 +259,16 @@ export class IncidentsController {
         const repairSummary = repairs.length ? this.repairs(repairs) : "";
         const experience = details?.experience_candidate;
         const logSynthesis = incident.capability_id === "logs.health"
-            ? this.logSynthesis(incident.context)
+            ? this.logSynthesis(incident.context, incident.incident_id)
             : "";
         return `
-            <article class="incident-card incident-card--${escapeHtml(severity)} ${incident.state === "resolved" ? "is-resolved" : "is-active"}">
+            <article class="incident-card incident-card--${escapeHtml(displaySeverity.tone)} ${incident.state === "resolved" ? "is-resolved" : "is-active"}">
                 <div class="incident-card__accent" aria-hidden="true"></div>
                 <div class="incident-card__body">
                     <header class="incident-card__header">
                         <div>
                             <div class="incident-card__badges">
-                                <span class="incident-status">${escapeHtml(SEVERITY_LABELS[severity] ?? severity)}</span>
+                                <span class="incident-status">${escapeHtml(displaySeverity.label)}</span>
                                 <span class="incident-badge incident-badge--${escapeHtml(workflow)}">${escapeHtml(WORKFLOW_LABELS[workflow] ?? workflow)}</span>
                             </div>
                             <h3>${escapeHtml(this.equipmentLabel(incident.node_id))}</h3>
@@ -264,6 +276,13 @@ export class IncidentsController {
                         </div>
                         <span class="incident-card__duration">Depuis ${escapeHtml(formatDate(incident.started_at))}</span>
                     </header>
+                    ${this.tsunadeDecision(details ?? incident)}
+                    <div class="incident-card__actions">
+                        ${incident.state === "active" ? `<button class="configuration-primary-button" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${expertiseState === "ai_queued" ? "Analyse Katsuyu en attente" : "Lancer le diagnostic"}</button>` : ""}
+                        ${incident.state === "active" && this.canRestartDnsmasq(incident) && repairs.length === 0 ? `<button class="configuration-secondary-button" data-tsunade-repair-propose="${escapeHtml(incident.incident_id)}" type="button">Proposer le redémarrage de dnsmasq</button>` : ""}
+                        ${proposedRepair && !proposedRepair.authorized_at ? `<button class="configuration-primary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-tsunade-repair-authorize="${escapeHtml(proposedRepair.repair_id)}" type="button">Autoriser depuis Vision</button>` : ""}
+                        <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${this.expandedDetails.has(incident.incident_id) ? "Masquer l’évolution" : "Afficher l’évolution"}</button>
+                    </div>
                     <p class="incident-card__message">${escapeHtml(incident.message ?? "Incident sans résumé")}</p>
                     <dl class="incident-card__details">
                         <div><dt>Dernière évolution</dt><dd>${escapeHtml(formatDate(incident.last_observed_at))}</dd></div>
@@ -273,7 +292,6 @@ export class IncidentsController {
                     </dl>
                     ${logSynthesis}
                     ${this.tsunadeExpertise(details ?? incident)}
-                    ${this.tsunadeDecision(details ?? incident)}
                     ${incident.final_result ? `<p class="incident-card__result"><strong>Résultat :</strong> ${escapeHtml(incident.final_result)}</p>` : ""}
                     ${repairSummary}
                     ${experience ? `<div class="incident-experience"><strong>${escapeHtml(experience.prompt)}</strong><button class="configuration-primary-button" data-tsunade-experience="${escapeHtml(incident.incident_id)}" type="button">Enregistrer la réparation connue</button></div>` : ""}
@@ -284,15 +302,19 @@ export class IncidentsController {
                             </label>
                             <button class="configuration-primary-button" type="submit">Approfondir les journaux</button>
                         </form>` : ""}
-                    <div class="incident-card__actions">
-                        ${incident.state === "active" ? `<button class="configuration-primary-button" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${expertiseState === "ai_queued" ? "Analyse Katsuyu en attente" : "Lancer le diagnostic"}</button>` : ""}
-                        ${incident.state === "active" && this.canRestartDnsmasq(incident) && repairs.length === 0 ? `<button class="configuration-secondary-button" data-tsunade-repair-propose="${escapeHtml(incident.incident_id)}" type="button">Proposer le redémarrage de dnsmasq</button>` : ""}
-                        ${proposedRepair && !proposedRepair.authorized_at ? `<button class="configuration-primary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-tsunade-repair-authorize="${escapeHtml(proposedRepair.repair_id)}" type="button">Autoriser depuis Vision</button>` : ""}
-                        <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${this.expandedDetails.has(incident.incident_id) ? "Masquer l’évolution" : "Afficher l’évolution"}</button>
-                    </div>
                     ${this.expandedDetails.has(incident.incident_id) && details ? this.evolution(details) : ""}
                 </div>
             </article>`;
+    }
+
+    displaySeverity(incident, severity) {
+        if (incident.capability_id === "logs.health") {
+            return {label: "À approfondir", tone: "degraded"};
+        }
+        return {
+            label: SEVERITY_LABELS[severity] ?? severity,
+            tone: severity,
+        };
     }
 
     latestTsunadeDecision(incident) {
@@ -830,7 +852,7 @@ export class IncidentsController {
         this.elements.logHealth.innerHTML = `<ul>${rows}</ul><p>Dernière analyse : <strong>${escapeHtml(formatDate(result.analyzed_at ?? this.logHealth.finished_at))}</strong></p>`;
     }
 
-    logSynthesis(context) {
+    logSynthesis(context, incidentId) {
         if (!context || typeof context !== "object") {
             return "";
         }
@@ -838,6 +860,7 @@ export class IncidentsController {
         const source = LOG_SOURCE_LABELS[context.source] ?? this.readableIdentifier(context.source);
         const state = context.status === "OK" ? "sain" : "anomalie";
         const window = this.analysisWindow(context);
+        const expanded = this.expandedLogAnomalies.has(incidentId);
         const items = findings.map((finding) => {
             const reference = finding.reference_occurrences == null
                 ? "aucune référence antérieure"
@@ -845,7 +868,35 @@ export class IncidentsController {
             const trend = TREND_LABELS[finding.trend] ?? this.readableIdentifier(finding.trend);
             return `<li><strong>${escapeHtml(finding.signature ?? finding.summary)}</strong><span>${escapeHtml(finding.occurrences ?? 0)} occurrence(s) / ${escapeHtml(window)}</span><small>Référence : ${escapeHtml(reference)} · Évolution : ${escapeHtml(trend)}</small></li>`;
         }).join("");
-        return `<section class="incident-log-synthesis"><header><strong>${escapeHtml(source)}</strong><span>État des journaux : ${escapeHtml(state)}</span></header>${items ? `<ul>${items}</ul>` : "<p>Aucune anomalie regroupée.</p>"}</section>`;
+        const anomalyLabel = findings.length === 0
+            ? "Aucune anomalie regroupée"
+            : `${findings.length} anomalie(s) regroupée(s)`;
+        return `<section class="incident-log-synthesis ${expanded ? "is-expanded" : ""}">
+            <header>
+                <div>
+                    <strong>${escapeHtml(source)}</strong>
+                    <span>État des journaux : ${escapeHtml(state)} · ${escapeHtml(anomalyLabel)}</span>
+                </div>
+                ${items ? `<button class="configuration-secondary-button" data-tsunade-log-anomalies="${escapeHtml(incidentId)}" type="button">${expanded ? "Masquer les anomalies" : "Afficher les anomalies"}</button>` : ""}
+            </header>
+            ${expanded
+                ? items
+                    ? `<ul>${items}</ul>`
+                    : "<p>Aucune anomalie regroupée.</p>"
+                : ""}
+        </section>`;
+    }
+
+    toggleLogAnomalies(incidentId) {
+        if (!incidentId) {
+            return;
+        }
+        if (this.expandedLogAnomalies.has(incidentId)) {
+            this.expandedLogAnomalies.delete(incidentId);
+        } else {
+            this.expandedLogAnomalies.add(incidentId);
+        }
+        this.render();
     }
 
     analysisWindow(context) {

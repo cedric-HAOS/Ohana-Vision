@@ -201,7 +201,17 @@
 }
 
 .incident-log-synthesis header {
-    grid-template-columns: auto 1fr;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--ohana-space-2);
+}
+
+.incident-log-synthesis header > div {
+    display: grid;
+    gap: var(--ohana-space-1);
+    min-width: min(100%, 18rem);
 }
 
 .incident-log-synthesis header span,
@@ -661,7 +671,10 @@
     border-left-color: var(--ohana-health-degraded);
 }
 
-.incident-tsunade-decision--investigate,
+.incident-tsunade-decision--investigate {
+    border-left-color: var(--ohana-health-degraded);
+}
+
 .incident-tsunade-decision--action_required {
     border-left-color: var(--ohana-health-critical);
 }

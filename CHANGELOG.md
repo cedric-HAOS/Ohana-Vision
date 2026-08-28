@@ -6,6 +6,20 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.22.9] — Décision Tsunade prioritaire — 2026-08-28
+
+## Corrigé
+
+- La page Tsunade affiche la décision, la confiance et les actions avant le
+  détail des journaux et l'analyse Katsuyu.
+- Les incidents de santé des journaux apparaissent comme « À approfondir » au
+  lieu de « Critique ».
+
+## Ergonomie
+
+- Les anomalies de journaux disposent d'un bouton dédié pour les afficher ou les
+  masquer sans ouvrir l'évolution complète de l'incident.
+
 # [1.22.8] — Échecs Katsuyu visibles — 2026-08-27
 
 ## Corrigé
