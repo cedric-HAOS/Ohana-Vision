@@ -6,6 +6,14 @@ Le projet suit les principes de Semantic Versioning.
 
 ---
 
+# [1.22.10] — Source de journaux INFRA-01 — 2026-08-29
+
+## Ajouté
+
+- La configuration Tsunade propose `infra-01` avec les sources HAOS.
+- Les incidents issus des journaux Agent et Vision affichent le libellé
+  `INFRA-01` dans le cockpit.
+
 # [1.22.9] — Décision Tsunade prioritaire — 2026-08-28
 
 ## Corrigé

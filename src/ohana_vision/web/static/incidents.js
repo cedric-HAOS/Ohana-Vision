@@ -21,6 +21,7 @@ const EVENT_LABELS = Object.freeze({
     resolved: "Résolution",
 });
 const LOG_SOURCE_LABELS = Object.freeze({
+    "infra-01": "INFRA-01",
     "ha-01": "HA-01",
     "linky-01": "LINKY-01",
     "zwave-01": "ZWAVE-01",

@@ -149,8 +149,8 @@ confirmation du retour à l’état sain. Une réparation réussie n’est mémo
 qu’après une seconde confirmation utilisateur ; Vision ne stocke ni l’incident
 ni l’expérience et transmet la provenance de la validation à Agent.
 
-La page présente aussi la dernière santé quotidienne des journaux HA-01,
-LINKY-01 et ZWAVE-01. Une anomalie affiche sa signature, son nombre
+La page présente aussi la dernière santé quotidienne des journaux INFRA-01,
+HA-01, LINKY-01 et ZWAVE-01. Une anomalie affiche sa signature, son nombre
 d’occurrences, la référence précédente et son évolution. Les réparations
 affichent action, risque, conséquences, provenance de validation et résultat ;
 les compteurs historiques indiquent contrôles, réparations apprises et taux de

@@ -1394,7 +1394,7 @@ export class ConfigurationController {
             );
             const sources = policy?.sources?.length
                 ? policy.sources
-                : ["ha-01", "linky-01", "zwave-01"];
+                : ["infra-01", "ha-01", "linky-01", "zwave-01"];
             this.elements.tsunadeLogSources.innerHTML = sources.map(
                 (source) => `
                     <label class="configuration-check worker-log-source">

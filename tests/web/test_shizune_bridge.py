@@ -16,9 +16,7 @@ class FakeCompanionClient:
         self.calls.append(("pair", payload))
         return {"pairing_id": "pairing-1", "verification_code": "ABCD-EFGH"}
 
-    def poll_pairing(
-        self, pairing_id: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def poll_pairing(self, pairing_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         self.calls.append(("poll", pairing_id, payload))
         return {"status": "PENDING"}
 

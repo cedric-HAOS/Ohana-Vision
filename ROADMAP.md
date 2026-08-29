@@ -5,31 +5,38 @@
 Ohana-Vision transforme les données produites par Ohana-Agent en une
 représentation lisible, temps réel et historique de l'infrastructure.
 
-Ohana-Agent reste propriétaire de la configuration et de l'exécution des
-observations. Vision valide, persiste, projette et présente les snapshots et
-observations reçus. Les opérations d'administration passent exclusivement par
-les contrats publics et versionnés de l'Agent.
+Ohana-Agent reste propriétaire de la configuration, de l'exécution et des
+décisions opérationnelles. Vision valide, persiste, projette et présente les
+snapshots, observations, incidents et résultats reçus. Les opérations
+d'administration passent exclusivement par les contrats publics et versionnés de
+l'Agent.
 
 ## État actuel
 
-**Version préparée : 1.12.0 — Sauvegarde d'INFRA-01.**
+**Version publiée : 1.22.9 — Décision Tsunade prioritaire.**
 
 Le socle actuel couvre notamment :
 
 - la visualisation temps réel de l'infrastructure, des services et des
   capacités ;
-- le cockpit de supervision des ressources, des uptimes et des diagnostics
-  systemd de la machine hôte d'Agent ;
-- l'administration graphique de l'infrastructure, du réseau, du DHCP et des
-  plugins exposés par Agent ;
-- la configuration des sauvegardes HAOS vers iCloud, avec activation et
-  horaire distincts pour chaque cible et secrets conservés côté Agent ;
-- la configuration, la planification, la rétention et le déclenchement manuel
-  de la sauvegarde logique chiffrée d'INFRA-01 ;
-- la présence réseau et les plages de surveillance ;
-- la persistance durable des observations ;
-- le regroupement des évaluations répétitives ;
-- le cycle de vie des incidents, avec acquittement et silence temporaire.
+- le cockpit de supervision des ressources, uptimes et diagnostics systemd de
+  la machine hôte d'Agent ;
+- l'administration graphique de l'infrastructure, du réseau, du DHCP, des
+  plugins, des workers Katsuyu et des compagnons Shizune ;
+- la configuration des sauvegardes HAOS vers iCloud et de la sauvegarde logique
+  chiffrée d'INFRA-01 ;
+- la présence réseau, les plages de surveillance et l'état suspendu neutre ;
+- la persistance durable des observations, la maîtrise du WAL et la projection
+  des incidents ;
+- la page Tsunade comme cockpit d'incidents, de diagnostic, d'analyse et de
+  décision ;
+- le suivi des jobs `logs.health_check`, des anomalies de journaux, des
+  investigations bornées et des analyses Katsuyu ;
+- l'affichage des hypothèses, preuves, commandes copiables et erreurs techniques
+  Katsuyu ;
+- les réparations supervisées, leur autorisation explicite et leur résultat ;
+- la PWA Shizune et sa passerelle bornée, sans exposition du jeton Agent au
+  navigateur.
 
 Le détail exhaustif des versions et correctifs publiés est conservé dans le
 [CHANGELOG](CHANGELOG.md).
@@ -40,94 +47,80 @@ Le détail exhaustif des versions et correctifs publiés est conservé dans le
 
 ### 1.0 — Socle de visualisation
 
-- domaine backend, stockage des observations et moteurs de projection, santé
-  et timeline ;
-- API REST, WebSocket et runtime applicatif ;
+- domaine backend, stockage des observations et moteurs de projection ;
+- API REST, WebSocket, santé, timeline et runtime applicatif ;
 - dashboard, topologie interactive et frontend modulaire.
 
 **Statut : livré.**
 
-### 1.1 — Infrastructure pilotée par Agent
+### 1.1 à 1.3 — Infrastructure et administration
 
 - contrat d'infrastructure strict et versionné ;
 - ingestion atomique par `PUT /api/infrastructure` ;
 - topologie complète avec équipements, liaisons et positions logiques ;
-- synchronisation résiliente Agent ↔ Vision.
-
-**Statut : livré.**
-
-### 1.2 — Administration graphique
-
-- configuration DHCP et gestion des réservations ;
-- édition de l'architecture, des équipements, des liaisons et des services ;
+- configuration DHCP, architecture, réseau et plugins exposés par Agent ;
 - proxy backend authentifié, sans exposition du jeton Agent au navigateur.
 
 **Statut : livré.**
 
-### 1.3 — Administration des plugins
+### 1.4 à 1.10 — Présence, télémétrie et topologie
 
-- inventaire des plugins réellement enregistrés dans Agent ;
-- lecture, modification, reconfiguration et test immédiat ;
-- formulaires dédiés pour DNS, NTP et MQTT ;
-- gestion des états vides, erreurs, confirmations et secrets.
-
-**Statut : livré.**
-
-### 1.4 — Présence réseau des équipements
-
-- prise en charge de la capacité `network.reachable` ;
-- distinction entre présence réseau et santé des services ;
-- indicateurs de présence dans la topologie et informations de diagnostic dans
-  l'inspecteur.
+- indicateurs de présence réseau distincts de la santé fonctionnelle ;
+- administration et présentation Z-Wave, WireGuard, Freebox et télémétrie ;
+- Téléinformation Linky et envoi HTTP direct depuis `teleinfo2mqtt` ;
+- formulaires adaptés au type de service ;
+- NetworkManager, rollback, capacités Ethernet et cohérence temps réel.
 
 **Statut : livré.**
 
-### 1.5 à 1.7 — Réseau, télémétrie et Téléinformation
-
-- administration et présentation des plugins Z-Wave, WireGuard, Freebox et
-  Shelly Telemetry ;
-- amélioration progressive de la configuration par équipement ;
-- intégration de la Téléinformation Linky ;
-- validation renforcée des noms utilisés par les réservations DHCP.
-
-**Statut : livré.**
-
-### 1.8 — Télémétrie et formulaires de services
-
-- présentation du plugin de télémétrie Home Assistant ;
-- migration visuelle des anciens services `shelly_telemetry` ;
-- prise en charge des adresses IPv4 et noms DNS ;
-- formulaires adaptés au type de service.
-
-**Statut : livré.**
-
-### 1.9 — Téléinformation directe et plages de surveillance
-
-- configuration de l'envoi HTTP direct depuis `teleinfo2mqtt` ;
-- identification du compteur Linky et de sa source ;
-- plages horaires par équipement, héritées par les services et la présence
-  réseau ;
-- état suspendu neutre dans la santé globale et les incidents.
-
-**Statut : livré.**
-
-### 1.10 — Administration réseau et enrichissement de la topologie
-
-- lecture et configuration NetworkManager avec confirmation et rollback ;
-- lecture visuelle des capacités Ethernet ;
-- découverte, positionnement et rendu des équipements Z-Wave ;
-- cohérence temps réel des cartes, services et timelines.
-
-**Statut : livré.**
-
-### 1.11 — Persistance et centre d'incidents
+### 1.11 à 1.13 — Persistance, incidents et sauvegardes
 
 - stockage SQLite et restauration des observations ;
 - ingestion idempotente fondée sur `observation_id` ;
 - ouverture, mise à jour, résolution, acquittement et silence des incidents ;
-- regroupement et filtrage des évaluations répétitives ;
-- navigation fluide dans l'éditeur d'architecture et création d'une
-  réservation depuis un bail DHCP dynamique.
+- configuration des sauvegardes HAOS et INFRA-01 ;
+- carte de sauvegarde stable pendant les rafraîchissements temps réel.
+
+**Statut : livré.**
+
+### 1.14 à 1.17 — Hôte, appairage et workers Katsuyu
+
+- page Hôte indépendante du pool de workers ;
+- appairage Katsuyu et confiance TLS à comparer avec l'installateur ;
+- page **Workers Katsuyu** avec état, capacités, dernière connexion et origine
+  du réveil ;
+- séparation stricte entre affichage Vision et exécution Agent/Tsunade.
+
+**Statut : livré.**
+
+### 1.18 et 1.19 — Incidents et expertise Tsunade
+
+- page **Tsunade** alimentée par la source de vérité Agent ;
+- incidents actifs, en cours, traités et résolus ;
+- diagnostic Tsunade déclenché depuis Vision sans lancer directement Katsuyu ;
+- distinction entre diagnostics déterministes et hypothèses Katsuyu AI ;
+- affichage des hypothèses, confiance, causes, preuves et contradictions.
+
+**Statut : livré.**
+
+### 1.20 et 1.21 — Cockpit Tsunade complet
+
+- réparation supervisée de `dnsmasq.service` avec autorisation explicite ;
+- expérience de réparation connue enregistrable après confirmation ;
+- contrôle quotidien des journaux HA-01, LINKY-01 et ZWAVE-01 ;
+- investigation complémentaire `logs.health` avec motif borné ;
+- purge SQLite par lots et checkpoints WAL passifs.
+
+**Statut : livré.**
+
+### 1.22 — Wake-on-LAN, Shizune et analyse exploitable
+
+- page **Workers Katsuyu** avec politique Wake-on-LAN effective et test de réveil ;
+- administration Shizune, association, révocation et passerelle PWA bornée ;
+- commandes d'investigation copiables réservées à la page Tsunade ;
+- erreurs techniques Katsuyu affichées explicitement ;
+- décision Tsunade, confiance et actions rendues visibles avant les détails ;
+- anomalies de journaux repliables sans ouvrir l'évolution complète.
 
 **Statut : livré.**
 
@@ -135,13 +128,15 @@ Le détail exhaustif des versions et correctifs publiés est conservé dans le
 
 ## Prochaines priorités
 
-### Maintenant — Consolidation de la version 1.11
+### Maintenant — Lisibilité opérationnelle de Tsunade
 
-- qualifier la volumétrie, les performances et la rétention du stockage
-  durable ;
-- renforcer les diagnostics de restauration et de projection des incidents ;
-- poursuivre la simplification des vues d'observations et d'incidents ;
-- détailler les statistiques par capacité.
+- stabiliser le rendu des cartes longues : décision, actions, journaux,
+  analyse, réparation et évolution ;
+- faciliter le diagnostic des timeouts Katsuyu et des réveils manqués depuis
+  l'interface ;
+- clarifier les états `À approfondir`, `Surveillance`, `Action nécessaire` et
+  leurs conséquences opérateur ;
+- vérifier le confort mobile et bureau des cartes Tsunade les plus denses.
 
 **Statut : en consolidation.**
 
@@ -155,25 +150,16 @@ Le détail exhaustif des versions et correctifs publiés est conservé dans le
 
 **Statut : planifié.**
 
-### Plus tard — Sécurité et utilisateurs
+### Plus tard — Sécurité, utilisateurs et multi-site
 
 - authentification ;
 - rôles et permissions ;
 - préférences utilisateur ;
 - audit des actions ;
-- notifications et Webhooks.
+- notifications et Webhooks ;
+- vues par site, vue consolidée et prévention des conflits d'identifiants.
 
 **Statut : à cadrer.**
-
-### Plus tard — Écosystème Ohana
-
-- prise en charge de plusieurs Agents et de plusieurs sites ;
-- vues par site et vue consolidée ;
-- gestion des conflits d'identifiants ;
-- documentation des contrats et capacités des plugins ;
-- diagnostics et actions contrôlées avec suivi d'exécution.
-
-**Statut : exploration.**
 
 ---
 
@@ -188,5 +174,7 @@ Les évolutions de Vision doivent préserver les règles suivantes :
 4. la présence réseau reste distincte de la santé fonctionnelle ;
 5. les données durables doivent pouvoir être restaurées sans doublon ;
 6. le détail des releases appartient au changelog, pas à la roadmap ;
-7. chaque évolution doit rester testable, accessible et exploitable sur les
+7. les décisions, justifications et actions doivent rester visibles avant les
+   détails secondaires ;
+8. chaque évolution doit rester testable, accessible et exploitable sur les
    différentes tailles d'écran.
