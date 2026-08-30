@@ -254,6 +254,8 @@ export class IncidentsController {
         const workflow = String(incident.workflow_state ?? "new").toLowerCase();
         const expertiseState = String(incident.expertise_state ?? "idle").toLowerCase();
         const details = this.details.get(incident.incident_id);
+        const decisionRecord = this.latestTsunadeDecisionRecord(details ?? incident);
+        const guidance = this.incidentGuidance(incident, decisionRecord, expertiseState);
         const repairState = details ?? incident;
         const repairs = Array.isArray(repairState.repairs) ? repairState.repairs : [];
         const proposedRepair = repairs.find((repair) => repair.status === "proposed");
@@ -275,11 +277,17 @@ export class IncidentsController {
                             <h3>${escapeHtml(this.equipmentLabel(incident.node_id))}</h3>
                             <p>${escapeHtml(this.serviceLabel(incident.node_id, incident.service_id))} · ${escapeHtml(this.readableIdentifier(incident.capability_id))}</p>
                         </div>
-                        <span class="incident-card__duration">Depuis ${escapeHtml(formatDate(incident.started_at))}</span>
+                        <span class="incident-card__dates">
+                            <span>Incident ouvert le</span>
+                            <strong>${escapeHtml(formatDate(incident.started_at))}</strong>
+                        </span>
                     </header>
-                    ${this.tsunadeDecision(details ?? incident)}
+                    ${expertiseState === "ai_queued" || !decisionRecord
+                        ? this.incidentGuidanceView(guidance)
+                        : ""}
+                    ${this.tsunadeDecision(details ?? incident, decisionRecord)}
                     <div class="incident-card__actions">
-                        ${incident.state === "active" ? `<button class="configuration-primary-button" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${expertiseState === "ai_queued" ? "Analyse Katsuyu en attente" : "Lancer le diagnostic"}</button>` : ""}
+                        ${incident.state === "active" ? `<button class="${escapeHtml(guidance.buttonClass)}" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${escapeHtml(guidance.buttonLabel)}</button>` : ""}
                         ${incident.state === "active" && this.canRestartDnsmasq(incident) && repairs.length === 0 ? `<button class="configuration-secondary-button" data-tsunade-repair-propose="${escapeHtml(incident.incident_id)}" type="button">Proposer le redémarrage de dnsmasq</button>` : ""}
                         ${proposedRepair && !proposedRepair.authorized_at ? `<button class="configuration-primary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-tsunade-repair-authorize="${escapeHtml(proposedRepair.repair_id)}" type="button">Autoriser depuis Vision</button>` : ""}
                         <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${this.expandedDetails.has(incident.incident_id) ? "Masquer l’évolution" : "Afficher l’évolution"}</button>
@@ -319,9 +327,10 @@ export class IncidentsController {
     }
 
     latestTsunadeDecision(incident) {
-        if (incident?.latest_decision && typeof incident.latest_decision === "object") {
-            return incident.latest_decision;
-        }
+        return this.latestTsunadeDecisionRecord(incident)?.payload ?? null;
+    }
+
+    latestTsunadeDecisionRecord(incident) {
         const events = Array.isArray(incident?.events)
             ? incident.events
             : [];
@@ -335,15 +344,106 @@ export class IncidentsController {
                 && payload.decision
                 && payload.decision !== "pending"
             ) {
-                return payload;
+                return {
+                    occurredAt: events[index]?.occurred_at ?? null,
+                    payload,
+                };
             }
+        }
+
+        if (incident?.latest_decision && typeof incident.latest_decision === "object") {
+            return {
+                occurredAt: incident.latest_decision.occurred_at
+                    ?? incident.latest_decision.decided_at
+                    ?? null,
+                payload: incident.latest_decision,
+            };
         }
 
         return null;
     }
 
-    tsunadeDecision(incident) {
-        const decision = this.latestTsunadeDecision(incident);
+    decisionFreshness(incident, decisionRecord) {
+        const decisionAt = Date.parse(decisionRecord?.occurredAt ?? "");
+        const observedAt = Date.parse(incident?.last_observed_at ?? "");
+
+        if (!Number.isFinite(decisionAt) || !Number.isFinite(observedAt)) {
+            return "unknown";
+        }
+        return observedAt > decisionAt ? "stale" : "current";
+    }
+
+    incidentGuidance(incident, decisionRecord, expertiseState) {
+        if (expertiseState === "ai_queued") {
+            return {
+                tone: "waiting",
+                title: "Analyse en cours",
+                detail: "Katsuyu prépare une nouvelle analyse. Aucune autre action n’est nécessaire pour le moment.",
+                buttonLabel: "Analyse Katsuyu en attente",
+                buttonClass: "configuration-secondary-button",
+            };
+        }
+
+        const decision = decisionRecord?.payload;
+        if (!decision) {
+            return {
+                tone: "attention",
+                title: "À faire : analyser cet incident",
+                detail: "Aucune décision Tsunade n’est encore disponible.",
+                buttonLabel: "Analyser cet incident",
+                buttonClass: "configuration-primary-button",
+            };
+        }
+
+        if (this.decisionFreshness(incident, decisionRecord) === "stale") {
+            return {
+                tone: "attention",
+                title: "À faire : actualiser l’analyse",
+                detail: "Une observation plus récente n’est pas encore prise en compte par cette décision.",
+                buttonLabel: "Actualiser l’analyse",
+                buttonClass: "configuration-primary-button",
+            };
+        }
+
+        const value = String(decision.decision ?? "watch");
+        if (value === "action_required") {
+            return {
+                tone: "critical",
+                title: "Action requise",
+                detail: decision.recommended_action ?? "Consultez la recommandation de Tsunade avant d’intervenir.",
+                buttonLabel: "Réévaluer l’incident",
+                buttonClass: "configuration-secondary-button",
+            };
+        }
+        if (value === "investigate") {
+            return {
+                tone: "attention",
+                title: "À faire : approfondir",
+                detail: decision.recommended_action ?? "Demandez une analyse approfondie de cet incident.",
+                buttonLabel: "Approfondir l’analyse",
+                buttonClass: "configuration-primary-button",
+            };
+        }
+        return {
+            tone: "current",
+            title: "Rien à faire maintenant",
+            detail: value === "stable"
+                ? "La situation est stable et l’analyse couvre la dernière observation."
+                : "Tsunade poursuit la surveillance avec une analyse à jour.",
+            buttonLabel: "Relancer l’analyse",
+            buttonClass: "configuration-secondary-button",
+        };
+    }
+
+    incidentGuidanceView(guidance) {
+        return `<aside class="incident-guidance incident-guidance--${escapeHtml(guidance.tone)}">
+            <strong>${escapeHtml(guidance.title)}</strong>
+            <span>${escapeHtml(guidance.detail)}</span>
+        </aside>`;
+    }
+
+    tsunadeDecision(incident, decisionRecord = this.latestTsunadeDecisionRecord(incident)) {
+        const decision = decisionRecord?.payload;
 
         if (!decision) {
             return "";
@@ -362,6 +462,15 @@ export class IncidentsController {
             : decision.reevaluate_after
                 ? this.readableIdentifier(decision.reevaluate_after)
                 : "Selon évolution";
+        const freshness = this.decisionFreshness(incident, decisionRecord);
+        const observationLabel = incident.capability_id === "logs.health"
+            ? "le contrôle des journaux"
+            : "le dernier constat";
+        const freshnessLabel = freshness === "current"
+            ? `À jour avec ${observationLabel} du ${formatDate(incident.last_observed_at)}`
+            : freshness === "stale"
+                ? `À actualiser : ${observationLabel} du ${formatDate(incident.last_observed_at)} est plus récent`
+                : "Fraîcheur non vérifiable";
 
         return `
             <section class="incident-tsunade-decision incident-tsunade-decision--${escapeHtml(value)}">
@@ -372,10 +481,17 @@ export class IncidentsController {
                             TSUNADE_DECISION_LABELS[value] ?? this.readableIdentifier(value)
                         )}</strong>
                     </div>
-                    <small>${escapeHtml(
-                        TSUNADE_DECISION_SOURCE_LABELS[source] ?? this.readableIdentifier(source)
-                    )} · confiance ${escapeHtml(confidenceLabel)}</small>
+                    <div class="incident-tsunade-decision__meta">
+                        <small>${escapeHtml(
+                            TSUNADE_DECISION_SOURCE_LABELS[source] ?? this.readableIdentifier(source)
+                        )} · confiance ${escapeHtml(confidenceLabel)}</small>
+                        ${decisionRecord.occurredAt
+                            ? `<time>Décision du ${escapeHtml(formatDate(decisionRecord.occurredAt))}</time>`
+                            : ""}
+                    </div>
                 </header>
+
+                <p class="incident-decision-freshness incident-decision-freshness--${escapeHtml(freshness)}">${escapeHtml(freshnessLabel)}</p>
 
                 ${decision.conclusion
                     ? `<p>${escapeHtml(decision.conclusion)}</p>`
@@ -850,7 +966,7 @@ export class IncidentsController {
             const state = source ? (healthy ? "Sain" : "Anomalie") : "Non analysé";
             return `<li class="${healthy ? "is-healthy" : source ? "is-unhealthy" : ""}"><strong>${escapeHtml(label)}</strong><span>${healthy ? "✓" : source ? "!" : "—"} ${escapeHtml(state)}</span></li>`;
         }).join("");
-        this.elements.logHealth.innerHTML = `<ul>${rows}</ul><p>Dernière analyse : <strong>${escapeHtml(formatDate(result.analyzed_at ?? this.logHealth.finished_at))}</strong></p>`;
+        this.elements.logHealth.innerHTML = `<ul>${rows}</ul><p>Contrôle global effectué le <strong>${escapeHtml(formatDate(result.analyzed_at ?? this.logHealth.finished_at))}</strong></p>`;
     }
 
     logSynthesis(context, incidentId) {

@@ -344,7 +344,15 @@ def test_static_ui_exposes_incident_center() -> None:
     assert 'payload.cycle_status === "ai_failed"' in script.text
     assert "displaySeverity(incident, severity)" in script.text
     assert 'return {label: "À approfondir", tone: "degraded"};' in script.text
-    decision_index = script.text.index("${this.tsunadeDecision(details ?? incident)}")
+    assert "latestTsunadeDecisionRecord(incident)" in script.text
+    assert "decisionFreshness(incident, decisionRecord)" in script.text
+    assert "À faire : actualiser l’analyse" in script.text
+    assert "Contrôle global effectué le" in script.text
+    assert "Décision du" in script.text
+    assert "incident-decision-freshness" in stylesheet.text
+    decision_index = script.text.index(
+        "${this.tsunadeDecision(details ?? incident, decisionRecord)}"
+    )
     actions_index = script.text.index('<div class="incident-card__actions">')
     log_synthesis_index = script.text.index("${logSynthesis}")
     expertise_index = script.text.index("${this.tsunadeExpertise(details ?? incident)}")

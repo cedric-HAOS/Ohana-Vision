@@ -260,9 +260,54 @@
 }
 
 .incident-card__header p,
-.incident-card__duration {
+.incident-card__dates {
     color: var(--ohana-text-muted);
     font-size: var(--ohana-font-size-sm);
+}
+
+.incident-card__dates {
+    display: grid;
+    justify-items: end;
+    gap: var(--ohana-space-1);
+    text-align: right;
+}
+
+.incident-card__dates span,
+.incident-card__dates small {
+    font-size: var(--ohana-font-size-xs);
+}
+
+.incident-card__dates strong {
+    color: var(--ohana-text-secondary);
+    font-family: var(--ohana-font-family-mono);
+}
+
+.incident-guidance {
+    display: flex;
+    align-items: baseline;
+    gap: var(--ohana-space-2);
+    padding: var(--ohana-space-3) var(--ohana-space-4);
+    border-radius: var(--ohana-radius-md);
+    color: var(--ohana-text-secondary);
+    background: var(--ohana-background-canvas);
+}
+
+.incident-guidance strong {
+    color: var(--ohana-text-primary);
+    white-space: nowrap;
+}
+
+.incident-guidance--current {
+    border-left: 0.25rem solid var(--ohana-health-healthy);
+}
+
+.incident-guidance--waiting,
+.incident-guidance--attention {
+    border-left: 0.25rem solid var(--ohana-health-degraded);
+}
+
+.incident-guidance--critical {
+    border-left: 0.25rem solid var(--ohana-health-critical);
 }
 
 .incident-card__badges,
@@ -630,6 +675,16 @@
     gap: var(--ohana-space-1);
 }
 
+.incident-tsunade-decision__meta {
+    justify-items: end;
+    text-align: right;
+}
+
+.incident-tsunade-decision__meta time {
+    color: var(--ohana-text-secondary);
+    font-size: var(--ohana-font-size-xs);
+}
+
 .incident-tsunade-decision header span,
 .incident-tsunade-decision header small,
 .incident-tsunade-decision dt {
@@ -645,6 +700,22 @@
 .incident-tsunade-decision p {
     margin: 0;
     color: var(--ohana-text-secondary);
+}
+
+.incident-tsunade-decision .incident-decision-freshness {
+    padding: var(--ohana-space-2) var(--ohana-space-3);
+    border-radius: var(--ohana-radius-sm);
+    font-size: var(--ohana-font-size-sm);
+}
+
+.incident-decision-freshness--current {
+    color: var(--ohana-health-healthy);
+    background: var(--ohana-health-healthy-soft);
+}
+
+.incident-decision-freshness--stale {
+    color: var(--ohana-health-degraded);
+    background: color-mix(in srgb, var(--ohana-health-degraded) 12%, transparent);
 }
 
 .incident-tsunade-decision dl {
@@ -700,6 +771,17 @@
     }
 
     .incident-card__header {
+        flex-direction: column;
+    }
+
+    .incident-card__dates,
+    .incident-tsunade-decision__meta {
+        justify-items: start;
+        text-align: left;
+    }
+
+    .incident-guidance {
+        align-items: flex-start;
         flex-direction: column;
     }
 }
