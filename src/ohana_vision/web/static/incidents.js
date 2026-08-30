@@ -706,14 +706,56 @@ export class IncidentsController {
         }
         button.disabled = true;
         this.showError("");
+        this.showCommandStatus("Analyse demandée à Tsunade…", "running");
         try {
-            await requestJson(API.tsunadeDiagnose(incidentId), {
+            const outcome = await requestJson(API.tsunadeDiagnose(incidentId), {
                 method: "POST",
             });
+
+            if (outcome?.status === "AI_QUEUED") {
+                if (!outcome.ai_job_id) {
+                    throw new Error("Tsunade n’a pas renvoyé l’identifiant de l’analyse Katsuyu");
+                }
+                const job = await this.followJob(
+                    {
+                        job_id: outcome.ai_job_id,
+                        status: "QUEUED",
+                    },
+                    "Analyse Katsuyu",
+                );
+                this.details.delete(incidentId);
+                this.expandedDetails.delete(incidentId);
+                await this.load();
+                if (job.status === "SUCCEEDED") {
+                    this.showCommandStatus("Analyse Katsuyu terminée ; la décision Tsunade est à jour.");
+                } else {
+                    const reason = job.error?.message
+                        ? ` · ${job.error.message}`
+                        : "";
+                    this.showError(
+                        `Analyse Katsuyu ${this.jobStatusLabel(job.status)}${reason}`,
+                    );
+                    this.showCommandStatus("");
+                }
+                return;
+            }
+
             this.details.delete(incidentId);
             this.expandedDetails.delete(incidentId);
             await this.load();
+            if (outcome?.status === "DETERMINISTIC") {
+                this.showCommandStatus("Diagnostic Tsunade terminé sans analyse Katsuyu.");
+            } else if (outcome?.status === "INSUFFICIENT_CONTEXT") {
+                this.showCommandStatus(
+                    outcome.diagnosis
+                        ?? "Tsunade ne dispose pas d’assez de contexte et aucun worker Katsuyu compatible n’est disponible.",
+                    "warning",
+                );
+            } else {
+                this.showCommandStatus("Diagnostic Tsunade terminé.");
+            }
         } catch (error) {
+            this.showCommandStatus("");
             this.showError(`Diagnostic indisponible : ${this.errorMessage(error)}`);
         } finally {
             button.disabled = false;
@@ -773,6 +815,7 @@ export class IncidentsController {
 
             this.showCommandStatus(
                 `${label} · ${this.jobStatusLabel(job.status)}${progress}`,
+                "running",
             );
 
             if (TERMINAL_JOB_STATUSES.has(job.status)) {
@@ -1141,10 +1184,18 @@ export class IncidentsController {
         }
     }
 
-    showCommandStatus(message) {
+    showCommandStatus(message, tone = "success") {
         if (this.elements.commandStatus) {
             this.elements.commandStatus.textContent = message;
             this.elements.commandStatus.classList.toggle("hidden", !message);
+            this.elements.commandStatus.classList.toggle(
+                "is-running",
+                Boolean(message) && tone === "running",
+            );
+            this.elements.commandStatus.classList.toggle(
+                "is-warning",
+                Boolean(message) && tone === "warning",
+            );
         }
     }
 

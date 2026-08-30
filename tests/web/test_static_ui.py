@@ -350,6 +350,13 @@ def test_static_ui_exposes_incident_center() -> None:
     assert "Contrôle global effectué le" in script.text
     assert "Décision du" in script.text
     assert "incident-decision-freshness" in stylesheet.text
+    assert 'outcome?.status === "AI_QUEUED"' in script.text
+    assert "outcome.ai_job_id" in script.text
+    assert 'outcome?.status === "INSUFFICIENT_CONTEXT"' in script.text
+    assert '"Analyse Katsuyu",' in script.text
+    assert '"running",' in script.text
+    assert ".incidents-command-status.is-running" in stylesheet.text
+    assert ".incidents-command-status.is-warning" in stylesheet.text
     decision_index = script.text.index(
         "${this.tsunadeDecision(details ?? incident, decisionRecord)}"
     )

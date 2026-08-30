@@ -107,6 +107,16 @@
     background: var(--ohana-health-healthy-soft);
 }
 
+.incidents-command-status.is-running {
+    color: var(--ohana-brand-primary);
+    background: color-mix(in srgb, var(--ohana-brand-primary) 12%, transparent);
+}
+
+.incidents-command-status.is-warning {
+    color: var(--ohana-health-degraded);
+    background: color-mix(in srgb, var(--ohana-health-degraded) 12%, transparent);
+}
+
 .incidents-filter {
     padding: var(--ohana-space-2) var(--ohana-space-4);
     border: var(--ohana-border-width-thin) solid var(--ohana-border-default);
