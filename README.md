@@ -448,3 +448,6 @@ La fiche d’un équipement peut définir une plage de surveillance avec ses jou
 son fuseau horaire et un délai de démarrage. En dehors de cette plage, les
 services et la présence réseau hérités affichent **Suspendu**. Cet état reste
 visible dans la timeline sans être compté comme incident ou dégradation.
+
+Le [parcours des priorités Tsunade](docs/tsunade-priorities.md) décrit les cartes,
+le dossier, Shizune et la séparation entre état courant et historique.

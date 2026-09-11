@@ -108,3 +108,14 @@ def respond(
             token,
         )
     )
+
+
+@router.post("/incidents/{incident_id}/diagnose")
+def diagnose(
+    incident_id: str,
+    request: Request,
+    authorization: str | None = Header(default=None),
+    companion_id: str | None = Header(default=None, alias="X-Ohana-Companion-Id"),
+) -> JSONResponse:
+    device_id, token = _identity(authorization, companion_id)
+    return _call(lambda: _client(request).diagnose(incident_id, device_id, token))

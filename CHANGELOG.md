@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [1.22.13] — 2026-09-11 — Priorités Tsunade
+
+- Les incidents sont regroupés par prochaine étape ; les statistiques, journaux
+  détaillés, hypothèses et historiques restent accessibles dans le dossier.
+- La décision et sa fraîcheur viennent de la synthèse Agent. Une liste de huit
+  exemples ne remplace plus le nombre total d’anomalies.
+- L’« État courant » exclut les équipements absents de la topologie actuelle,
+  y compris après actualisation ; leurs périodes restent consultables dans l’historique.
+- Shizune peut ouvrir le dossier d’un incident et demander un diagnostic via
+  son canal compagnon authentifié.
+
 Toutes les évolutions importantes du projet sont documentées dans ce fichier.
 
 Le projet suit les principes de Semantic Versioning.

@@ -13,7 +13,11 @@ l'Agent.
 
 ## État actuel
 
-**Version publiée : 1.22.9 — Décision Tsunade prioritaire.**
+**Version : 1.22.13 — Priorités Tsunade et état courant cohérent.**
+
+Les cartes exposent la conclusion, sa fraîcheur et la prochaine étape ; le dossier
+contient les détails. L’état courant suit la topologie actuelle et conserve
+l’historique des équipements retirés. Voir [le parcours](docs/tsunade-priorities.md).
 
 Le socle actuel couvre notamment :
 

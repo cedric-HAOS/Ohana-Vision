@@ -67,6 +67,7 @@ export class IncidentsController {
         this.expandedLogAnomalies = new Set();
         this.filter = "active";
         this.loaded = false;
+        this.focusedIncident = new URLSearchParams(window.location.search).get("incident");
         this.elements = {
             error: document.querySelector("#incidents-error"),
             list: document.querySelector("#incidents-list"),
@@ -81,6 +82,7 @@ export class IncidentsController {
             filters: Array.from(document.querySelectorAll("[data-incidents-filter]")),
             logCheck: document.querySelector("#tsunade-log-check"),
             commandStatus: document.querySelector("#incidents-command-status"),
+            cycleSummary: document.querySelector("#incidents-cycle-summary"),
         };
     }
 
@@ -164,6 +166,15 @@ export class IncidentsController {
                 fetchJson(API.administrationCapabilities),
             ]);
             this.incidents = Array.isArray(payload?.incidents) ? payload.incidents : [];
+            if (this.focusedIncident) {
+                const incident = this.incidents.find(item => item.incident_id === this.focusedIncident);
+                if (incident) {
+                    this.filter = incident.state === "resolved" ? "resolved" : "active";
+                    this.details.set(incident.incident_id, await fetchJson(API.tsunadeIncident(incident.incident_id)));
+                    this.expandedDetails.add(incident.incident_id);
+                }
+                this.focusedIncident = null;
+            }
             await this.loadDecisionDetails();
             this.summary = payload?.summary && typeof payload.summary === "object"
                 ? payload.summary
@@ -217,13 +228,42 @@ export class IncidentsController {
             );
             return;
         }
+        visible.sort((a, b) => (a.assessment?.priority ?? 9) - (b.assessment?.priority ?? 9));
+        let previousGroup = null;
         this.elements.list.innerHTML = visible
-            .map((incident) => this.incidentCard(incident))
+            .map((incident) => {
+                const group = this.incidentGroup(incident);
+                const heading = group !== previousGroup
+                    ? `<h3 class="incidents-group-heading">${escapeHtml(group)}</h3>` : "";
+                previousGroup = group;
+                return heading + this.incidentCard(incident);
+            })
             .join("");
+    }
+
+    incidentGroup(incident) {
+        const state = incident.assessment?.state;
+        if (incident.state === "resolved") return "Résolus";
+        if (state === "analyzing") return "Analyses en cours";
+        if (state === "stale") return "Diagnostics à actualiser";
+        if (state === "watch") return "Sous surveillance";
+        if (state === "investigate") return "À approfondir";
+        return "À examiner en priorité";
     }
 
     renderSummary() {
         const active = this.incidents.filter((incident) => incident.state === "active");
+        const analyzing = active.filter((incident) => incident.assessment?.state === "analyzing").length;
+        const stale = active.filter((incident) => incident.assessment?.state === "stale").length;
+        if (this.elements.cycleSummary) {
+            this.elements.cycleSummary.textContent = this.logHealth && !TERMINAL_JOB_STATUSES.has(this.logHealth.status)
+                ? "Contrôle des journaux en cours ou en attente de Katsuyu."
+                : analyzing ? `${analyzing} analyse(s) Katsuyu en cours ou en attente.`
+                    : stale ? `${stale} analyse(s) à actualiser avec les derniers éléments.`
+                        : this.logHealth?.finished_at
+                            ? `Dernier contrôle des journaux : ${formatDate(this.logHealth.finished_at)}`
+                            : "Aucun contrôle des journaux disponible.";
+        }
         this.setCount(this.elements.activeCount, active.length);
         this.setCount(
             this.elements.newCount,
@@ -254,8 +294,11 @@ export class IncidentsController {
         const workflow = String(incident.workflow_state ?? "new").toLowerCase();
         const expertiseState = String(incident.expertise_state ?? "idle").toLowerCase();
         const details = this.details.get(incident.incident_id);
-        const decisionRecord = this.latestTsunadeDecisionRecord(details ?? incident);
+        const decisionRecord = this.latestTsunadeDecisionRecord(
+            Object.hasOwn(incident, "latest_decision") ? incident : details ?? incident,
+        );
         const guidance = this.incidentGuidance(incident, decisionRecord, expertiseState);
+        const assessment = incident.assessment;
         const repairState = details ?? incident;
         const repairs = Array.isArray(repairState.repairs) ? repairState.repairs : [];
         const proposedRepair = repairs.find((repair) => repair.status === "proposed");
@@ -274,26 +317,30 @@ export class IncidentsController {
                                 <span class="incident-status">${escapeHtml(displaySeverity.label)}</span>
                                 <span class="incident-badge incident-badge--${escapeHtml(workflow)}">${escapeHtml(WORKFLOW_LABELS[workflow] ?? workflow)}</span>
                             </div>
-                            <h3>${escapeHtml(this.equipmentLabel(incident.node_id))}</h3>
-                            <p>${escapeHtml(this.serviceLabel(incident.node_id, incident.service_id))} · ${escapeHtml(this.readableIdentifier(incident.capability_id))}</p>
+                            <h3>${escapeHtml(assessment?.title ?? this.equipmentLabel(incident.node_id))}</h3>
+                            <p>${escapeHtml(assessment?.label ?? guidance.title)}</p>
                         </div>
-                        <span class="incident-card__dates">
+                        ${incident.capability_id !== "logs.health" ? `<span class="incident-card__dates">
                             <span>Incident ouvert le</span>
                             <strong>${escapeHtml(formatDate(incident.started_at))}</strong>
-                        </span>
+                        </span>` : ""}
                     </header>
-                    ${expertiseState === "ai_queued" || !decisionRecord
+                    <p class="incident-card__message">${escapeHtml(incident.message ?? "Incident sans résumé")}</p>
+                    ${!assessment && (expertiseState === "ai_queued" || !decisionRecord)
                         ? this.incidentGuidanceView(guidance)
                         : ""}
-                    ${this.tsunadeDecision(details ?? incident, decisionRecord)}
+                    ${this.compactDecision(incident, decisionRecord)}
                     <div class="incident-card__actions">
-                        ${incident.state === "active" ? `<button class="${escapeHtml(guidance.buttonClass)}" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${escapeHtml(guidance.buttonLabel)}</button>` : ""}
+                    ${incident.state === "active" && (assessment?.next_action === "diagnose" || !assessment || this.expandedDetails.has(incident.incident_id)) ? `<button class="${escapeHtml(guidance.buttonClass)}" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${escapeHtml(guidance.buttonLabel)}</button>` : ""}
                         ${incident.state === "active" && this.canRestartDnsmasq(incident) && repairs.length === 0 ? `<button class="configuration-secondary-button" data-tsunade-repair-propose="${escapeHtml(incident.incident_id)}" type="button">Proposer le redémarrage de dnsmasq</button>` : ""}
                         ${proposedRepair && !proposedRepair.authorized_at ? `<button class="configuration-primary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-tsunade-repair-authorize="${escapeHtml(proposedRepair.repair_id)}" type="button">Autoriser depuis Vision</button>` : ""}
-                        <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${this.expandedDetails.has(incident.incident_id) ? "Masquer l’évolution" : "Afficher l’évolution"}</button>
+                        <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${this.expandedDetails.has(incident.incident_id) ? "Fermer le dossier" : "Voir le dossier"}</button>
                     </div>
-                    <p class="incident-card__message">${escapeHtml(incident.message ?? "Incident sans résumé")}</p>
+                    ${this.expandedDetails.has(incident.incident_id) ? `
+                    <div class="incident-dossier">
+                    ${this.tsunadeDecision(details ?? incident, decisionRecord)}
                     <dl class="incident-card__details">
+                        <div><dt>Incident ouvert le</dt><dd>${escapeHtml(formatDate(incident.started_at))}</dd></div>
                         <div><dt>Dernière évolution</dt><dd>${escapeHtml(formatDate(incident.last_observed_at))}</dd></div>
                         <div><dt>Occurrences</dt><dd>${escapeHtml(incident.occurrence_count ?? 1)}</dd></div>
                         <div><dt>Récurrences</dt><dd>${escapeHtml(incident.recurrence_count ?? 0)}</dd></div>
@@ -312,13 +359,15 @@ export class IncidentsController {
                             <button class="configuration-primary-button" type="submit">Approfondir les journaux</button>
                         </form>` : ""}
                     ${this.expandedDetails.has(incident.incident_id) && details ? this.evolution(details) : ""}
+                    </div>` : ""}
+                    ${!this.expandedDetails.has(incident.incident_id) && experience ? `<p class="incident-card__result">Une réparation attend votre confirmation dans le dossier.</p>` : ""}
                 </div>
             </article>`;
     }
 
     displaySeverity(incident, severity) {
         if (incident.capability_id === "logs.health") {
-            return {label: "À approfondir", tone: "degraded"};
+            return {label: "Journaux", tone: "degraded"};
         }
         return {
             label: SEVERITY_LABELS[severity] ?? severity,
@@ -331,6 +380,9 @@ export class IncidentsController {
     }
 
     latestTsunadeDecisionRecord(incident) {
+        if (incident?.latest_decision) {
+            return {occurredAt: incident.latest_decision.occurred_at, payload: incident.latest_decision};
+        }
         const events = Array.isArray(incident?.events)
             ? incident.events
             : [];
@@ -364,13 +416,29 @@ export class IncidentsController {
     }
 
     decisionFreshness(incident, decisionRecord) {
-        const decisionAt = Date.parse(decisionRecord?.occurredAt ?? "");
+        const decisionAt = Date.parse(decisionRecord?.payload?.basis_observed_at ?? decisionRecord?.occurredAt ?? "");
         const observedAt = Date.parse(incident?.last_observed_at ?? "");
 
         if (!Number.isFinite(decisionAt) || !Number.isFinite(observedAt)) {
             return "unknown";
         }
         return observedAt > decisionAt ? "stale" : "current";
+    }
+
+    compactDecision(incident, record) {
+        if (!record || incident.expertise_state === "ai_queued") return "";
+        const stale = incident.assessment?.state === "stale"
+            || this.decisionFreshness(incident, record) === "stale";
+        const decision = record.payload;
+        const confidence = Number(decision.confidence);
+        const confidenceText = decision.confidence != null && Number.isFinite(confidence)
+            ? ` · confiance ${Math.round(confidence * 100)} %` : "";
+        if (stale) return `<p class="incident-compact-decision"><small>Conclusion précédente du ${escapeHtml(formatDate(record.occurredAt))}${escapeHtml(confidenceText)}. De nouveaux éléments sont disponibles.</small></p>`;
+        return `<section class="incident-compact-decision">
+            <strong>${escapeHtml(stale ? "Analyse à actualiser" : TSUNADE_DECISION_LABELS[decision.decision] ?? "Analyse incomplète")}</strong>
+            <span>${escapeHtml(stale ? "De nouveaux éléments sont disponibles depuis la dernière conclusion." : decision.reason || decision.conclusion || "Les éléments disponibles ne permettent pas de conclure.")}</span>
+            <small>${escapeHtml(stale ? "Conclusion précédente" : "Décision")} du ${escapeHtml(formatDate(record.occurredAt))}${escapeHtml(confidenceText)}</small>
+        </section>`;
     }
 
     incidentGuidance(incident, decisionRecord, expertiseState) {
@@ -1016,7 +1084,8 @@ export class IncidentsController {
         if (!context || typeof context !== "object") {
             return "";
         }
-        const findings = Array.isArray(context.findings) ? context.findings.slice(0, 8) : [];
+        const allFindings = Array.isArray(context.findings) ? context.findings : [];
+        const findings = allFindings.slice(0, 8);
         const source = LOG_SOURCE_LABELS[context.source] ?? this.readableIdentifier(context.source);
         const state = context.status === "OK" ? "sain" : "anomalie";
         const window = this.analysisWindow(context);
@@ -1028,9 +1097,9 @@ export class IncidentsController {
             const trend = TREND_LABELS[finding.trend] ?? this.readableIdentifier(finding.trend);
             return `<li><strong>${escapeHtml(finding.signature ?? finding.summary)}</strong><span>${escapeHtml(finding.occurrences ?? 0)} occurrence(s) / ${escapeHtml(window)}</span><small>Référence : ${escapeHtml(reference)} · Évolution : ${escapeHtml(trend)}</small></li>`;
         }).join("");
-        const anomalyLabel = findings.length === 0
+        const anomalyLabel = allFindings.length === 0
             ? "Aucune anomalie regroupée"
-            : `${findings.length} anomalie(s) regroupée(s)`;
+            : `${allFindings.length} anomalie(s) regroupée(s)${allFindings.length > findings.length ? ` · ${findings.length} présentées` : ""}`;
         return `<section class="incident-log-synthesis ${expanded ? "is-expanded" : ""}">
             <header>
                 <div>
@@ -1130,7 +1199,7 @@ export class IncidentsController {
 
     async loadDecisionDetails() {
         const pending = this.incidents.filter(
-            (incident) => !this.details.has(incident.incident_id),
+            (incident) => !Object.hasOwn(incident, "latest_decision") && !this.details.has(incident.incident_id),
         );
         const results = await Promise.allSettled(
             pending.map(async (incident) => [

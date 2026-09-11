@@ -88,6 +88,16 @@ class AgentCompanionClient:
             token=token,
         )
 
+    def diagnose(self, incident_id: str, device_id: str, token: str) -> dict[str, Any]:
+        identifier = quote(incident_id, safe="")
+        return self._request(
+            "POST",
+            f"/v1/incidents/{identifier}/diagnose",
+            {},
+            device_id=device_id,
+            token=token,
+        )
+
     def _request(
         self,
         method: str,

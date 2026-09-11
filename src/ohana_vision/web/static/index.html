@@ -792,10 +792,12 @@
         <div class="panel-heading">
          <div>
           <p class="panel-heading__kicker">Tsunade</p>
-          <h2 id="incidents-heading">Moteur d’incidents</h2>
-          <p>Suivez les incidents détectés par Shikamaru, leurs investigations, décisions et résolutions.</p>
+          <h2 id="incidents-heading">Les priorités de Tsunade</h2>
+          <p>Les problèmes, leur diagnostic et la prochaine étape.</p>
          </div>
         </div>
+        <details class="incidents-history">
+        <summary>Contrôles et bilan</summary>
         <div class="incidents-summary" aria-label="Synthèse des incidents">
          <article class="incidents-summary-card">
           <span>Actifs</span>
@@ -842,9 +844,11 @@
           <p>Aucune analyse disponible.</p>
          </div>
         </section>
+        </details>
+        <p class="incidents-cycle-summary" id="incidents-cycle-summary" aria-live="polite"></p>
         <div class="incidents-toolbar">
          <div aria-label="Filtrer les incidents" class="incidents-toolbar__filters">
-          <button aria-pressed="true" class="incidents-filter is-active" data-incidents-filter="active" type="button">Actifs</button>
+          <button aria-pressed="true" class="incidents-filter is-active" data-incidents-filter="active" type="button">Tous les actifs</button>
           <button aria-pressed="false" class="incidents-filter" data-incidents-filter="new" type="button">Nouveaux</button>
           <button aria-pressed="false" class="incidents-filter" data-incidents-filter="in_progress" type="button">En cours</button>
           <button aria-pressed="false" class="incidents-filter" data-incidents-filter="treated" type="button">Traités</button>

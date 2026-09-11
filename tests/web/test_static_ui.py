@@ -343,7 +343,7 @@ def test_static_ui_exposes_incident_center() -> None:
     assert "Erreur technique Katsuyu" in script.text
     assert 'payload.cycle_status === "ai_failed"' in script.text
     assert "displaySeverity(incident, severity)" in script.text
-    assert 'return {label: "À approfondir", tone: "degraded"};' in script.text
+    assert 'return {label: "Journaux", tone: "degraded"};' in script.text
     assert "latestTsunadeDecisionRecord(incident)" in script.text
     assert "decisionFreshness(incident, decisionRecord)" in script.text
     assert "À faire : actualiser l’analyse" in script.text
@@ -358,7 +358,7 @@ def test_static_ui_exposes_incident_center() -> None:
     assert ".incidents-command-status.is-running" in stylesheet.text
     assert ".incidents-command-status.is-warning" in stylesheet.text
     decision_index = script.text.index(
-        "${this.tsunadeDecision(details ?? incident, decisionRecord)}"
+        "${this.compactDecision(incident, decisionRecord)}"
     )
     actions_index = script.text.index('<div class="incident-card__actions">')
     log_synthesis_index = script.text.index("${logSynthesis}")

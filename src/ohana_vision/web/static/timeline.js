@@ -278,8 +278,14 @@ export class TimelineController {
     }
 
     renderCurrentStates() {
+        const currentIds = new Set(
+            (this.state.topology?.devices ?? []).flatMap(
+                (device) => [device.device_id, device.node_id],
+            ).filter(Boolean),
+        );
         const currentStates =
             this.periodGroups
+                .filter((group) => currentIds.has(group.nodeId))
                 .map((group) => ({
                     nodeId: group.nodeId,
                     period: group.periods.at(-1) ?? null,

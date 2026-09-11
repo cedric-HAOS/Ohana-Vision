@@ -521,6 +521,7 @@ export class ApplicationController {
             }
 
             await Promise.allSettled(operations);
+            this.timeline.render();
             this.renderLastRefresh();
         } finally {
             this.setRefreshing(false);
@@ -588,6 +589,7 @@ export class ApplicationController {
                 dataOperations,
             );
             await this.topology.load();
+            this.timeline.render();
 
             if (
                 this.navigation.activeView

@@ -4,6 +4,8 @@
 }
 
 .incidents-panel {
+    display: flex;
+    flex-direction: column;
     min-height: 100%;
     overflow: hidden;
     border: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
@@ -11,6 +13,27 @@
     background: var(--ohana-background-surface);
     box-shadow: var(--ohana-shadow-md);
 }
+
+.incidents-history { order: 10; padding: var(--ohana-space-4) var(--ohana-space-5); border-top: 1px solid var(--ohana-border-subtle); }
+.incidents-history > summary { cursor: pointer; color: var(--ohana-text-secondary); }
+.incidents-cycle-summary { margin: 0; padding: 0 var(--ohana-space-5) var(--ohana-space-3); color: var(--ohana-text-secondary); }
+.incidents-group-heading { margin: var(--ohana-space-3) 0 0; font-size: var(--ohana-font-size-md); color: var(--ohana-text-secondary); }
+.incident-compact-decision { display: grid; gap: var(--ohana-space-2); padding: var(--ohana-space-3) 0; }
+.incident-compact-decision small { color: var(--ohana-text-muted); }
+.incident-dossier { border-top: 1px solid var(--ohana-border-subtle); margin-top: var(--ohana-space-3); padding-top: var(--ohana-space-4); }
+.incident-card__header h3, .incident-card__message { overflow-wrap: anywhere; }
+.incidents-panel .configuration-primary-button {
+    padding: var(--ohana-space-2) var(--ohana-space-4);
+    border: 1px solid var(--ohana-brand-primary);
+    border-radius: var(--ohana-radius-md);
+    background: var(--ohana-brand-primary);
+    color: var(--ohana-background-canvas);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+.incidents-panel .configuration-primary-button:disabled { opacity: .55; cursor: default; }
+.incidents-panel .incident-card__message { border: 0; padding: 0; background: transparent; color: var(--ohana-text-secondary); }
 
 .incidents-summary {
     display: grid;

@@ -42,6 +42,10 @@ class FakeCompanionClient:
         self.calls.append(("respond", request_id, payload, device_id, token))
         return {"request_id": request_id, "answer": payload["choice"]}
 
+    def diagnose(self, incident_id: str, device_id: str, token: str) -> dict[str, Any]:
+        self.calls.append(("diagnose", incident_id, device_id, token))
+        return {"schema_version": 1, "status": "AI_QUEUED"}
+
 
 def make_client() -> tuple[TestClient, FakeCompanionClient]:
     companion = FakeCompanionClient()
@@ -49,6 +53,27 @@ def make_client() -> tuple[TestClient, FakeCompanionClient]:
         companion_client=cast(AgentCompanionClient, companion),
     )
     return TestClient(app), companion
+
+
+def test_diagnosis_requires_identity_and_forwards_only_incident():
+    client, companion = make_client()
+    path = "/api/shizune/incidents/incident-1/diagnose"
+    assert client.post(path, json={}).status_code == 401
+    assert companion.calls == []
+    response = client.post(
+        path,
+        json={},
+        headers={
+            "Authorization": "Bearer scoped-secret",
+            "X-Ohana-Companion-Id": "pwa-device",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    assert response.json() == {"schema_version": 1, "status": "AI_QUEUED"}
+    assert companion.calls == [
+        ("diagnose", "incident-1", "pwa-device", "scoped-secret")
+    ]
 
 
 def test_pairing_is_forwarded_without_an_existing_session() -> None:
