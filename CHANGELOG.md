@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.22.14] — 2026-09-14 — Suivi des investigations Tsunade
+
+- Le dossier affiche l’état de la collecte complémentaire et ses limites.
+- Ouvrir le dossier ne réactive plus un bouton de diagnostic sans suite disponible.
+- Les demandes de collecte disposent d’un accès explicite à Shizune.
+
 ## [1.22.13] — 2026-09-11 — Priorités Tsunade
 
 - Les incidents sont regroupés par prochaine étape ; les statistiques, journaux

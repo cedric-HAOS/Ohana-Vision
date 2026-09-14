@@ -13,7 +13,7 @@ l'Agent.
 
 ## État actuel
 
-**Version : 1.22.13 — Priorités Tsunade et état courant cohérent.**
+**Version : 1.22.14 — Priorités Tsunade et état courant cohérent.**
 
 Les cartes exposent la conclusion, sa fraîcheur et la prochaine étape ; le dossier
 contient les détails. L’état courant suit la topologie actuelle et conserve

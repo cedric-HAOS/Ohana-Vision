@@ -331,7 +331,8 @@ export class IncidentsController {
                         : ""}
                     ${this.compactDecision(incident, decisionRecord)}
                     <div class="incident-card__actions">
-                    ${incident.state === "active" && (assessment?.next_action === "diagnose" || !assessment || this.expandedDetails.has(incident.incident_id)) ? `<button class="${escapeHtml(guidance.buttonClass)}" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${escapeHtml(guidance.buttonLabel)}</button>` : ""}
+                    ${incident.state === "active" && (assessment?.next_action === "diagnose" || !assessment) ? `<button class="${escapeHtml(guidance.buttonClass)}" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${escapeHtml(guidance.buttonLabel)}</button>` : ""}
+                        ${assessment?.next_action === "decisions" ? '<a class="configuration-primary-button" href="/shizune/">Examiner la demande dans Shizune</a>' : ""}
                         ${incident.state === "active" && this.canRestartDnsmasq(incident) && repairs.length === 0 ? `<button class="configuration-secondary-button" data-tsunade-repair-propose="${escapeHtml(incident.incident_id)}" type="button">Proposer le redémarrage de dnsmasq</button>` : ""}
                         ${proposedRepair && !proposedRepair.authorized_at ? `<button class="configuration-primary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-tsunade-repair-authorize="${escapeHtml(proposedRepair.repair_id)}" type="button">Autoriser depuis Vision</button>` : ""}
                         <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${this.expandedDetails.has(incident.incident_id) ? "Fermer le dossier" : "Voir le dossier"}</button>
@@ -426,6 +427,13 @@ export class IncidentsController {
     }
 
     compactDecision(incident, record) {
+        const assessment = incident.assessment;
+        if (assessment?.followup) return `<section class="incident-compact-decision">
+            <strong>${escapeHtml(assessment.label)}</strong>
+            <span>${escapeHtml(assessment.followup.detail || "Une collecte complémentaire attend votre autorisation dans Shizune.")}</span>
+            ${assessment.decided_at ? `<small>Dernière décision du ${escapeHtml(formatDate(assessment.decided_at))}</small>` : ""}
+            ${assessment.recommended_action ? `<small>Suite recommandée : ${escapeHtml(assessment.recommended_action)}</small>` : ""}
+        </section>`;
         if (!record || incident.expertise_state === "ai_queued") return "";
         const stale = incident.assessment?.state === "stale"
             || this.decisionFreshness(incident, record) === "stale";
