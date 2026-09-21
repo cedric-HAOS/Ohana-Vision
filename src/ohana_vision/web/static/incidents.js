@@ -428,12 +428,28 @@ export class IncidentsController {
 
     compactDecision(incident, record) {
         const assessment = incident.assessment;
-        if (assessment?.followup) return `<section class="incident-compact-decision">
-            <strong>${escapeHtml(assessment.label)}</strong>
-            <span>${escapeHtml(assessment.followup.detail || "Une collecte complémentaire attend votre autorisation dans Shizune.")}</span>
-            ${assessment.decided_at ? `<small>Dernière décision du ${escapeHtml(formatDate(assessment.decided_at))}</small>` : ""}
-            ${assessment.recommended_action ? `<small>Suite recommandée : ${escapeHtml(assessment.recommended_action)}</small>` : ""}
-        </section>`;
+        if (assessment?.followup) {
+            const followup = assessment.followup;
+            const stale = assessment.state === "stale" || assessment.decision_current === false
+                || (record && this.decisionFreshness(incident, record) === "stale");
+            const reason = assessment.reason || assessment.conclusion || record?.payload?.reason;
+            const followupLabel = {
+                pending: "Collecte à autoriser", authorized: "Collecte autorisée",
+                queued: "Collecte en attente ou en cours", reviewing: "Réévaluation en attente ou en cours",
+                completed: "Suivi précédent terminé", incomplete: "Suivi terminé, contexte insuffisant",
+                failed: "Suivi interrompu", refused: "Collecte refusée",
+                cancelled: "Collecte annulée", expired: "Demande expirée",
+            }[followup.status] ?? "Suivi de l’investigation";
+            return `<section class="incident-compact-decision">
+                <strong>${escapeHtml(assessment.label)}</strong>
+                ${stale ? '<span>De nouveaux éléments sont disponibles depuis la dernière conclusion.</span>'
+                    : reason && assessment.state !== "analyzing" ? `<span>${escapeHtml(reason)}</span>` : ""}
+                ${assessment.decided_at ? `<small>Dernière décision du ${escapeHtml(formatDate(assessment.decided_at))}</small>` : ""}
+                <small>${escapeHtml(followupLabel)}${followup.detail ? ` : ${escapeHtml(followup.detail)}` : ""}</small>
+                ${followup.failed_at ? `<small>Interruption du ${escapeHtml(formatDate(followup.failed_at))}</small>` : ""}
+                ${assessment.recommended_action ? `<small>Suite recommandée : ${escapeHtml(assessment.recommended_action)}</small>` : ""}
+            </section>`;
+        }
         if (!record || incident.expertise_state === "ai_queued") return "";
         const stale = incident.assessment?.state === "stale"
             || this.decisionFreshness(incident, record) === "stale";
