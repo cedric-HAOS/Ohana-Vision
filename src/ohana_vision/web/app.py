@@ -3,7 +3,7 @@
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from ohana_vision import __version__
@@ -30,6 +30,38 @@ SHIZUNE_DIRECTORY = Path("/var/www/shizune")
 
 
 ACCESS_LOGGER = logging.getLogger("ohana_vision.access")
+
+
+class RefusedRequestLogger:
+    """Log refused (4xx) and failed (5xx) HTTP requests, path only.
+
+    A plain ASGI wrapper around the response start: it leaves streaming
+    responses, WebSockets and server shutdown untouched.
+    """
+
+    def __init__(self, app) -> None:
+        self.app = app
+
+    async def __call__(self, scope, receive, send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_logged(message) -> None:
+            if message["type"] == "http.response.start" and message["status"] >= 400:
+                status = message["status"]
+                client = scope.get("client")
+                ACCESS_LOGGER.log(
+                    logging.WARNING if status >= 500 else logging.INFO,
+                    '%s "%s %s" %s',
+                    client[0] if client else "-",
+                    scope["method"],
+                    scope["path"],
+                    status,
+                )
+            await send(message)
+
+        await self.app(scope, receive, send_logged)
 
 
 class RevalidatedStaticFiles(StaticFiles):
@@ -74,21 +106,7 @@ def create_app(
         label="Infrastructure non configurée",
     )
 
-    @app.middleware("http")
-    async def log_refused_requests(request: Request, call_next):
-        response = await call_next(request)
-        status = response.status_code
-        if status >= 400:
-            # The path only: query strings may carry identifiers.
-            ACCESS_LOGGER.log(
-                logging.WARNING if status >= 500 else logging.INFO,
-                '%s "%s %s" %s',
-                request.client.host if request.client else "-",
-                request.method,
-                request.url.path,
-                status,
-            )
-        return response
+    app.add_middleware(RefusedRequestLogger)
 
     app.state.configuration = resolved_configuration
     app.state.base_topology = resolved_topology
