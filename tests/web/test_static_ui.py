@@ -3133,3 +3133,18 @@ def test_ui_files_are_revalidated_after_upgrades(path: str) -> None:
     assert first.headers["cache-control"] == "no-cache"
     revalidated = client.get(path, headers={"If-None-Match": first.headers["etag"]})
     assert revalidated.status_code == 304
+
+
+def test_only_refused_or_failed_requests_reach_the_journal(caplog) -> None:
+    """Agent observation exports and UI refreshes must not flood the journal."""
+    import logging
+
+    caplog.set_level(logging.INFO, logger="ohana_vision.access")
+    client = make_client()
+    assert client.get("/ui/incidents.js?token=query-secret").status_code == 200
+    assert client.get("/ui/missing.js?token=query-secret").status_code == 404
+
+    records = [r for r in caplog.records if r.name == "ohana_vision.access"]
+    assert [record.levelno for record in records] == [logging.INFO]
+    assert '"GET /ui/missing.js" 404' in records[0].getMessage()
+    assert "query-secret" not in caplog.text

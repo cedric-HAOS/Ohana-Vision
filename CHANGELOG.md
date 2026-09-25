@@ -2,6 +2,11 @@
 
 ## Non publié
 
+- Le journal d'accès d'uvicorn est désactivé : chaque observation poussée par
+  l'Agent et chaque rafraîchissement de l'interface écrivaient une ligne `INFO`
+  dans le journal d'INFRA-01 analysé par Katsuyu. Les refus (4xx, `INFO`) et
+  les erreurs (5xx, `WARNING`) restent journalisés par l'application, sans
+  chaîne de requête.
 - Les fichiers de l'interface (`/ui`) sont servis avec `Cache-Control: no-cache` :
   le navigateur revérifie chaque fichier (réponse 304 s'il n'a pas changé) et ne
   garde plus d'anciens modules après une mise à jour. Il fallait vider le cache

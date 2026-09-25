@@ -1,8 +1,9 @@
 """FastAPI application factory for Ohana-Vision."""
 
+import logging
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 
 from ohana_vision import __version__
@@ -26,6 +27,9 @@ APPLICATION_NAME = "Ohana Vision"
 
 STATIC_DIRECTORY = Path(__file__).parent / "static"
 SHIZUNE_DIRECTORY = Path("/var/www/shizune")
+
+
+ACCESS_LOGGER = logging.getLogger("ohana_vision.access")
 
 
 class RevalidatedStaticFiles(StaticFiles):
@@ -69,6 +73,22 @@ def create_app(
         topology_id="unconfigured",
         label="Infrastructure non configurée",
     )
+
+    @app.middleware("http")
+    async def log_refused_requests(request: Request, call_next):
+        response = await call_next(request)
+        status = response.status_code
+        if status >= 400:
+            # The path only: query strings may carry identifiers.
+            ACCESS_LOGGER.log(
+                logging.WARNING if status >= 500 else logging.INFO,
+                '%s "%s %s" %s',
+                request.client.host if request.client else "-",
+                request.method,
+                request.url.path,
+                status,
+            )
+        return response
 
     app.state.configuration = resolved_configuration
     app.state.base_topology = resolved_topology

@@ -104,6 +104,10 @@ def run(
         host=configuration.server.host,
         port=configuration.server.port,
         log_level=configuration.server.log_level.lower(),
+        # Every Agent observation export and UI refresh was an INFO line in
+        # the INFRA-01 journal; refused and failed requests are logged by the
+        # application middleware instead.
+        access_log=False,
     )
 
     return 0
