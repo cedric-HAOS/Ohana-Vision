@@ -226,10 +226,12 @@ class AgentAdministrationClient:
     def authorize_tsunade_repair(
         self, incident_id: str, payload: dict[str, Any]
     ) -> dict[str, Any]:
+        # Agent executes the repair before answering (Supervisor restart).
         return self._request(
             "POST",
             f"/v1/incidents/{quote(incident_id, safe='')}/repairs/authorize",
             payload=payload,
+            timeout_seconds=60.0,
         )
 
     def confirm_tsunade_experience(

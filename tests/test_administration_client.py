@@ -93,7 +93,7 @@ def test_backup_operations_allow_slow_cold_icloud_startup(
         ),
         (
             "http://127.0.0.1:8765/v1/incidents/incident%20id/repairs/authorize",
-            10.0,
+            60.0,
         ),
         (
             "http://127.0.0.1:8765/v1/incidents/incident%20id/experience",

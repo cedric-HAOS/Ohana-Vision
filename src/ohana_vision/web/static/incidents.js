@@ -333,7 +333,7 @@ export class IncidentsController {
                     <div class="incident-card__actions">
                     ${incident.state === "active" && (assessment?.next_action === "diagnose" || !assessment) ? `<button class="${escapeHtml(guidance.buttonClass)}" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${escapeHtml(guidance.buttonLabel)}</button>` : ""}
                         ${assessment?.next_action === "decisions" ? '<a class="configuration-primary-button" href="/shizune/">Examiner la demande dans Shizune</a>' : ""}
-                        ${incident.state === "active" && this.canRestartDnsmasq(incident) && repairs.length === 0 ? `<button class="configuration-secondary-button" data-tsunade-repair-propose="${escapeHtml(incident.incident_id)}" type="button">Proposer le redémarrage de dnsmasq</button>` : ""}
+                        ${this.canRequestRepair(incident, repairs) ? `<button class="configuration-secondary-button" data-tsunade-repair-propose="${escapeHtml(incident.incident_id)}" type="button">Demander la réparation connue</button>` : ""}
                         ${proposedRepair && !proposedRepair.authorized_at ? `<button class="configuration-primary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-tsunade-repair-authorize="${escapeHtml(proposedRepair.repair_id)}" type="button">Autoriser depuis Vision</button>` : ""}
                         <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${this.expandedDetails.has(incident.incident_id) ? "Fermer le dossier" : "Voir le dossier"}</button>
                     </div>
@@ -991,7 +991,8 @@ export class IncidentsController {
         try {
             await requestJson(API.tsunadeRepair(incidentId), {
                 method: "POST",
-                body: JSON.stringify({operation: "restart_service"}),
+                // Tsunade selects the catalogue repair; Vision never names one.
+                body: JSON.stringify({}),
             });
             this.details.delete(incidentId);
             this.expandedDetails.delete(incidentId);
@@ -1053,9 +1054,13 @@ export class IncidentsController {
     repairs(repairs) {
         const labels = {
             proposed: "En attente de validation",
+            authorized: "Autorisée, exécution en cours",
+            refused: "Refusée, aucune action exécutée",
+            expired: "Proposition expirée, aucune action exécutée",
             verifying: "Exécutée, vérification Shikamaru en attente",
             succeeded: "Réussie et confirmée par Shikamaru",
             failed: "Échec confirmé",
+            unverified: "Exécutée, résultat non confirmé par Shikamaru",
         };
         const riskLabels = {low: "Faible", medium: "Moyen", high: "Élevé"};
         return `<div class="incident-repairs"><strong>Réparations supervisées</strong>${repairs.map((repair) => `
@@ -1176,11 +1181,12 @@ export class IncidentsController {
         return labels[status] ?? this.readableIdentifier(status);
     }
 
-    canRestartDnsmasq(incident) {
-        return [incident.node_id, incident.service_id, incident.capability_id, incident.message]
-            .join(" ")
-            .toLowerCase()
-            .includes("dns");
+    canRequestRepair(incident, repairs) {
+        // Agent checks the real preconditions; this only hides pointless requests.
+        const pending = repairs.some((repair) => ["proposed", "authorized", "verifying"].includes(repair.status));
+        return incident.state === "active"
+            && incident.latest_decision?.epistemic_status === "confirmed_by_probe"
+            && !pending;
     }
 
     translatedSummary(summary) {

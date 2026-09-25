@@ -7,6 +7,15 @@
   Tsunade (Agent) s'en sert pour rattacher un incident à l'incident actif d'un
   service amont au lieu de solliciter Katsuyu. La suppression d'un service
   retire son identifiant des dépendances des autres services.
+- Les réparations supervisées affichent tous les états d'Agent, dont les
+  nouveaux `expired` (« Proposition expirée, aucune action exécutée ») et
+  `unverified` (« Exécutée, résultat non confirmé par Shikamaru »).
+- « Proposer le redémarrage de dnsmasq », affiché dès que « dns » apparaissait
+  dans l'incident, devient « Demander la réparation connue » : visible sur un
+  incident actif dont le diagnostic est confirmé par sonde et sans réparation
+  en cours. Tsunade choisit la réparation du catalogue et Vision n'envoie plus
+  d'opération. L'autorisation depuis Vision attend jusqu'à 60 s, le temps que
+  l'Agent exécute la réparation (redémarrage d'add-on par le Supervisor).
 - `configuration.js` (6 551 lignes) est découpé en modules ES par domaine sous
   `static/configuration/` : workers, compagnons, réseau, DHCP, vue et éditeur
   d'architecture, plugins, plus `shared.js` pour les validateurs. Aucun
