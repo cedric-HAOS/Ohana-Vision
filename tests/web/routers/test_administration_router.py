@@ -260,6 +260,16 @@ class FakeAdministrationClient:
     ) -> dict[str, Any]:
         return {"incident_id": incident_id, "success_count": 1, **payload}
 
+    def refuse_tsunade_repair(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {"incident_id": incident_id, "status": "refused", **payload}
+
+    def defer_tsunade_repair(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {"incident_id": incident_id, "status": "proposed", **payload}
+
     def approve_worker_pairing(self, pairing_id: str) -> dict[str, Any]:
         return {"pairing_id": pairing_id, "status": "APPROVED"}
 
@@ -351,6 +361,18 @@ def test_administration_routes_proxy_agent_documents() -> None:
         "11111111-1111-4111-8111-111111111111/experience",
         json={"confirm": True},
     )
+    repair_refusal = client.post(
+        "/api/administration/tsunade/incidents/"
+        "11111111-1111-4111-8111-111111111111/repairs/refuse",
+        json={"repair_id": "22222222-2222-4222-8222-222222222222"},
+    )
+    repair_deferral = client.post(
+        "/api/administration/tsunade/incidents/"
+        "11111111-1111-4111-8111-111111111111/repairs/defer",
+        json={"repair_id": "22222222-2222-4222-8222-222222222222"},
+    )
+    assert repair_refusal.json()["status"] == "refused"
+    assert repair_deferral.json()["status"] == "proposed"
 
     assert capabilities.status_code == 200
     assert "dhcp.read" in capabilities.json()["operations"]

@@ -2,6 +2,13 @@
 
 ## Non publié
 
+- Une réparation proposée peut être refusée (« Refuser », avec confirmation,
+  définitif et sans exécution) ou reportée (« Plus tard », une heure au plus)
+  depuis Vision, et plus seulement depuis Shizune. L'état affiche
+  « reportée jusqu'à … » pendant le report et « refusée depuis vision » après
+  un refus. Nécessite Ohana-Agent avec les routes `repairs/refuse` et
+  `repairs/defer`.
+
 ## [1.23.0] — 2026-09-25 — Dépendances de services et réparations du catalogue
 
 - Le formulaire de service de l'architecture expose « Dépend de » : une case par

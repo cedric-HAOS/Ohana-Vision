@@ -298,6 +298,24 @@ def authorize_tsunade_repair(
     return _call(lambda: client.authorize_tsunade_repair(incident_id, payload))
 
 
+@router.post("/tsunade/incidents/{incident_id}/repairs/refuse")
+def refuse_tsunade_repair(
+    incident_id: str, payload: dict[str, Any], request: Request
+) -> dict[str, Any]:
+    """Record a final refusal; Agent never executes a refused proposal."""
+    client = _client(request)
+    return _call(lambda: client.refuse_tsunade_repair(incident_id, payload))
+
+
+@router.post("/tsunade/incidents/{incident_id}/repairs/defer")
+def defer_tsunade_repair(
+    incident_id: str, payload: dict[str, Any], request: Request
+) -> dict[str, Any]:
+    """Keep a proposal pending for a bounded delay through Agent."""
+    client = _client(request)
+    return _call(lambda: client.defer_tsunade_repair(incident_id, payload))
+
+
 @router.post("/tsunade/incidents/{incident_id}/experience")
 def confirm_tsunade_experience(
     incident_id: str, payload: dict[str, Any], request: Request

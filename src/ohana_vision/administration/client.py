@@ -234,6 +234,24 @@ class AgentAdministrationClient:
             timeout_seconds=60.0,
         )
 
+    def refuse_tsunade_repair(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            f"/v1/incidents/{quote(incident_id, safe='')}/repairs/refuse",
+            payload=payload,
+        )
+
+    def defer_tsunade_repair(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            f"/v1/incidents/{quote(incident_id, safe='')}/repairs/defer",
+            payload=payload,
+        )
+
     def confirm_tsunade_experience(
         self, incident_id: str, payload: dict[str, Any]
     ) -> dict[str, Any]:

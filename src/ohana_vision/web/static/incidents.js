@@ -125,6 +125,16 @@ export class IncidentsController {
                 );
                 return;
             }
+            const decisionButton = event.target.closest("[data-tsunade-repair-decision]");
+            if (decisionButton) {
+                void this.decideRepair(
+                    decisionButton.dataset.incidentId,
+                    decisionButton.dataset.repairId,
+                    decisionButton.dataset.tsunadeRepairDecision,
+                    decisionButton,
+                );
+                return;
+            }
             const experienceButton = event.target.closest("[data-tsunade-experience]");
             if (experienceButton) {
                 void this.confirmExperience(experienceButton.dataset.tsunadeExperience, experienceButton);
@@ -334,7 +344,9 @@ export class IncidentsController {
                     ${incident.state === "active" && (assessment?.next_action === "diagnose" || !assessment) ? `<button class="${escapeHtml(guidance.buttonClass)}" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${escapeHtml(guidance.buttonLabel)}</button>` : ""}
                         ${assessment?.next_action === "decisions" ? '<a class="configuration-primary-button" href="/shizune/">Examiner la demande dans Shizune</a>' : ""}
                         ${this.canRequestRepair(incident, repairs) ? `<button class="configuration-secondary-button" data-tsunade-repair-propose="${escapeHtml(incident.incident_id)}" type="button">Demander la réparation connue</button>` : ""}
-                        ${proposedRepair && !proposedRepair.authorized_at ? `<button class="configuration-primary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-tsunade-repair-authorize="${escapeHtml(proposedRepair.repair_id)}" type="button">Autoriser depuis Vision</button>` : ""}
+                        ${proposedRepair && !proposedRepair.authorized_at ? `<button class="configuration-primary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-tsunade-repair-authorize="${escapeHtml(proposedRepair.repair_id)}" type="button">Autoriser depuis Vision</button>
+                        ${proposedRepair.deferred_until ? "" : `<button class="configuration-secondary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-repair-id="${escapeHtml(proposedRepair.repair_id)}" data-tsunade-repair-decision="defer" type="button">Plus tard</button>`}
+                        <button class="configuration-secondary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-repair-id="${escapeHtml(proposedRepair.repair_id)}" data-tsunade-repair-decision="refuse" type="button">Refuser</button>` : ""}
                         <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${this.expandedDetails.has(incident.incident_id) ? "Fermer le dossier" : "Voir le dossier"}</button>
                     </div>
                     ${this.expandedDetails.has(incident.incident_id) ? `
@@ -1005,6 +1017,40 @@ export class IncidentsController {
         }
     }
 
+    async decideRepair(incidentId, repairId, decision, button) {
+        // A refusal is final: Agent will never execute this proposal.
+        if (decision === "refuse" && !window.confirm("Refuser définitivement cette réparation ? Elle ne sera jamais exécutée.")) {
+            return;
+        }
+        button.disabled = true;
+        this.showError("");
+        try {
+            await requestJson(
+                decision === "refuse" ? API.tsunadeRepairRefuse(incidentId) : API.tsunadeRepairDefer(incidentId),
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        repair_id: repairId,
+                        source: "vision",
+                        answered_by: "utilisateur Vision",
+                    }),
+                },
+            );
+            this.details.delete(incidentId);
+            this.expandedDetails.delete(incidentId);
+            this.showCommandStatus(
+                decision === "refuse"
+                    ? "Réparation refusée ; aucune action ne sera exécutée."
+                    : "Décision reportée ; la réparation reste en attente sans être exécutée.",
+            );
+            await this.load();
+        } catch (error) {
+            this.showError(`Décision impossible : ${this.errorMessage(error)}`);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
     async authorizeRepair(incidentId, repairId, button) {
         button.disabled = true;
         this.showError("");
@@ -1068,7 +1114,7 @@ export class IncidentsController {
                 <dl>
                     <div><dt>Action proposée</dt><dd>${escapeHtml(this.readableIdentifier(repair.operation))} · ${escapeHtml(repair.target)}</dd></div>
                     <div><dt>Niveau de risque</dt><dd>${escapeHtml(riskLabels[repair.risk] ?? repair.risk)}</dd></div>
-                    <div><dt>État</dt><dd>${escapeHtml(labels[repair.status] ?? repair.status)}${repair.authorization_source ? ` · autorisée depuis ${escapeHtml(repair.authorization_source)}` : ""}</dd></div>
+                    <div><dt>État</dt><dd>${escapeHtml(labels[repair.status] ?? repair.status)}${repair.deferred_until ? ` · reportée jusqu’à ${escapeHtml(formatDate(repair.deferred_until))}` : ""}${repair.authorization_source ? ` · ${repair.status === "refused" ? "refusée" : "autorisée"} depuis ${escapeHtml(repair.authorization_source)}` : ""}</dd></div>
                 </dl>
                 ${Array.isArray(repair.consequences) && repair.consequences.length ? `<div><strong>Conséquences</strong><ul>${repair.consequences.map((consequence) => `<li>${escapeHtml(consequence)}</li>`).join("")}</ul></div>` : ""}
                 ${repair.result ? `<p class="incident-repair__result"><strong>${repair.status === "succeeded" ? "Réparation réussie" : "Résultat"}</strong> · ${escapeHtml(repair.result)}</p>` : ""}

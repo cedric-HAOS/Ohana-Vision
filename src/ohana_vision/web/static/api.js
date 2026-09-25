@@ -22,6 +22,10 @@ export const API = Object.freeze({
         `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/repairs`,
     tsunadeRepairAuthorize: (incidentId) =>
         `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/repairs/authorize`,
+    tsunadeRepairRefuse: (incidentId) =>
+        `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/repairs/refuse`,
+    tsunadeRepairDefer: (incidentId) =>
+        `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/repairs/defer`,
     tsunadeExperience: (incidentId) =>
         `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/experience`,
     incidentAcknowledge(incidentId) {
