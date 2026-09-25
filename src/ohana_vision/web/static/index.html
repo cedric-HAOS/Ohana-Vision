@@ -1477,6 +1477,11 @@
              <input id="architecture-service-availability-group" placeholder="dns" type="text">
              <small>Les instances d’un même groupe restent disponibles tant qu’au moins l’une est saine.</small>
             </label>
+            <fieldset class="configuration-span-2 service-dependencies">
+             <legend>Dépend de</legend>
+             <div class="service-dependency-options" id="architecture-service-dependencies"></div>
+             <small>Tant qu’un service coché a un incident actif, Tsunade y rattache les incidents de ce service au lieu de solliciter Katsuyu.</small>
+            </fieldset>
             <div class="configuration-form-grid configuration-span-2" id="architecture-service-home-assistant-telemetry-fields" hidden>
              <label>
               Entité principale

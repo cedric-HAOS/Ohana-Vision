@@ -1201,6 +1201,20 @@
     gap: 0.35rem;
 }
 
+.service-dependencies {
+    display: grid;
+    gap: 0.5rem;
+    border: 1px solid var(--ohana-border-subtle);
+    border-radius: var(--ohana-radius-md);
+    padding: 0.75rem;
+}
+
+.service-dependency-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+}
+
 .configuration-legacy-fields {
     border: 1px solid var(--ohana-border-subtle);
     border-radius: var(--ohana-radius-md);

@@ -2847,6 +2847,22 @@ def test_architecture_service_editor_exposes_availability_group() -> None:
     )
 
 
+
+def test_architecture_service_editor_exposes_declared_dependencies() -> None:
+    """Tsunade correlates a symptom only with explicitly declared upstreams."""
+    html_response = make_client().get("/ui/")
+    script_response = get_configuration_script(make_client())
+
+    assert 'id="architecture-service-dependencies"' in html_response.text
+    assert "Dépend de" in html_response.text
+    script = script_response.text
+    assert "service.metadata?.depends_on" in script
+    assert "metadata.depends_on = dependencies" in script
+    assert "delete metadata.depends_on" in script
+    # Deleting a service must not leave dangling dependencies behind.
+    assert "this.pruneServiceDependencies();" in script
+    assert "control.dataset.serviceDependency = candidate.id" in script
+
 def test_services_map_javascript_is_available() -> None:
     """The logical services controller must be packaged and served."""
     response = make_client().get("/ui/services.js")

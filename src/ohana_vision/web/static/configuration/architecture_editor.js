@@ -415,6 +415,10 @@ export const ArchitectureEditorMethods = {
             "architecture-service-teleinformation-maximum-age",
             service.metadata?.maximum_age_seconds ?? 30,
         );
+        this.renderServiceDependencies(
+            service.id,
+            service.metadata?.depends_on,
+        );
         this.updateServiceSpecificFields();
     },
 
@@ -522,7 +526,86 @@ export const ArchitectureEditorMethods = {
             "architecture-service-teleinformation-maximum-age",
             30,
         );
+        this.renderServiceDependencies(null, []);
         this.updateServiceSpecificFields();
+    },
+
+    renderServiceDependencies(serviceId, dependsOn) {
+        const container = document.getElementById(
+            "architecture-service-dependencies",
+        );
+
+        if (!container) {
+            return;
+        }
+
+        // Agent also accepts a single string; the form always writes a list.
+        const selected = new Set(
+            Array.isArray(dependsOn)
+                ? dependsOn
+                : (typeof dependsOn === "string" ? [dependsOn] : []),
+        );
+        const candidates = this.infrastructure.services.filter(
+            (item) => item.id !== serviceId,
+        );
+
+        container.replaceChildren();
+
+        if (!candidates.length) {
+            const empty = document.createElement("small");
+            empty.textContent = "Aucun autre service déclaré.";
+            container.append(empty);
+            return;
+        }
+
+        for (const candidate of candidates) {
+            const label = document.createElement("label");
+            label.className = "configuration-check";
+            const control = document.createElement("input");
+            control.type = "checkbox";
+            control.dataset.serviceDependency = candidate.id;
+            control.checked = selected.has(candidate.id);
+            label.append(
+                control,
+                ` ${candidate.name} · ${candidate.node}`,
+            );
+            container.append(label);
+        }
+    },
+
+    serviceDependencies(serviceId) {
+        return Array.from(document.querySelectorAll(
+            "[data-service-dependency]",
+        ))
+            .filter((control) => control.checked)
+            .map((control) => control.dataset.serviceDependency)
+            .filter((dependency) => dependency !== serviceId)
+            // Agent reads at most eight declared dependencies.
+            .slice(0, 8);
+    },
+
+    pruneServiceDependencies() {
+        const serviceIds = new Set(
+            this.infrastructure.services.map((item) => item.id),
+        );
+
+        for (const service of this.infrastructure.services) {
+            const dependsOn = service.metadata?.depends_on;
+
+            if (!Array.isArray(dependsOn)) {
+                continue;
+            }
+
+            const remaining = dependsOn.filter(
+                (dependency) => serviceIds.has(dependency),
+            );
+
+            if (remaining.length) {
+                service.metadata.depends_on = remaining;
+            } else {
+                delete service.metadata.depends_on;
+            }
+        }
     },
 
     editNewServiceForSelection() {
@@ -919,6 +1002,14 @@ export const ArchitectureEditorMethods = {
             delete metadata.availability_group;
         }
 
+        const dependencies = this.serviceDependencies(id);
+
+        if (dependencies.length) {
+            metadata.depends_on = dependencies;
+        } else {
+            delete metadata.depends_on;
+        }
+
         const teleinformationEntityFields = {
             apparent_power_entity_id:
                 "architecture-service-teleinformation-power-entity",
@@ -1214,6 +1305,7 @@ export const ArchitectureEditorMethods = {
                 });
         }
 
+        this.pruneServiceDependencies();
         this.clearArchitectureEditor();
         this.renderArchitecture();
         this.showNotice(

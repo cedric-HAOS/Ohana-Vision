@@ -2,6 +2,11 @@
 
 ## Non publié
 
+- Le formulaire de service de l'architecture expose « Dépend de » : une case par
+  autre service déclaré, enregistrée dans `metadata.depends_on` (huit au plus).
+  Tsunade (Agent) s'en sert pour rattacher un incident à l'incident actif d'un
+  service amont au lieu de solliciter Katsuyu. La suppression d'un service
+  retire son identifiant des dépendances des autres services.
 - `configuration.js` (6 551 lignes) est découpé en modules ES par domaine sous
   `static/configuration/` : workers, compagnons, réseau, DHCP, vue et éditeur
   d'architecture, plugins, plus `shared.js` pour les validateurs. Aucun
