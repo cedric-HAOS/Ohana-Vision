@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.25.0] — 2026-09-25 — Risque visible avant l'autorisation
+
 - Pendant la vérification d'une réparation, l'état affiche l'échéance :
   « vérification attendue avant … ».
 - Tant qu'une réparation attend une décision, la carte d'incident affiche son
