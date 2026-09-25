@@ -213,6 +213,22 @@
     color: var(--ohana-text-secondary);
 }
 
+.incident-card__repair-risk {
+    margin: 0.5rem 0 0;
+    padding: var(--ohana-space-2) var(--ohana-space-3);
+    border-left: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+    color: var(--ohana-text-secondary);
+}
+
+.incident-card__repair-risk p {
+    margin: 0;
+}
+
+.incident-card__repair-risk ul {
+    margin: 0.25rem 0 0;
+    padding-left: 1.25rem;
+}
+
 .incident-card__findings ul {
     margin: 0.5rem 0 0;
     padding-left: 1.25rem;

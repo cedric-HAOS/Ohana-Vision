@@ -2,6 +2,11 @@
 
 ## Non publié
 
+- Tant qu'une réparation attend une décision, la carte d'incident affiche son
+  risque, ses conséquences et le résultat attendu : autoriser ne demande plus
+  d'ouvrir le dossier. Politique par niveau de risque : une réparation à
+  risque faible s'autorise en un clic, une réparation à risque moyen ou élevé
+  demande une confirmation explicite.
 - Le journal d'accès d'uvicorn est désactivé : chaque observation poussée par
   l'Agent et chaque rafraîchissement de l'interface écrivaient une ligne `INFO`
   dans le journal d'INFRA-01 analysé par Katsuyu. Les refus (4xx, `INFO`) et

@@ -122,6 +122,7 @@ export class IncidentsController {
                     authorizeButton.dataset.incidentId,
                     authorizeButton.dataset.tsunadeRepairAuthorize,
                     authorizeButton,
+                    authorizeButton.dataset.repairRisk,
                 );
                 return;
             }
@@ -344,12 +345,13 @@ export class IncidentsController {
                     ${incident.state === "active" && (assessment?.next_action === "diagnose" || !assessment) ? `<button class="${escapeHtml(guidance.buttonClass)}" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${escapeHtml(guidance.buttonLabel)}</button>` : ""}
                         ${assessment?.next_action === "decisions" ? '<a class="configuration-primary-button" href="/shizune/">Examiner la demande dans Shizune</a>' : ""}
                         ${this.canRequestRepair(incident, repairs) ? `<button class="configuration-secondary-button" data-tsunade-repair-propose="${escapeHtml(incident.incident_id)}" type="button">Demander la réparation connue</button>` : ""}
-                        ${proposedRepair && !proposedRepair.authorized_at ? `<button class="configuration-primary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-tsunade-repair-authorize="${escapeHtml(proposedRepair.repair_id)}" type="button">Autoriser depuis Vision</button>
+                        ${proposedRepair && !proposedRepair.authorized_at ? `<button class="configuration-primary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-tsunade-repair-authorize="${escapeHtml(proposedRepair.repair_id)}" data-repair-risk="${escapeHtml(proposedRepair.risk ?? "low")}" type="button">Autoriser depuis Vision</button>
                         ${proposedRepair.deferred_until ? "" : `<button class="configuration-secondary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-repair-id="${escapeHtml(proposedRepair.repair_id)}" data-tsunade-repair-decision="defer" type="button">Plus tard</button>`}
                         <button class="configuration-secondary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-repair-id="${escapeHtml(proposedRepair.repair_id)}" data-tsunade-repair-decision="refuse" type="button">Refuser</button>` : ""}
                         <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${this.expandedDetails.has(incident.incident_id) ? "Fermer le dossier" : "Voir le dossier"}</button>
                     </div>
                     ${repairs.length ? `<p class="incident-card__repair"><strong>${escapeHtml(this.sentence(repairs[0].action ?? "réparation supervisée"))}</strong> · ${escapeHtml(this.repairStatus(repairs[0]))}</p>` : ""}
+                    ${proposedRepair ? this.pendingRepairRisk(proposedRepair) : ""}
                     ${this.expandedDetails.has(incident.incident_id) ? `
                     <div class="incident-dossier">
                     ${this.tsunadeDecision(details ?? incident, decisionRecord)}
@@ -1052,7 +1054,12 @@ export class IncidentsController {
         }
     }
 
-    async authorizeRepair(incidentId, repairId, button) {
+    async authorizeRepair(incidentId, repairId, button, risk = "low") {
+        // Action policy: a low-risk repair is one click; anything riskier
+        // needs an explicit confirmation of the displayed consequences.
+        if (risk !== "low" && !window.confirm("Cette réparation présente un risque " + (risk === "high" ? "élevé" : "moyen") + ". Autoriser son exécution après avoir lu ses conséquences ?")) {
+            return;
+        }
         button.disabled = true;
         this.showError("");
         try {
@@ -1100,6 +1107,17 @@ export class IncidentsController {
 
     sentence(text) {
         return text.charAt(0).toUpperCase() + text.slice(1);
+    }
+
+    pendingRepairRisk(repair) {
+        // Shown before any decision: authorizing must never require opening
+        // the dossier to discover what the action will do.
+        const riskLabels = {low: "faible", medium: "moyen", high: "élevé"};
+        const consequences = Array.isArray(repair.consequences) ? repair.consequences.slice(0, 8) : [];
+        return `<div class="incident-card__repair-risk">
+            <p><strong>Risque ${escapeHtml(riskLabels[repair.risk] ?? repair.risk ?? "inconnu")}</strong>${repair.expected_result ? ` · Résultat attendu : ${escapeHtml(repair.expected_result)}` : ""}</p>
+            ${consequences.length ? `<ul>${consequences.map((consequence) => `<li>${escapeHtml(consequence)}</li>`).join("")}</ul>` : ""}
+        </div>`;
     }
 
     repairStatus(repair) {
