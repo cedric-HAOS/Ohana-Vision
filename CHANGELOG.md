@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.23.0] — 2026-09-25 — Dépendances de services et réparations du catalogue
+
 - Le formulaire de service de l'architecture expose « Dépend de » : une case par
   autre service déclaré, enregistrée dans `metadata.depends_on` (huit au plus).
   Tsunade (Agent) s'en sert pour rattacher un incident à l'incident actif d'un

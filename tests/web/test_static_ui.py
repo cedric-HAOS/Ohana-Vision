@@ -2847,7 +2847,6 @@ def test_architecture_service_editor_exposes_availability_group() -> None:
     )
 
 
-
 def test_architecture_service_editor_exposes_declared_dependencies() -> None:
     """Tsunade correlates a symptom only with explicitly declared upstreams."""
     html_response = make_client().get("/ui/")
@@ -2862,6 +2861,7 @@ def test_architecture_service_editor_exposes_declared_dependencies() -> None:
     # Deleting a service must not leave dangling dependencies behind.
     assert "this.pruneServiceDependencies();" in script
     assert "control.dataset.serviceDependency = candidate.id" in script
+
 
 def test_services_map_javascript_is_available() -> None:
     """The logical services controller must be packaged and served."""
