@@ -59,6 +59,12 @@ assert(html.includes('reportée jusqu’à date(2026-09-25T15:52:00+02:00)'));
 assert(!html.includes('data-tsunade-repair-decision="defer"'));
 assert(html.includes('data-tsunade-repair-decision="refuse"'));
 
+repair.status = 'verifying';
+repair.deferred_until = null;
+repair.verification_deadline = '2026-09-25T15:00:00+02:00';
+html = controller.incidentCard(incident);
+assert(html.includes('vérification attendue avant date(2026-09-25T15:00:00+02:00)'));
+
 repair.status = 'refused';
 repair.deferred_until = null;
 repair.authorization_source = 'vision';

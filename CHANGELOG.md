@@ -2,6 +2,8 @@
 
 ## Non publié
 
+- Pendant la vérification d'une réparation, l'état affiche l'échéance :
+  « vérification attendue avant … ».
 - Tant qu'une réparation attend une décision, la carte d'incident affiche son
   risque, ses conséquences et le résultat attendu : autoriser ne demande plus
   d'ouvrir le dossier. Politique par niveau de risque : une réparation à

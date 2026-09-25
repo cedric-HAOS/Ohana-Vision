@@ -1132,10 +1132,13 @@ export class IncidentsController {
             unverified: "Exécutée, résultat non confirmé par Shikamaru",
         };
         const deferral = repair.deferred_until ? ` · reportée jusqu’à ${formatDate(repair.deferred_until)}` : "";
+        const deadline = repair.status === "verifying" && repair.verification_deadline
+            ? ` · vérification attendue avant ${formatDate(repair.verification_deadline)}`
+            : "";
         const source = repair.authorization_source
             ? ` · ${repair.status === "refused" ? "refusée" : "autorisée"} depuis ${repair.authorization_source}`
             : "";
-        return `${labels[repair.status] ?? repair.status}${deferral}${source}`;
+        return `${labels[repair.status] ?? repair.status}${deferral}${deadline}${source}`;
     }
 
     repairs(repairs) {
