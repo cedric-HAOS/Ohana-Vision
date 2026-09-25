@@ -36,6 +36,7 @@ ohana_vision = [
     "web/static/*.html",
     "web/static/*.css",
     "web/static/*.js",
+    "web/static/configuration/*.js",
     "web/static/assets/favicons/*.ico",
     "web/static/assets/favicons/*.svg",
     "web/static/assets/favicons/*.png",

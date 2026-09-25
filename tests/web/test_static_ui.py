@@ -1,14 +1,37 @@
 """Tests for the Ohana-Vision static web interface."""
 
+import re
+from types import SimpleNamespace
+
 import pytest
 from fastapi.testclient import TestClient
 
 from ohana_vision.web import create_app
 
+CONFIGURATION_MODULE_PATTERN = re.compile(r'from "\./(configuration/\w+\.js)"')
+
 
 def make_client() -> TestClient:
     """Create an Ohana-Vision application client."""
     return TestClient(create_app())
+
+
+def get_configuration_script(client: TestClient) -> SimpleNamespace:
+    """Serve configuration.js and the domain modules it imports as one text."""
+    entry = client.get("/ui/configuration.js")
+    texts = [entry.text]
+    modules = CONFIGURATION_MODULE_PATTERN.findall(entry.text)
+    if "configuration/shared.js" not in modules:
+        modules.append("configuration/shared.js")
+    for module in modules:
+        response = client.get(f"/ui/{module}")
+        assert response.status_code == 200, module
+        texts.append(response.text)
+    return SimpleNamespace(
+        status_code=entry.status_code,
+        headers=entry.headers,
+        text="\n".join(texts),
+    )
 
 
 def test_static_ui_is_available() -> None:
@@ -64,7 +87,7 @@ def test_static_javascript_is_available() -> None:
 def test_katsuyu_pairing_requires_code_and_tls_fingerprint() -> None:
     client = make_client()
 
-    script = client.get("/ui/configuration.js")
+    script = get_configuration_script(client)
     page = client.get("/ui/")
 
     assert script.status_code == 200
@@ -419,7 +442,7 @@ def test_static_ui_exposes_graphical_configuration_views() -> None:
 
 def test_static_ui_exposes_configuration_controller() -> None:
     """The configuration controller must be packaged and served."""
-    response = make_client().get("/ui/configuration.js")
+    response = get_configuration_script(make_client())
 
     assert response.status_code == 200
     assert "ConfigurationController" in response.text
@@ -465,7 +488,7 @@ def test_architecture_exposes_discovered_devices_to_position() -> None:
     """Discovered Z-Wave devices require an explicit placement action."""
     client = make_client()
     page = client.get("/ui/")
-    script = client.get("/ui/configuration.js")
+    script = get_configuration_script(client)
     stylesheet = client.get("/ui/styles/configuration.css")
 
     assert page.status_code == 200
@@ -490,7 +513,7 @@ def test_architecture_exposes_discovered_devices_to_position() -> None:
 def test_dhcp_reservation_validates_dns_hostname_before_submission() -> None:
     """DHCP reservation form must reject underscores before calling Agent."""
     html = make_client().get("/")
-    script = make_client().get("/ui/configuration.js")
+    script = get_configuration_script(make_client())
 
     assert html.status_code == 200
     assert script.status_code == 200
@@ -506,7 +529,7 @@ def test_dhcp_reservation_validates_dns_hostname_before_submission() -> None:
 
 def test_configuration_persists_device_role_in_metadata() -> None:
     """The architecture editor must preserve and update a device role."""
-    response = make_client().get("/ui/configuration.js")
+    response = get_configuration_script(make_client())
 
     assert response.status_code == 200
     assert '"architecture-device-role"' in response.text
@@ -528,7 +551,7 @@ def test_timeline_exposes_compact_current_state_mode() -> None:
 
 def test_configuration_keeps_dhcp_page_accessible_when_unavailable() -> None:
     """A DHCP read failure must not hide its dedicated configuration page."""
-    response = make_client().get("/ui/configuration.js")
+    response = get_configuration_script(make_client())
 
     assert response.status_code == 200
     assert "renderDHCPUnavailable" in response.text
@@ -541,7 +564,7 @@ def test_configuration_keeps_dhcp_page_accessible_when_unavailable() -> None:
 def test_configuration_controls_network_presence_per_device() -> None:
     """Network presence selection must live in the equipment editor."""
     page = make_client().get("/ui/")
-    script = make_client().get("/ui/configuration.js")
+    script = get_configuration_script(make_client())
 
     assert page.status_code == 200
     assert script.status_code == 200
@@ -557,7 +580,7 @@ def test_configuration_controls_network_presence_per_device() -> None:
 
 def test_configuration_uses_dhcp_plugin_specific_fields() -> None:
     """The DHCP observation form must match Agent's strict model."""
-    response = make_client().get("/ui/configuration.js")
+    response = get_configuration_script(make_client())
 
     assert response.status_code == 200
     assert "plugin-dhcp-check-service" in response.text
@@ -568,7 +591,7 @@ def test_configuration_uses_dhcp_plugin_specific_fields() -> None:
 
 def test_configuration_deletes_device_dependencies_coherently() -> None:
     """Deleting a device must remove its dependent architecture data."""
-    response = make_client().get("/ui/configuration.js")
+    response = get_configuration_script(make_client())
 
     assert response.status_code == 200
     assert "item.id !== selection.id" in response.text
@@ -2643,7 +2666,7 @@ def test_plugin_ui_supports_observation_plugins() -> None:
     """Expose dedicated controls for configurable Agent plugins."""
     client = make_client()
     html_response = client.get("/ui/")
-    js_response = client.get("/ui/configuration.js")
+    js_response = get_configuration_script(client)
 
     assert html_response.status_code == 200
     assert js_response.status_code == 200
@@ -2698,7 +2721,7 @@ def test_plugin_ui_supports_observation_plugins() -> None:
 
 def test_plugin_ui_configures_haos_backups() -> None:
     """Expose safe, per-target backup controls in the Agent plugin editor."""
-    response = make_client().get("/ui/configuration.js")
+    response = get_configuration_script(make_client())
 
     assert response.status_code == 200
     assert 'plugin.id === "backup"' in response.text
@@ -2788,7 +2811,7 @@ def test_dashboard_applies_critical_capability_health_to_kpis() -> None:
 
 def test_zwave_form_documents_home_assistant_websocket_port() -> None:
     """Z-Wave plugin form must describe the Home Assistant server endpoint."""
-    response = make_client().get("/ui/configuration.js")
+    response = get_configuration_script(make_client())
 
     assert response.status_code == 200
     assert "serveur WebSocket sur le port 3000" in response.text
@@ -2810,7 +2833,7 @@ def test_static_ui_exposes_services_map_page() -> None:
 def test_architecture_service_editor_exposes_availability_group() -> None:
     """Redundant service instances must share an editable logical group."""
     html_response = make_client().get("/ui/")
-    script_response = make_client().get("/ui/configuration.js")
+    script_response = get_configuration_script(make_client())
 
     assert html_response.status_code == 200
     assert 'id="architecture-service-availability-group"' in html_response.text
@@ -2942,7 +2965,7 @@ def test_application_wires_host_health_controller() -> None:
 
 def test_mqtt_plugin_form_configures_home_assistant_health_export() -> None:
     """MQTT settings must expose the approved Home Assistant export options."""
-    response = make_client().get("/ui/configuration.js")
+    response = get_configuration_script(make_client())
 
     assert response.status_code == 200
     assert "plugin-mqtt-ha-enabled" in response.text
@@ -2994,7 +3017,7 @@ def test_equipment_views_share_the_official_icon_catalog() -> None:
     client = make_client()
 
     utilities = client.get("/ui/utils.js")
-    configuration = client.get("/ui/configuration.js")
+    configuration = get_configuration_script(client)
     details = client.get("/ui/device_details.js")
     services = client.get("/ui/services.js")
 
@@ -3015,7 +3038,7 @@ def test_equipment_views_share_the_official_icon_catalog() -> None:
 def test_architecture_editor_supports_dns_hosts_and_contextual_ports() -> None:
     client = make_client()
     html_response = client.get("/ui/")
-    js_response = client.get("/ui/configuration.js")
+    js_response = get_configuration_script(client)
 
     assert "Hôte ou adresse IP" in html_response.text
     assert "she-01.ohana.lan" in html_response.text
@@ -3031,7 +3054,7 @@ def test_architecture_editor_supports_dns_hosts_and_contextual_ports() -> None:
 
 def test_backup_ui_exposes_infra_01_encryption_and_schedule() -> None:
     client = make_client()
-    response = client.get("/ui/configuration.js")
+    response = get_configuration_script(client)
 
     assert response.status_code == 200
     assert "plugin-backup-infra-enabled" in response.text
@@ -3064,7 +3087,7 @@ def test_device_details_supports_manual_infra_01_backup() -> None:
 def test_workers_configuration_exposes_wake_on_lan_controls() -> None:
     client = make_client()
     page = client.get("/")
-    script = client.get("/ui/configuration.js")
+    script = get_configuration_script(client)
 
     assert page.status_code == 200
     assert 'id="worker-wake-enabled"' in page.text

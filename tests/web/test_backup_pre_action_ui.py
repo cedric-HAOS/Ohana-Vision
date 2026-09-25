@@ -5,8 +5,13 @@ from pathlib import Path
 
 def test_absent_backup_pre_action_stays_empty_in_editor() -> None:
     """Do not turn the example script name into a configured action."""
-    script = Path("src/ohana_vision/web/static/configuration.js").read_text(
-        encoding="utf-8"
+    static = Path("src/ohana_vision/web/static")
+    script = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in [
+            static / "configuration.js",
+            *sorted((static / "configuration").glob("*.js")),
+        ]
     )
 
     empty_fallback = (
