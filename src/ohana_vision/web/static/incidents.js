@@ -349,6 +349,7 @@ export class IncidentsController {
                         <button class="configuration-secondary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-repair-id="${escapeHtml(proposedRepair.repair_id)}" data-tsunade-repair-decision="refuse" type="button">Refuser</button>` : ""}
                         <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${this.expandedDetails.has(incident.incident_id) ? "Fermer le dossier" : "Voir le dossier"}</button>
                     </div>
+                    ${repairs.length ? `<p class="incident-card__repair"><strong>${escapeHtml(this.sentence(repairs[0].action ?? "réparation supervisée"))}</strong> · ${escapeHtml(this.repairStatus(repairs[0]))}</p>` : ""}
                     ${this.expandedDetails.has(incident.incident_id) ? `
                     <div class="incident-dossier">
                     ${this.tsunadeDecision(details ?? incident, decisionRecord)}
@@ -1097,7 +1098,11 @@ export class IncidentsController {
         }
     }
 
-    repairs(repairs) {
+    sentence(text) {
+        return text.charAt(0).toUpperCase() + text.slice(1);
+    }
+
+    repairStatus(repair) {
         const labels = {
             proposed: "En attente de validation",
             authorized: "Autorisée, exécution en cours",
@@ -1108,13 +1113,21 @@ export class IncidentsController {
             failed: "Échec confirmé",
             unverified: "Exécutée, résultat non confirmé par Shikamaru",
         };
+        const deferral = repair.deferred_until ? ` · reportée jusqu’à ${formatDate(repair.deferred_until)}` : "";
+        const source = repair.authorization_source
+            ? ` · ${repair.status === "refused" ? "refusée" : "autorisée"} depuis ${repair.authorization_source}`
+            : "";
+        return `${labels[repair.status] ?? repair.status}${deferral}${source}`;
+    }
+
+    repairs(repairs) {
         const riskLabels = {low: "Faible", medium: "Moyen", high: "Élevé"};
         return `<div class="incident-repairs"><strong>Réparations supervisées</strong>${repairs.map((repair) => `
             <article class="incident-repair">
                 <dl>
                     <div><dt>Action proposée</dt><dd>${escapeHtml(this.readableIdentifier(repair.operation))} · ${escapeHtml(repair.target)}</dd></div>
                     <div><dt>Niveau de risque</dt><dd>${escapeHtml(riskLabels[repair.risk] ?? repair.risk)}</dd></div>
-                    <div><dt>État</dt><dd>${escapeHtml(labels[repair.status] ?? repair.status)}${repair.deferred_until ? ` · reportée jusqu’à ${escapeHtml(formatDate(repair.deferred_until))}` : ""}${repair.authorization_source ? ` · ${repair.status === "refused" ? "refusée" : "autorisée"} depuis ${escapeHtml(repair.authorization_source)}` : ""}</dd></div>
+                    <div><dt>État</dt><dd>${escapeHtml(this.repairStatus(repair))}</dd></div>
                 </dl>
                 ${Array.isArray(repair.consequences) && repair.consequences.length ? `<div><strong>Conséquences</strong><ul>${repair.consequences.map((consequence) => `<li>${escapeHtml(consequence)}</li>`).join("")}</ul></div>` : ""}
                 ${repair.result ? `<p class="incident-repair__result"><strong>${repair.status === "succeeded" ? "Réparation réussie" : "Résultat"}</strong> · ${escapeHtml(repair.result)}</p>` : ""}

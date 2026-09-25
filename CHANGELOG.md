@@ -8,6 +8,8 @@
   « reportée jusqu'à … » pendant le report et « refusée depuis vision » après
   un refus. Nécessite Ohana-Agent avec les routes `repairs/refuse` et
   `repairs/defer`.
+- La carte d'incident affiche l'état de sa dernière réparation (proposée,
+  reportée, refusée, en vérification, réussie…) sans ouvrir le dossier.
 
 ## [1.23.0] — 2026-09-25 — Dépendances de services et réparations du catalogue
 

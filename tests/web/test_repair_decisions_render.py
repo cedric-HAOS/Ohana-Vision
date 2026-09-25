@@ -23,13 +23,15 @@ const context = vm.createContext({
 vm.runInContext(source + '\nglobalThis.Controller = IncidentsController;', context);
 const controller = Object.create(context.Controller.prototype);
 controller.details = new Map();
-controller.expandedDetails = new Set(['case']);
+// Collapsed card: the repair state must be readable without the dossier.
+controller.expandedDetails = new Set();
 controller.expandedLogAnomalies = new Set();
 controller.state = {topology: {devices: []}};
 controller.equipmentLabel = value => value;
 const repair = {
     repair_id: 'repair-1', operation: 'restart_addon', target: 'core_mosquitto',
     risk: 'low', status: 'proposed', consequences: ['Clients MQTT déconnectés.'],
+    action: 'le redémarrage supervisé de l’add-on Mosquitto',
 };
 const incident = {
     incident_id: 'case', state: 'active', node_id: 'ha-01',
@@ -44,6 +46,7 @@ let html = controller.incidentCard(incident);
 assert(html.includes('data-tsunade-repair-authorize="repair-1"'));
 assert(html.includes('data-tsunade-repair-decision="defer"'));
 assert(html.includes('data-tsunade-repair-decision="refuse"'));
+assert(html.includes('add-on Mosquitto</strong> · En attente de validation'));
 
 repair.deferred_until = '2026-09-25T15:52:00+02:00';
 html = controller.incidentCard(incident);
