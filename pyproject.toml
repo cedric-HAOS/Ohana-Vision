@@ -28,7 +28,7 @@ dev = [
     "build",
     "httpx",
     "pytest>=9.0",
-    "ruff>=0.12",
+    "ruff~=0.16.0",
 ]
 
 [tool.setuptools.package-data]
