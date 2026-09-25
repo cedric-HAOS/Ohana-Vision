@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.24.0] — 2026-09-25 — Refuser ou reporter une réparation
+
 - Une réparation proposée peut être refusée (« Refuser », avec confirmation,
   définitif et sans exécution) ou reportée (« Plus tard », une heure au plus)
   depuis Vision, et plus seulement depuis Shizune. L'état affiche
