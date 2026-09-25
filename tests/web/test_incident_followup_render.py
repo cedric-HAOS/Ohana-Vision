@@ -48,18 +48,22 @@ incident.last_observed_at = '2026-09-21T09:34:00+02:00';
 incident.latest_decision = {decision: 'watch', decision_source: 'deterministic',
     occurred_at: '2026-09-21T09:35:00+02:00',
     reason: 'Collecte tronquée <script>', conclusion: 'Surveillance actuelle'};
-incident.assessment = {state: 'watch', label: 'Sous surveillance', next_action: 'details',
-    decision_current: true, conclusion: 'Surveillance actuelle', reason: 'Collecte tronquée <script>',
+incident.assessment = {state: 'watch', label: 'Sous surveillance',
+    next_action: 'details',
+    decision_current: true, conclusion: 'Surveillance actuelle',
+    reason: 'Collecte tronquée <script>',
     decided_at: '2026-09-21T09:35:00+02:00',
     followup: {status: 'completed', detail: 'Ancienne collecte terminée'}};
 const current = controller.incidentCard(incident);
 const compact = controller.compactDecision(incident, {
-    payload: incident.latest_decision, occurredAt: incident.latest_decision.occurred_at});
+    payload: incident.latest_decision,
+    occurredAt: incident.latest_decision.occurred_at});
 assert(compact.includes('Collecte tronquée &lt;script>'));
 assert(current.includes('Collecte tronquée &lt;script>'));
 assert(current.includes('Ancienne collecte terminée'));
 assert(current.includes('Suivi précédent terminé'));
-incident.assessment.followup = {status: 'failed', detail: 'Collecte non aboutie (TIMEOUT).',
+incident.assessment.followup = {status: 'failed',
+    detail: 'Collecte non aboutie (TIMEOUT).',
     failed_at: '2026-09-21T09:00:00+02:00'};
 const failed = controller.incidentCard(incident);
 assert(failed.includes('Collecte tronquée &lt;script>'));
