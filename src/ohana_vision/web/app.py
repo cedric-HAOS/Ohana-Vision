@@ -28,6 +28,20 @@ STATIC_DIRECTORY = Path(__file__).parent / "static"
 SHIZUNE_DIRECTORY = Path("/var/www/shizune")
 
 
+class RevalidatedStaticFiles(StaticFiles):
+    """Serve the Vision UI so browsers revalidate every file before reuse.
+
+    Module URLs carry no version: without this header, a browser kept old
+    ES modules after an upgrade (« Dépend de » stayed empty until the cache
+    was cleared). ETags keep unchanged files at a 304 round trip.
+    """
+
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 def create_app(
     context: ApplicationContext | None = None,
     *,
@@ -74,7 +88,7 @@ def create_app(
 
     app.mount(
         "/ui",
-        StaticFiles(
+        RevalidatedStaticFiles(
             directory=STATIC_DIRECTORY,
             html=True,
         ),

@@ -2,6 +2,10 @@
 
 ## Non publié
 
+- Les fichiers de l'interface (`/ui`) sont servis avec `Cache-Control: no-cache` :
+  le navigateur revérifie chaque fichier (réponse 304 s'il n'a pas changé) et ne
+  garde plus d'anciens modules après une mise à jour. Il fallait vider le cache
+  pour voir « Dépend de » après Vision 1.23.0.
 ## [1.24.0] — 2026-09-25 — Refuser ou reporter une réparation
 
 - Une réparation proposée peut être refusée (« Refuser », avec confirmation,

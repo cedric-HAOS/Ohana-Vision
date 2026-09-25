@@ -3120,3 +3120,16 @@ def test_workers_configuration_exposes_wake_on_lan_controls() -> None:
     assert "watchWakingWorkers()" in script.text
     assert "workerAvailabilityRefreshIntervalMs = 5000" in script.text
     assert 'worker.availability === "WAKING"' in script.text
+
+
+@pytest.mark.parametrize(
+    "path", ["/ui/", "/ui/incidents.js", "/ui/configuration/architecture_editor.js"]
+)
+def test_ui_files_are_revalidated_after_upgrades(path: str) -> None:
+    """Browsers must not reuse an old ES module after a Vision upgrade."""
+    client = make_client()
+    first = client.get(path)
+    assert first.status_code == 200
+    assert first.headers["cache-control"] == "no-cache"
+    revalidated = client.get(path, headers={"If-None-Match": first.headers["etag"]})
+    assert revalidated.status_code == 304
