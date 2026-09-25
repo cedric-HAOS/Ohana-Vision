@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Non publié
+
+- `configuration.js` (6 551 lignes) est découpé en modules ES par domaine sous
+  `static/configuration/` : workers, compagnons, réseau, DHCP, vue et éditeur
+  d'architecture, plugins, plus `shared.js` pour les validateurs. Aucun
+  changement de comportement.
+- Des tests Node chargent ces modules, détectent les collisions de méthodes et
+  couvrent les validateurs réseau et d'empreinte TLS.
+
 ## [1.22.14] — 2026-09-14 — Suivi des investigations Tsunade
 
 - Le dossier affiche l’état de la collecte complémentaire et ses limites.
