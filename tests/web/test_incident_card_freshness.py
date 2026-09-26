@@ -27,7 +27,10 @@ controller.details = new Map();
 controller.expandedDetails = new Set();
 controller.expandedLogAnomalies = new Set();
 controller.state = {topology: {
-    devices: [{node: 'infra-01', label: 'INFRA-01'}, {node: 'zwave-01', label: 'ZWAVE-01'}],
+    devices: [
+        {node: 'infra-01', label: 'INFRA-01'},
+        {node: 'zwave-01', label: 'ZWAVE-01'},
+    ],
     nodes: [
         {id: 'infra-01', services: [{id: 'chrony', name: 'Chrony'}]},
         {id: 'zwave-01', services: [{id: 'zwave', name: 'Z-Wave JS'}]},
@@ -52,7 +55,8 @@ assert(html.includes('timed out'));
 //    reloaded list, where the authorization already failed (26 September).
 const zwaveRepair = {
     repair_id: 'r1', status: 'proposed', risk: 'medium', operation: 'restart_addon',
-    target: 'a0d7b954_zwavejs2mqtt', action: 'le redémarrage supervisé de l’add-on Z-Wave JS',
+    target: 'a0d7b954_zwavejs2mqtt',
+    action: 'le redémarrage supervisé de l’add-on Z-Wave JS',
 };
 controller.details.set('zw', {repairs: [zwaveRepair], events: []});
 const zwave = {
@@ -61,7 +65,9 @@ const zwave = {
     expertise_state: 'deterministic', context: {}, events: [],
     repairs: [{...zwaveRepair, status: 'failed', authorization_source: 'vision',
         result: 'Le Supervisor a refusé le redémarrage de a0d7b954_zwavejs2mqtt'}],
-    latest_decision: {decision: 'action_required', occurred_at: '2026-09-26T20:04:54+02:00'},
+    latest_decision: {
+        decision: 'action_required', occurred_at: '2026-09-26T20:04:54+02:00',
+    },
     assessment: {state: 'resolved'},
 };
 html = controller.incidentCard(zwave);
@@ -78,13 +84,16 @@ html = controller.tsunadeExpertise(deterministic);
 assert(html.includes('Analyse déterministe de Tsunade'));
 assert(!html.includes('Analyse Katsuyu'));
 const katsuyu = {events: [{occurred_at: '2026-09-26T05:07:00+02:00', payload: {
-    decision: 'investigate', decision_source: 'katsuyu_ai', epistemic_status: 'hypothesis',
+    decision: 'investigate', decision_source: 'katsuyu_ai',
+    epistemic_status: 'hypothesis',
     hypotheses: [{summary: 'Composant custom', confidence: 0.6}],
 }}]};
 assert(controller.tsunadeExpertise(katsuyu).includes('Analyse Katsuyu'));
 
 // 4. The authorization banner is replaced by the verified outcome.
-controller.incidents = [{incident_id: 'ntp', repairs: [{repair_id: 'r2', status: 'verifying'}]}];
+controller.incidents = [
+    {incident_id: 'ntp', repairs: [{repair_id: 'r2', status: 'verifying'}]},
+];
 controller.followedRepair = {incidentId: 'ntp', repairId: 'r2'};
 controller.updateFollowedRepair();
 assert.equal(shown.length, 0);
