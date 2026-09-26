@@ -80,6 +80,15 @@ export class ApplicationController {
         this.observationRefreshTimer = null;
         this.observationRefreshInFlight = false;
         this.observationRefreshPending = false;
+        // Observations arrive about once a second on Konoha: a page reloads
+        // the costly views only when a status changed, the rest at most every
+        // few seconds. Reloading the 24 h timeline on every observation, from
+        // every open page, kept Vision at full CPU on INFRA-01.
+        this.observationStatusChanged = false;
+        this.observationDataIntervalMs = 5000;
+        this.observationDataLoadedAt = 0;
+        this.incidentsRefreshIntervalMs = 15000;
+        this.incidentsLoadedAt = 0;
         this.timelineLoadInFlight = null;
         this.timelineLastLoadedAt = 0;
         this.timelineRefreshIntervalMs = 5000;
@@ -378,6 +387,10 @@ export class ApplicationController {
             message.type
                 === "observation.accepted"
         ) {
+            // An older Vision does not say: assume the status changed.
+            if (message.status_changed !== false) {
+                this.observationStatusChanged = true;
+            }
             this.scheduleObservationRefresh();
             return;
         }
@@ -420,55 +433,54 @@ export class ApplicationController {
 
         this.observationRefreshInFlight = true;
         this.setRefreshing(true);
+        const statusChanged = this.observationStatusChanged;
+        this.observationStatusChanged = false;
+        const now = Date.now();
+        const dataDue = statusChanged
+            || now - this.observationDataLoadedAt >= this.observationDataIntervalMs;
+        const incidentsDue = statusChanged
+            || now - this.incidentsLoadedAt >= this.incidentsRefreshIntervalMs;
 
         try {
             const activeView =
                 this.navigation?.activeView
                 ?? "overview";
             const operations = [];
+            const timeline = () => statusChanged
+                ? this.loadTimeline({force: true})
+                : Promise.resolve();
 
             if (activeView === "overview") {
-                operations.push(
-                    this.loadRuntime(),
-                    this.loadObservations(),
-                    this.loadTimeline({
-                        force: true,
-                    }),
-                );
-            } else if (activeView === "infrastructure") {
-                operations.push(
-                    this.loadObservations(),
-                    this.loadTimeline({
-                        force: true,
-                    }),
-                );
+                if (dataDue) {
+                    operations.push(this.loadRuntime(), this.loadObservations());
+                }
+                operations.push(timeline());
             } else if (
-                activeView === "services"
+                activeView === "infrastructure"
+                || activeView === "services"
             ) {
-                operations.push(
-                    this.loadObservations(),
-                    this.loadTimeline({
-                        force: true,
-                    }),
-                );
+                if (dataDue) {
+                    operations.push(this.loadObservations());
+                }
+                operations.push(timeline());
             } else if (activeView === "observations") {
-                operations.push(
-                    this.loadObservations(),
-                );
+                if (dataDue) {
+                    operations.push(this.loadObservations());
+                }
             } else if (activeView === "incidents") {
-                operations.push(
-                    this.incidents.load(),
-                );
+                if (incidentsDue) {
+                    this.incidentsLoadedAt = now;
+                    operations.push(this.incidents.load());
+                }
             } else if (activeView === "host") {
-                operations.push(
-                    this.host.load(),
-                );
+                if (dataDue) {
+                    operations.push(this.host.load());
+                }
             } else if (activeView === "timeline") {
-                operations.push(
-                    this.loadTimeline({
-                        force: true,
-                    }),
-                );
+                operations.push(timeline());
+            }
+            if (dataDue) {
+                this.observationDataLoadedAt = now;
             }
 
             if (operations.length > 0) {
@@ -476,8 +488,11 @@ export class ApplicationController {
             }
 
             if (
-                activeView === "overview"
-                || activeView === "infrastructure"
+                statusChanged
+                && (
+                    activeView === "overview"
+                    || activeView === "infrastructure"
+                )
             ) {
                 await this.topology.refreshStatus();
             }

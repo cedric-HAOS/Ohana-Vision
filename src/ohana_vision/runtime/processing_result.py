@@ -21,6 +21,8 @@ class ProcessingResult:
     incident_updated: bool = False
     incident_id: UUID | None = None
     reason: str | None = None
+    # Any status change, devices included: pages reload timelines only then.
+    status_changed: bool = False
 
     def __post_init__(self) -> None:
         """Validate processing result consistency."""
@@ -64,6 +66,7 @@ class ProcessingResult:
         timeline_updated: bool,
         incident_updated: bool = False,
         incident_id: UUID | None = None,
+        status_changed: bool = False,
     ) -> ProcessingResult:
         """Create a successful processing result."""
 
@@ -75,6 +78,7 @@ class ProcessingResult:
             timeline_updated=timeline_updated,
             incident_updated=incident_updated,
             incident_id=incident_id,
+            status_changed=status_changed,
         )
 
     @classmethod

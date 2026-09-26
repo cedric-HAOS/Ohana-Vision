@@ -2,6 +2,25 @@
 
 ## Non publié
 
+- Vision ne sature plus INFRA-01. Le 26 septembre, le processus tournait
+  entre 90 et 110 % de CPU et l'Agent a vu 432 livraisons d'observations
+  expirer en neuf heures, d'où des états affichés en retard. Cause : chaque
+  page ouverte rechargeait la chronologie de 24 h à chaque observation
+  (environ une par seconde), et cette chronologie coûtait environ 18 secondes
+  sur INFRA-01 (26 000 lignes relues et une sous-requête corrélée de 15,8 s
+  pour les états reportés).
+  - La chronologie ne lit plus que l'état reporté de chaque capacité et ses
+    changements de statut (`state_changes_window`, nouvel index couvrant
+    `observations_identity_status`, créé au démarrage) : même résultat,
+    1 211 ms → 49 ms sur une base de deux jours à l'échelle de Konoha.
+  - Les pages ne rechargent la chronologie qu'après un changement de statut
+    (`status_changed` dans l'événement `observation.accepted`), les
+    observations et compteurs au plus toutes les 5 secondes et la page Tsunade
+    au plus toutes les 15 secondes.
+  - L'ingestion ne reconstruit plus sa chronologie de suivi à partir de tous
+    les changements de santé depuis le démarrage : seuls les 16 derniers par
+    capacité sont conservés.
+
 ## [1.26.0] — 2026-09-26 — Cartes d'incident à jour
 
 - Carte d'incident à jour après une décision : l'état des réparations vient

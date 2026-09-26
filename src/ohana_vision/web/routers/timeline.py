@@ -39,7 +39,7 @@ def build_infrastructure_timeline(
     """Build the infrastructure timeline from stored observations."""
     try:
         observations = (
-            observation_store.history_window(
+            observation_store.state_changes_window(
                 since=since,
                 until=until,
             )

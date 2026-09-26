@@ -280,6 +280,104 @@ class ObservationStore:
             )
         )
 
+    def state_changes_window(
+        self,
+        *,
+        since: datetime,
+        until: datetime | None = None,
+    ) -> tuple[Observation, ...]:
+        """Return what a timeline needs: carry-forward states, then changes.
+
+        A timeline period only depends on when a capability changes status.
+        Konoha records about 26,000 observations a day, almost all repeating
+        the current status: reading and decoding them all took over a second
+        per timeline request, requested by every open page on each new
+        observation, and kept Vision at full CPU on INFRA-01.
+        """
+        self._validate_dates(since=since, until=until)
+        if self._connection is None:
+            return self._only_state_changes(
+                self._memory_history_window(since=since, until=until)
+            )
+
+        clauses = ["observed_at >= ?"]
+        parameters: list[object] = [self._database_datetime(since)]
+        if until is not None:
+            clauses.append("observed_at <= ?")
+            parameters.append(self._database_datetime(until))
+        parameters.append(self._history_max_rows + 1)
+        with self._lock:
+            # Both scans read only the covering identity/status index; full
+            # rows are fetched for the few observations that are kept.
+            change_rows = self._connection.execute(
+                f"""
+                SELECT {self._COLUMN_NAMES}
+                FROM observations
+                WHERE sequence IN (
+                    SELECT sequence FROM (
+                        SELECT sequence, status,
+                               LAG(status) OVER (
+                                   PARTITION BY node_id, service_id, capability_id
+                                   ORDER BY observed_at, sequence
+                               ) AS previous_status
+                        FROM observations
+                        WHERE {" AND ".join(clauses)}
+                    )
+                    WHERE previous_status IS NULL OR previous_status <> status
+                )
+                ORDER BY observed_at, sequence
+                LIMIT ?
+                """,
+                parameters,
+            ).fetchall()
+            if len(change_rows) > self._history_max_rows:
+                raise ValueError(
+                    "history window exceeds the configured maximum row count."
+                )
+            carried_rows = self._connection.execute(
+                f"""
+                SELECT {self._COLUMN_NAMES}
+                FROM observations
+                WHERE sequence IN (
+                    SELECT sequence FROM (
+                        SELECT sequence,
+                               ROW_NUMBER() OVER (
+                                   PARTITION BY node_id, service_id, capability_id
+                                   ORDER BY observed_at DESC, sequence DESC
+                               ) AS recency_rank
+                        FROM observations
+                        WHERE observed_at < ?
+                    )
+                    WHERE recency_rank = 1
+                )
+                """,
+                (self._database_datetime(since),),
+            ).fetchall()
+        # The first row of each capability in the window may repeat the state
+        # carried forward: drop it like any other repeat.
+        return self._only_state_changes(
+            tuple(
+                sorted(
+                    (self._from_row(row) for row in [*carried_rows, *change_rows]),
+                    key=lambda observation: observation.observed_at,
+                )
+            )
+        )
+
+    @classmethod
+    def _only_state_changes(
+        cls, observations: tuple[Observation, ...]
+    ) -> tuple[Observation, ...]:
+        previous: dict[tuple[str, str, str], Observation] = {}
+        kept: list[Observation] = []
+        for observation in observations:
+            key = cls._capability_key(observation)
+            current = previous.get(key)
+            if current is None or current.status is not observation.status:
+                kept.append(observation)
+            previous[key] = observation
+        return tuple(kept)
+
     def purge_expired(self, *, now: datetime | None = None) -> int:
         """Purge expired observations and their incident deduplication rows."""
         if self._retention_days is None:
@@ -418,6 +516,14 @@ class ObservationStore:
             CREATE INDEX IF NOT EXISTS observations_identity_latest
             ON observations(
                 node_id, service_id, capability_id, observed_at, sequence
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE INDEX IF NOT EXISTS observations_identity_status
+            ON observations(
+                node_id, service_id, capability_id, observed_at, sequence, status
             )
             """
         )

@@ -92,5 +92,6 @@ def test_post_observation_is_received_by_websocket_client() -> None:
         "node_id": "infra-01",
         "status": "healthy",
         "incident_updated": False,
+        "status_changed": True,
         "incident_id": None,
     }

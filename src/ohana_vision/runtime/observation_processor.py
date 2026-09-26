@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -17,6 +18,10 @@ from ohana_vision.runtime.runtime_snapshot import RuntimeSnapshot
 from ohana_vision.timeline.infrastructure_timeline import (
     InfrastructureTimeline,
 )
+
+# Enough to show recent transitions in the runtime counters; the timeline
+# history itself is read from the store by the timeline API.
+HEALTH_CHANGES_PER_CAPABILITY = 16
 
 
 class ObservationStoreProtocol(Protocol):
@@ -67,8 +72,10 @@ class ObservationProcessor:
         default_factory=dict,
         init=False,
     )
-    _timeline_observations: list[Observation] = field(
-        default_factory=list,
+    # Last health changes per capability. The whole list since start was
+    # kept and rebuilt on every change: it grew without bound.
+    _health_changes: dict[tuple[str, str, str], deque[Observation]] = field(
+        default_factory=dict,
         init=False,
     )
 
@@ -78,15 +85,13 @@ class ObservationProcessor:
             self._capability_key(observation): observation
             for observation in self.observation_store.latest_per_capability()
         }
-        self._timeline_observations = [
-            observation
-            for observation in self._latest_observations.values()
+        self._health_changes = {
+            key: deque((observation,), maxlen=HEALTH_CHANGES_PER_CAPABILITY)
+            for key, observation in self._latest_observations.items()
             if observation.contributes_to_health
-        ]
+        }
         if self._latest_observations:
-            self.infrastructure_timeline = self.timeline_engine.build_infrastructure(
-                tuple(self._timeline_observations)
-            )
+            self.infrastructure_timeline = self._timeline(self._health_changes)
 
     def process(self, observation: Observation) -> ProcessingResult:
         """Process an observation through the backend pipeline."""
@@ -109,15 +114,26 @@ class ObservationProcessor:
             replaces_current = (
                 current is None or observation.observed_at >= current.observed_at
             )
+            status_changed = replaces_current and (
+                current is None or observation.status is not current.status
+            )
             health_changed = observation.contributes_to_health and (
                 current is None or observation.status is not current.status
             )
             if replaces_current:
                 candidate_observations[key] = observation
-            candidate_timeline = (
-                self.timeline_engine.build_infrastructure(
-                    (*self._timeline_observations, observation)
+            candidate_changes = self._health_changes
+            if health_changed:
+                changes = deque(
+                    sorted(
+                        (*self._health_changes.get(key, ()), observation),
+                        key=lambda item: item.observed_at,
+                    ),
+                    maxlen=HEALTH_CHANGES_PER_CAPABILITY,
                 )
+                candidate_changes = {**self._health_changes, key: changes}
+            candidate_timeline = (
+                self._timeline(candidate_changes)
                 if health_changed
                 else self.infrastructure_timeline
             )
@@ -150,9 +166,7 @@ class ObservationProcessor:
 
         timeline_updated = candidate_timeline != self.infrastructure_timeline
         self._latest_observations = candidate_observations
-        if health_changed:
-            self._timeline_observations.append(observation)
-            self._timeline_observations.sort(key=lambda item: item.observed_at)
+        self._health_changes = candidate_changes
         self.infrastructure_timeline = candidate_timeline
 
         duration = self._duration_since(started)
@@ -169,6 +183,14 @@ class ObservationProcessor:
                 if incident_transition is not None
                 else None
             ),
+            status_changed=status_changed,
+        )
+
+    def _timeline(
+        self, changes: dict[tuple[str, str, str], deque[Observation]]
+    ) -> InfrastructureTimeline:
+        return self.timeline_engine.build_infrastructure(
+            tuple(observation for items in changes.values() for observation in items)
         )
 
     def latest_observation(self, *, capability_id: str) -> Observation | None:

@@ -3020,14 +3020,6 @@ def test_frontend_limits_observations_and_coalesces_realtime_refreshes() -> None
     assert "this.services.invalidate()" in response.text
 
 
-def test_realtime_observation_forces_timeline_reload() -> None:
-    """A fresh accepted observation must refresh stale service statuses."""
-    response = make_client().get("/ui/application.js")
-
-    assert response.status_code == 200
-    assert "this.loadTimeline({\n                        force: true," in response.text
-
-
 def test_equipment_views_share_the_official_icon_catalog() -> None:
     """Topology, architecture and details must use the same icon source."""
     client = make_client()
