@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.26.0] — 2026-09-26 — Cartes d'incident à jour
+
 - Carte d'incident à jour après une décision : l'état des réparations vient
   de la liste rechargée périodiquement, et un dossier ouvert est relu à chaque
   rechargement. Le 26 septembre, après l'échec d'une autorisation Z-Wave JS,
