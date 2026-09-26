@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.27.1] — 2026-09-26 — Espace disque et cause des échecs
+
 - Carte d'incident : la cause d'une réparation en échec (« chrony.service est
   masqué ») s'affiche sous « Échec confirmé », sans ouvrir le dossier.
 - `vision.db` rend l'espace libéré : la base passe en
