@@ -187,6 +187,7 @@ export class IncidentsController {
                 this.focusedIncident = null;
             }
             await this.loadDecisionDetails();
+            this.updateFollowedRepair();
             this.summary = payload?.summary && typeof payload.summary === "object"
                 ? payload.summary
                 : {};
@@ -310,7 +311,10 @@ export class IncidentsController {
         );
         const guidance = this.incidentGuidance(incident, decisionRecord, expertiseState);
         const assessment = incident.assessment;
-        const repairState = details ?? incident;
+        // The periodically reloaded list carries the current repairs; a cached
+        // dossier kept a repair "En attente" with its buttons on a resolved
+        // incident after its failed authorization (Z-Wave JS, 26 September).
+        const repairState = Array.isArray(incident.repairs) ? incident : details ?? incident;
         const repairs = Array.isArray(repairState.repairs) ? repairState.repairs : [];
         const proposedRepair = repairs.find((repair) => repair.status === "proposed");
         const repairSummary = repairs.length ? this.repairs(repairs) : "";
@@ -328,7 +332,7 @@ export class IncidentsController {
                                 <span class="incident-status">${escapeHtml(displaySeverity.label)}</span>
                                 <span class="incident-badge incident-badge--${escapeHtml(workflow)}">${escapeHtml(WORKFLOW_LABELS[workflow] ?? workflow)}</span>
                             </div>
-                            <h3>${escapeHtml(assessment?.title ?? this.equipmentLabel(incident.node_id))}</h3>
+                            <h3>${escapeHtml(this.incidentTitle(incident))}</h3>
                             <p>${escapeHtml(assessment?.label ?? guidance.title)}</p>
                         </div>
                         ${incident.capability_id !== "logs.health" ? `<span class="incident-card__dates">
@@ -379,6 +383,25 @@ export class IncidentsController {
                     ${!this.expandedDetails.has(incident.incident_id) && experience ? `<p class="incident-card__result">Une réparation attend votre confirmation dans le dossier.</p>` : ""}
                 </div>
             </article>`;
+    }
+
+    /**
+     * Name the affected service, not the raw observation message: a chrony
+     * outage was titled "timed out". The message stays shown below the title.
+     */
+    incidentTitle(incident) {
+        const assessmentTitle = incident.assessment?.title;
+        if (
+            assessmentTitle
+            && ["network.reachable", "logs.health"].includes(incident.capability_id)
+        ) {
+            return assessmentTitle;
+        }
+        if (!incident.service_id) {
+            return assessmentTitle ?? this.equipmentLabel(incident.node_id);
+        }
+        return `${this.serviceLabel(incident.node_id, incident.service_id)} · `
+            + this.equipmentLabel(incident.node_id);
     }
 
     displaySeverity(incident, severity) {
@@ -665,13 +688,20 @@ export class IncidentsController {
         if (!expertise) {
             return "";
         }
+        // Deterministic procedures also carry proposals: only a Katsuyu result
+        // is an AI analysis with hypotheses.
+        const payload = expertise.payload;
+        const fromKatsuyu = payload.decision_source === "katsuyu_ai"
+            || payload.origin === "katsuyu_ai"
+            || payload.epistemic_status === "hypothesis"
+            || (Array.isArray(payload.hypotheses) && payload.hypotheses.length > 0);
 
         return `
             <section class="incident-katsuyu-analysis">
                 <header>
                     <div>
-                        <span>Analyse Katsuyu</span>
-                        <strong>Hypothèses exploitables</strong>
+                        <span>${fromKatsuyu ? "Analyse Katsuyu" : "Analyse déterministe de Tsunade"}</span>
+                        <strong>${fromKatsuyu ? "Hypothèses exploitables" : "Propositions"}</strong>
                     </div>
                     ${expertise.occurredAt
                         ? `<time>${escapeHtml(formatDate(expertise.occurredAt))}</time>`
@@ -1063,7 +1093,7 @@ export class IncidentsController {
         button.disabled = true;
         this.showError("");
         try {
-            await requestJson(API.tsunadeRepairAuthorize(incidentId), {
+            const repair = await requestJson(API.tsunadeRepairAuthorize(incidentId), {
                 method: "POST",
                 body: JSON.stringify({
                     repair_id: repairId,
@@ -1073,7 +1103,20 @@ export class IncidentsController {
             });
             this.details.delete(incidentId);
             this.expandedDetails.delete(incidentId);
-            this.showCommandStatus("Réparation autorisée ; vérification Shikamaru en attente.");
+            // Report what actually happened, then follow the verification
+            // instead of leaving "en attente" on screen after it ended.
+            if (repair?.status === "failed") {
+                this.showCommandStatus(
+                    `Réparation en échec : ${repair.result ?? "exécution impossible"}`,
+                    "warning",
+                );
+            } else {
+                this.followedRepair = {incidentId, repairId};
+                this.showCommandStatus(
+                    "Réparation exécutée ; vérification Shikamaru en attente.",
+                    "running",
+                );
+            }
             await this.load();
         } catch (error) {
             this.showError(`Réparation impossible : ${this.errorMessage(error)}`);
@@ -1308,8 +1351,19 @@ export class IncidentsController {
     }
 
     async loadDecisionDetails() {
+        // An open dossier is reloaded with the list so its evolution and
+        // repairs never lag behind the card; closed ones are dropped.
+        const current = new Set(this.incidents.map((incident) => incident.incident_id));
+        for (const incidentId of Array.from(this.details.keys())) {
+            if (!current.has(incidentId) || this.expandedDetails.has(incidentId)) {
+                this.details.delete(incidentId);
+            }
+        }
         const pending = this.incidents.filter(
-            (incident) => !Object.hasOwn(incident, "latest_decision") && !this.details.has(incident.incident_id),
+            (incident) => (
+                this.expandedDetails.has(incident.incident_id)
+                || !Object.hasOwn(incident, "latest_decision")
+            ) && !this.details.has(incident.incident_id),
         );
         const results = await Promise.allSettled(
             pending.map(async (incident) => [
@@ -1363,7 +1417,34 @@ export class IncidentsController {
         }
     }
 
+    /** Replace the authorization banner with the verified outcome. */
+    updateFollowedRepair() {
+        if (!this.followedRepair) {
+            return;
+        }
+        const {incidentId, repairId} = this.followedRepair;
+        const incident = this.incidents.find((item) => item.incident_id === incidentId);
+        const repair = (incident?.repairs ?? []).find((item) => item.repair_id === repairId);
+        if (!repair || ["verifying", "authorized", "proposed"].includes(repair.status)) {
+            return;
+        }
+        this.followedRepair = null;
+        const outcomes = {
+            succeeded: ["Réparation confirmée par Shikamaru.", "success"],
+            failed: [`Réparation en échec : ${repair.result ?? "capacité toujours dégradée"}`, "warning"],
+            unverified: ["Réparation non confirmée par Shikamaru dans le délai.", "warning"],
+        };
+        const [message, tone] = outcomes[repair.status]
+            ?? [`Réparation : ${this.repairStatus(repair)}`, "success"];
+        this.showCommandStatus(message, tone);
+    }
+
     showCommandStatus(message, tone = "success") {
+        window.clearTimeout(this.commandStatusTimer);
+        if (message && tone === "success") {
+            // A confirmation is transient; warnings and running states stay.
+            this.commandStatusTimer = window.setTimeout(() => this.showCommandStatus(""), 30000);
+        }
         if (this.elements.commandStatus) {
             this.elements.commandStatus.textContent = message;
             this.elements.commandStatus.classList.toggle("hidden", !message);

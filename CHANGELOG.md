@@ -2,6 +2,23 @@
 
 ## Non publié
 
+- Carte d'incident à jour après une décision : l'état des réparations vient
+  de la liste rechargée périodiquement, et un dossier ouvert est relu à chaque
+  rechargement. Le 26 septembre, après l'échec d'une autorisation Z-Wave JS,
+  la carte avait gardé « En attente de validation » et ses boutons sur un
+  incident résolu jusqu'au rechargement de la page.
+- Bandeau d'autorisation fidèle : il affiche le résultat renvoyé par l'Agent
+  (échec et sa cause, ou vérification en cours), puis l'issue constatée par
+  Shikamaru (« Réparation confirmée », échec, non confirmée) ; une
+  confirmation disparaît au bout de 30 secondes.
+- Titre de carte : un incident de service porte le nom du service et de
+  l'équipement (« Chrony · INFRA-01 ») au lieu du message brut de
+  l'observation (« timed out »), qui reste affiché dessous.
+- Une procédure déterministe n'est plus présentée comme « Analyse Katsuyu »
+  dans le dossier : « Analyse déterministe de Tsunade · Propositions » ;
+  « Analyse Katsuyu · Hypothèses exploitables » est réservé aux résultats de
+  Katsuyu.
+
 ## [1.25.0] — 2026-09-25 — Risque visible avant l'autorisation
 
 - Pendant la vérification d'une réparation, l'état affiche l'échéance :
