@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import sqlite3
 from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
@@ -14,6 +15,8 @@ from uuid import UUID
 
 from ohana_vision.domain.health import HealthStatus
 from ohana_vision.domain.observation import Observation
+
+LOGGER = logging.getLogger(__name__)
 
 
 class DuplicateObservationError(ValueError):
@@ -432,6 +435,8 @@ class ObservationStore:
                     """
                 )
             self._connection.commit()
+            if removed:
+                self._release_free_pages()
             self._checkpoint_wal()
             self._next_purge_at = monotonic() + self._purge_interval_seconds
             return removed
@@ -471,6 +476,7 @@ class ObservationStore:
         connection.execute("PRAGMA busy_timeout=5000")
         connection.execute("PRAGMA cache_size=-2048")
         connection.execute("PRAGMA temp_store=FILE")
+        self._enable_incremental_vacuum(connection)
         version = int(connection.execute("PRAGMA user_version").fetchone()[0])
         if version > self._SCHEMA_VERSION:
             connection.close()
@@ -531,6 +537,22 @@ class ObservationStore:
         connection.commit()
         self._connection = connection
         self._checkpoint_wal()
+
+    @staticmethod
+    def _enable_incremental_vacuum(connection: sqlite3.Connection) -> None:
+        """Let purges return freed pages instead of growing the file forever."""
+        if int(connection.execute("PRAGMA auto_vacuum").fetchone()[0]) == 2:
+            return
+        connection.execute("PRAGMA auto_vacuum=INCREMENTAL")
+        # An existing file only changes mode through one full rebuild.
+        LOGGER.info("Rebuilding the observation database once to reclaim space.")
+        connection.execute("VACUUM")
+
+    def _release_free_pages(self) -> None:
+        if self._connection is None:
+            return
+        self._connection.execute("PRAGMA incremental_vacuum").fetchall()
+        self._connection.commit()
 
     def _checkpoint_wal(self) -> None:
         """Checkpoint without waiting for readers or blocking observation writes."""

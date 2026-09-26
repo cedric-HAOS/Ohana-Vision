@@ -2,6 +2,11 @@
 
 ## Non publié
 
+- `vision.db` rend l'espace libéré : la base passe en
+  `auto_vacuum=INCREMENTAL` par une reconstruction unique au premier
+  démarrage, puis chaque purge rend ses pages libres. Sur INFRA-01, le
+  fichier faisait 267 Mo pour environ 45 Mo de données.
+
 ## [1.27.0] — 2026-09-26 — Réparations à confirmer
 
 - Réparations vérifiées faciles à enregistrer : une section « Réparations à

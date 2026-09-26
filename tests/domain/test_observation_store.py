@@ -292,6 +292,50 @@ def test_sqlite_retention_purges_observations_and_reuses_database_pages(
     store.close()
 
 
+def test_existing_database_is_converted_once_and_purges_shrink_the_file(
+    tmp_path: Path,
+) -> None:
+    # INFRA-01 kept a 267 MB vision.db for about 45 MB of observations.
+    path = tmp_path / "vision.db"
+    legacy = sqlite3.connect(path)
+    legacy.execute("CREATE TABLE padding (value BLOB)")
+    legacy.commit()
+    legacy.close()
+    now = datetime(2026, 8, 10, 12, 0, tzinfo=UTC)
+    store = ObservationStore(path, retention_days=7)
+    assert store._connection is not None
+    assert store._connection.execute("PRAGMA auto_vacuum").fetchone()[0] == 2
+    store.add_many(
+        Observation(
+            capability_id=f"dns.expired.{index}",
+            service_id="dns-primary",
+            node_id="zwave-01",
+            status=HealthStatus.HEALTHY,
+            observed_at=now - timedelta(days=8),
+            message="x" * 2_000,
+        )
+        for index in range(2_000)
+    )
+    pages_before = store._connection.execute("PRAGMA page_count").fetchone()[0]
+
+    assert store.purge_expired(now=now) == 2_000
+
+    assert store._connection.execute("PRAGMA freelist_count").fetchone()[0] == 0
+    assert (
+        store._connection.execute("PRAGMA page_count").fetchone()[0]
+        < pages_before / 4
+    )
+    store.close()
+
+    statements: list[str] = []
+    reopened = ObservationStore(path, retention_days=7)
+    assert reopened._connection is not None
+    reopened._connection.set_trace_callback(statements.append)
+    reopened._enable_incremental_vacuum(reopened._connection)
+    assert "VACUUM" not in statements
+    reopened.close()
+
+
 def test_sqlite_retention_purges_in_checkpointed_batches(
     tmp_path: Path, monkeypatch
 ) -> None:
