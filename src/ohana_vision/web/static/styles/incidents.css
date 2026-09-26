@@ -140,6 +140,44 @@
     background: color-mix(in srgb, var(--ohana-health-degraded) 12%, transparent);
 }
 
+.incidents-command-status button {
+    margin-left: var(--ohana-space-3);
+}
+
+.incidents-experience-pending {
+    display: grid;
+    gap: var(--ohana-space-2);
+    padding: var(--ohana-space-4) var(--ohana-space-5);
+    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+    background: color-mix(in srgb, var(--ohana-brand-primary) 8%, transparent);
+}
+
+.incidents-experience-pending h3,
+.incidents-experience-pending p {
+    margin: 0;
+}
+
+.incidents-experience-pending p {
+    color: var(--ohana-text-muted);
+    font-size: var(--ohana-font-size-xs);
+}
+
+.incidents-experience-pending ul {
+    display: grid;
+    gap: var(--ohana-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.incidents-experience-pending li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--ohana-space-3);
+}
+
 .incidents-filter {
     padding: var(--ohana-space-2) var(--ohana-space-4);
     border: var(--ohana-border-width-thin) solid var(--ohana-border-default);

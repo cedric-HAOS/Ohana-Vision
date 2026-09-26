@@ -82,6 +82,7 @@ export class IncidentsController {
             filters: Array.from(document.querySelectorAll("[data-incidents-filter]")),
             logCheck: document.querySelector("#tsunade-log-check"),
             commandStatus: document.querySelector("#incidents-command-status"),
+            experiencePending: document.querySelector("#incidents-experience-pending"),
             cycleSummary: document.querySelector("#incidents-cycle-summary"),
         };
     }
@@ -156,6 +157,16 @@ export class IncidentsController {
                 );
             }
         });
+        // The save button also lives outside the list: in the pending section
+        // and in the outcome banner, visible whatever the selected filter.
+        [this.elements.experiencePending, this.elements.commandStatus].forEach((element) => {
+            element?.addEventListener("click", (event) => {
+                const experienceButton = event.target.closest("[data-tsunade-experience]");
+                if (experienceButton) {
+                    void this.confirmExperience(experienceButton.dataset.tsunadeExperience, experienceButton);
+                }
+            });
+        });
         this.elements.list?.addEventListener("submit", (event) => {
             const form = event.target.closest("[data-tsunade-log-investigation]");
             if (!form) {
@@ -210,6 +221,7 @@ export class IncidentsController {
 
     render() {
         this.renderSummary();
+        this.renderExperiencePending();
         this.elements.filters.forEach((button) => {
             const active = button.dataset.incidentsFilter === this.filter;
             button.classList.toggle("is-active", active);
@@ -251,6 +263,39 @@ export class IncidentsController {
                 return heading + this.incidentCard(incident);
             })
             .join("");
+    }
+
+    /**
+     * Verified repairs waiting to be saved as known repairs. The incident is
+     * resolved by then, so it left "Tous les actifs": on 26 September the
+     * save button was only found in the dossier of a resolved incident.
+     */
+    renderExperiencePending() {
+        const element = this.elements.experiencePending;
+        if (!element) {
+            return;
+        }
+        const pending = this.incidents.filter(
+            (incident) => this.details.get(incident.incident_id)?.experience_candidate,
+        );
+        element.classList.toggle("hidden", pending.length === 0);
+        if (pending.length === 0) {
+            element.innerHTML = "";
+            return;
+        }
+        element.innerHTML = `<h3>Réparations à confirmer</h3>
+            <p>Shikamaru a vérifié ces réparations. Les enregistrer les ajoute aux réparations connues de Tsunade.</p>
+            <ul>${pending.map((incident) => {
+                const repair = (incident.repairs ?? []).find((item) => item.status === "succeeded");
+                return `<li>
+                    <span><strong>${escapeHtml(this.incidentTitle(incident))}</strong>${repair ? ` · ${escapeHtml(this.sentence(repair.action ?? "réparation supervisée"))}` : ""}${incident.ended_at ? ` · résolu le ${escapeHtml(formatDate(incident.ended_at))}` : ""}</span>
+                    ${this.experienceButton(incident.incident_id)}
+                </li>`;
+            }).join("")}</ul>`;
+    }
+
+    experienceButton(incidentId) {
+        return `<button class="configuration-primary-button" data-tsunade-experience="${escapeHtml(incidentId)}" type="button">Enregistrer la réparation connue</button>`;
     }
 
     incidentGroup(incident) {
@@ -356,6 +401,7 @@ export class IncidentsController {
                     </div>
                     ${repairs.length ? `<p class="incident-card__repair"><strong>${escapeHtml(this.sentence(repairs[0].action ?? "réparation supervisée"))}</strong> · ${escapeHtml(this.repairStatus(repairs[0]))}</p>` : ""}
                     ${proposedRepair ? this.pendingRepairRisk(proposedRepair) : ""}
+                    ${experience ? `<div class="incident-experience"><strong>${escapeHtml(experience.prompt)}</strong>${this.experienceButton(incident.incident_id)}</div>` : ""}
                     ${this.expandedDetails.has(incident.incident_id) ? `
                     <div class="incident-dossier">
                     ${this.tsunadeDecision(details ?? incident, decisionRecord)}
@@ -370,7 +416,6 @@ export class IncidentsController {
                     ${this.tsunadeExpertise(details ?? incident)}
                     ${incident.final_result ? `<p class="incident-card__result"><strong>Résultat :</strong> ${escapeHtml(incident.final_result)}</p>` : ""}
                     ${repairSummary}
-                    ${experience ? `<div class="incident-experience"><strong>${escapeHtml(experience.prompt)}</strong><button class="configuration-primary-button" data-tsunade-experience="${escapeHtml(incident.incident_id)}" type="button">Enregistrer la réparation connue</button></div>` : ""}
                     ${incident.state === "active" && incident.capability_id === "logs.health" ? `
                         <form class="incident-log-investigation" data-tsunade-log-investigation="${escapeHtml(incident.incident_id)}">
                             <label>Motif à approfondir
@@ -380,7 +425,6 @@ export class IncidentsController {
                         </form>` : ""}
                     ${this.expandedDetails.has(incident.incident_id) && details ? this.evolution(details) : ""}
                     </div>` : ""}
-                    ${!this.expandedDetails.has(incident.incident_id) && experience ? `<p class="incident-card__result">Une réparation attend votre confirmation dans le dossier.</p>` : ""}
                 </div>
             </article>`;
     }
@@ -1359,10 +1403,19 @@ export class IncidentsController {
                 this.details.delete(incidentId);
             }
         }
+        // Only the dossier carries the experience candidate: fetch it for
+        // resolved incidents whose repair succeeded, again when the cached
+        // dossier predates the resolution.
+        for (const incident of this.incidents) {
+            if (this.awaitsExperience(incident) && this.details.get(incident.incident_id)?.state !== "resolved") {
+                this.details.delete(incident.incident_id);
+            }
+        }
         const pending = this.incidents.filter(
             (incident) => (
                 this.expandedDetails.has(incident.incident_id)
                 || !Object.hasOwn(incident, "latest_decision")
+                || this.awaitsExperience(incident)
             ) && !this.details.has(incident.incident_id),
         );
         const results = await Promise.allSettled(
@@ -1377,6 +1430,11 @@ export class IncidentsController {
                 this.details.set(incidentId, details);
             }
         });
+    }
+
+    awaitsExperience(incident) {
+        return incident.state === "resolved"
+            && (incident.repairs ?? []).some((repair) => repair.status === "succeeded");
     }
 
     equipmentLabel(nodeId) {
@@ -1436,17 +1494,20 @@ export class IncidentsController {
         };
         const [message, tone] = outcomes[repair.status]
             ?? [`Réparation : ${this.repairStatus(repair)}`, "success"];
-        this.showCommandStatus(message, tone);
+        const experienceIncident = this.details.get(incidentId)?.experience_candidate ? incidentId : null;
+        this.showCommandStatus(message, tone, experienceIncident);
     }
 
-    showCommandStatus(message, tone = "success") {
+    showCommandStatus(message, tone = "success", experienceIncident = null) {
         window.clearTimeout(this.commandStatusTimer);
         if (message && tone === "success") {
             // A confirmation is transient; warnings and running states stay.
             this.commandStatusTimer = window.setTimeout(() => this.showCommandStatus(""), 30000);
         }
         if (this.elements.commandStatus) {
-            this.elements.commandStatus.textContent = message;
+            this.elements.commandStatus.innerHTML = message
+                ? escapeHtml(message) + (experienceIncident ? ` ${this.experienceButton(experienceIncident)}` : "")
+                : "";
             this.elements.commandStatus.classList.toggle("hidden", !message);
             this.elements.commandStatus.classList.toggle(
                 "is-running",
