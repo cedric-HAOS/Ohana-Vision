@@ -57,7 +57,8 @@ assert(html.includes('data-repair-risk="low"'));
 const failed = {...repair, status: 'failed',
     result: 'L’assistant a échoué : chrony.service est masqué <x>'};
 html = controller.incidentCard({...incident, repairs: [failed]});
-assert(html.includes('Échec confirmé<br><span>L’assistant a échoué : chrony.service est masqué &lt;x>'));
+assert(html.includes(
+    'Échec confirmé<br><span>L’assistant a échoué : chrony.service est masqué &lt;x>'));
 
 repair.deferred_until = '2026-09-25T15:52:00+02:00';
 html = controller.incidentCard(incident);
