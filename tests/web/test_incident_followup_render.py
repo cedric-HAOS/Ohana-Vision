@@ -55,6 +55,7 @@ incident.assessment = {state: 'watch', label: 'Sous surveillance',
     decided_at: '2026-09-21T09:35:00+02:00',
     followup: {status: 'completed', detail: 'Ancienne collecte terminée'}};
 const current = controller.incidentCard(incident);
+assert.equal(current.split('Sous surveillance').length - 1, 1);
 const compact = controller.compactDecision(incident, {
     payload: incident.latest_decision,
     occurredAt: incident.latest_decision.occurred_at});

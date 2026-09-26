@@ -2,10 +2,15 @@
 
 ## Non publié
 
+- Carte d'incident : la cause d'une réparation en échec (« chrony.service est
+  masqué ») s'affiche sous « Échec confirmé », sans ouvrir le dossier.
 - `vision.db` rend l'espace libéré : la base passe en
   `auto_vacuum=INCREMENTAL` par une reconstruction unique au premier
   démarrage, puis chaque purge rend ses pages libres. Sur INFRA-01, le
   fichier faisait 267 Mo pour environ 45 Mo de données.
+- Carte d'incident : l'état de l'évaluation (par exemple « Investigation
+  terminée — suite à préciser ») n'est plus répété sous le titre et dans le
+  bloc de décision.
 
 ## [1.27.0] — 2026-09-26 — Réparations à confirmer
 

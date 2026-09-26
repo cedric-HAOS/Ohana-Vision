@@ -399,7 +399,7 @@ export class IncidentsController {
                         <button class="configuration-secondary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-repair-id="${escapeHtml(proposedRepair.repair_id)}" data-tsunade-repair-decision="refuse" type="button">Refuser</button>` : ""}
                         <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${this.expandedDetails.has(incident.incident_id) ? "Fermer le dossier" : "Voir le dossier"}</button>
                     </div>
-                    ${repairs.length ? `<p class="incident-card__repair"><strong>${escapeHtml(this.sentence(repairs[0].action ?? "réparation supervisée"))}</strong> · ${escapeHtml(this.repairStatus(repairs[0]))}</p>` : ""}
+                    ${repairs.length ? `<p class="incident-card__repair"><strong>${escapeHtml(this.sentence(repairs[0].action ?? "réparation supervisée"))}</strong> · ${escapeHtml(this.repairStatus(repairs[0]))}${repairs[0].status === "failed" && repairs[0].result ? `<br><span>${escapeHtml(repairs[0].result)}</span>` : ""}</p>` : ""}
                     ${proposedRepair ? this.pendingRepairRisk(proposedRepair) : ""}
                     ${experience ? `<div class="incident-experience"><strong>${escapeHtml(experience.prompt)}</strong>${this.experienceButton(incident.incident_id)}</div>` : ""}
                     ${this.expandedDetails.has(incident.incident_id) ? `
@@ -522,8 +522,9 @@ export class IncidentsController {
                 failed: "Suivi interrompu", refused: "Collecte refusée",
                 cancelled: "Collecte annulée", expired: "Demande expirée",
             }[followup.status] ?? "Suivi de l’investigation";
+            // The card header already shows assessment.label: repeating it
+            // printed "Investigation terminée — suite à préciser" twice.
             return `<section class="incident-compact-decision">
-                <strong>${escapeHtml(assessment.label)}</strong>
                 ${stale ? '<span>De nouveaux éléments sont disponibles depuis la dernière conclusion.</span>'
                     : reason && assessment.state !== "analyzing" ? `<span>${escapeHtml(reason)}</span>` : ""}
                 ${assessment.decided_at ? `<small>Dernière décision du ${escapeHtml(formatDate(assessment.decided_at))}</small>` : ""}

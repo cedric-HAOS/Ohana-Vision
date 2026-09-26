@@ -53,6 +53,12 @@ assert(html.includes('Risque faible</strong> · Résultat attendu : L’aller'))
 assert(html.includes('<li>Clients MQTT déconnectés.</li>'));
 assert(html.includes('data-repair-risk="low"'));
 
+// A failed helper shows its cause on the collapsed card (chrony, 26 September).
+const failed = {...repair, status: 'failed',
+    result: 'L’assistant a échoué : chrony.service est masqué <x>'};
+html = controller.incidentCard({...incident, repairs: [failed]});
+assert(html.includes('Échec confirmé<br><span>L’assistant a échoué : chrony.service est masqué &lt;x>'));
+
 repair.deferred_until = '2026-09-25T15:52:00+02:00';
 html = controller.incidentCard(incident);
 assert(html.includes('reportée jusqu’à date(2026-09-25T15:52:00+02:00)'));
