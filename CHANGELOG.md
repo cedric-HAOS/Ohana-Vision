@@ -2,6 +2,16 @@
 
 ## Non publié
 
+## [1.27.0] — 2026-09-26 — Réparations à confirmer
+
+- Réparations vérifiées faciles à enregistrer : une section « Réparations à
+  confirmer », au-dessus de la liste et quel que soit le filtre, propose
+  « Enregistrer la réparation connue » pour chaque réparation confirmée par
+  Shikamaru. Le bandeau « Réparation confirmée par Shikamaru. » et la carte
+  fermée portent le même bouton. Le 26 septembre, après la réparation Z-Wave
+  JS, il fallait le chercher : l'incident, résolu une vingtaine de secondes
+  après la réparation, quittait « Tous les actifs », et le bouton n'était que
+  dans son dossier, sous « Résolus ».
 - Vision ne sature plus INFRA-01. Le 26 septembre, le processus tournait
   entre 90 et 110 % de CPU et l'Agent a vu 432 livraisons d'observations
   expirer en neuf heures, d'où des états affichés en retard. Cause : chaque
