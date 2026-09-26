@@ -58,7 +58,9 @@ function element() {
         capability_id: 'zwave.status', message: 'Z-Wave JS driver is ready',
         ended_at: '2026-09-26T21:16:35+02:00', expertise_state: 'deterministic',
         context: {}, events: [], repairs: [repair],
-        latest_decision: {decision: 'action_required', occurred_at: '2026-09-26T21:15:32+02:00'},
+        latest_decision: {
+            decision: 'action_required', occurred_at: '2026-09-26T21:15:32+02:00',
+        },
     };
     const candidate = {prompt: 'Enregistrer comme réparation connue ?'};
 
