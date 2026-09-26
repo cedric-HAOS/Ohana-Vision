@@ -322,8 +322,7 @@ def test_existing_database_is_converted_once_and_purges_shrink_the_file(
 
     assert store._connection.execute("PRAGMA freelist_count").fetchone()[0] == 0
     assert (
-        store._connection.execute("PRAGMA page_count").fetchone()[0]
-        < pages_before / 4
+        store._connection.execute("PRAGMA page_count").fetchone()[0] < pages_before / 4
     )
     store.close()
 
