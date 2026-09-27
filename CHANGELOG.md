@@ -2,6 +2,10 @@
 
 ## Non publié
 
+- Proposition de réparation : un encadré « Réparation connue » montre, avant
+  toute décision, l'historique de la réparation reproduite et les critères
+  explicites partagés (symptôme, preuve, action), avec l'éventuel
+  avertissement.
 - Réparations connues : une section du bilan Tsunade liste chaque réparation
   connue avec ses tentatives, réussites, échecs, dernière réussite et son
   état, et propose « Désactiver », « Rendre obsolète » ou « Réactiver ». La

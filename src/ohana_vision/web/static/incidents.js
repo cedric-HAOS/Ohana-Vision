@@ -1319,6 +1319,24 @@ export class IncidentsController {
         return `<div class="incident-card__repair-risk">
             <p><strong>Risque ${escapeHtml(riskLabels[repair.risk] ?? repair.risk ?? "inconnu")}</strong>${repair.expected_result ? ` · Résultat attendu : ${escapeHtml(repair.expected_result)}` : ""}</p>
             ${consequences.length ? `<ul>${consequences.map((consequence) => `<li>${escapeHtml(consequence)}</li>`).join("")}</ul>` : ""}
+            ${this.knownRepair(repair.known_repair)}
+        </div>`;
+    }
+
+    knownRepair(known) {
+        // Phase 3: the proposal reproduces a known repair; its track record and
+        // the explicit criteria it shares are shown before any decision.
+        if (!known) {
+            return "";
+        }
+        const lastSuccess = known.last_success_at
+            ? `, dernière réussite le ${formatDate(known.last_success_at)}`
+            : "";
+        const criteria = Array.isArray(known.criteria) ? known.criteria.slice(0, 8) : [];
+        return `<div class="incident-card__known-repair">
+            <p><strong>Réparation connue</strong> · ${escapeHtml(known.success_count)} réussite(s) et ${escapeHtml(known.failure_count)} échec(s) sur ${escapeHtml(known.attempt_count)} tentative(s)${escapeHtml(lastSuccess)}</p>
+            ${known.caution ? `<p class="incident-card__known-repair-caution">${escapeHtml(known.caution)}</p>` : ""}
+            ${criteria.length ? `<ul>${criteria.map((criterion) => `<li>${escapeHtml(criterion)}</li>`).join("")}</ul>` : ""}
         </div>`;
     }
 

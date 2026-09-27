@@ -86,6 +86,25 @@
     color: var(--ohana-health-critical);
 }
 
+.incident-card__known-repair {
+    display: grid;
+    gap: var(--ohana-space-1);
+    margin-top: var(--ohana-space-2);
+    padding: var(--ohana-space-2) var(--ohana-space-3);
+    border-left: 3px solid var(--ohana-health-healthy);
+    border-radius: var(--ohana-radius-sm);
+    background: var(--ohana-background-canvas);
+}
+
+.incident-card__known-repair p,
+.incident-card__known-repair ul {
+    margin: 0;
+}
+
+.incident-card__known-repair-caution {
+    color: var(--ohana-health-degraded, var(--ohana-text-muted));
+}
+
 /* Known repairs: one readable row each, with their history and actions. */
 .incidents-experiences__content ul {
     display: grid;
