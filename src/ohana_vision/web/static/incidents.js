@@ -65,6 +65,9 @@ export class IncidentsController {
         this.logHealth = null;
         this.acceptedLogSignatures = [];
         this.experiences = null;
+        // Manual forms survive the periodic re-render, with their draft.
+        this.manualForms = new Set();
+        this.manualDrafts = new Map();
         this.logCheckAvailable = false;
         this.expandedLogAnomalies = new Set();
         this.filter = "active";
@@ -151,6 +154,20 @@ export class IncidentsController {
                 return;
             }
 
+            const manualOpen = event.target.closest("[data-tsunade-manual-open]");
+            if (manualOpen) {
+                this.manualForms.add(manualOpen.dataset.tsunadeManualOpen);
+                this.render();
+                return;
+            }
+            const manualCancel = event.target.closest("[data-tsunade-manual-cancel]");
+            if (manualCancel) {
+                this.manualForms.delete(manualCancel.dataset.tsunadeManualCancel);
+                this.manualDrafts.delete(manualCancel.dataset.tsunadeManualCancel);
+                this.render();
+                return;
+            }
+
             const acceptButton = event.target.closest("[data-tsunade-accept-log]");
             if (acceptButton) {
                 void this.acceptLogSignature(
@@ -199,7 +216,19 @@ export class IncidentsController {
                 );
             }
         });
+        this.elements.list?.addEventListener("input", (event) => {
+            const form = event.target.closest("[data-tsunade-manual-form]");
+            if (form) {
+                this.manualDrafts.set(form.dataset.tsunadeManualForm, event.target.value);
+            }
+        });
         this.elements.list?.addEventListener("submit", (event) => {
+            const manualForm = event.target.closest("[data-tsunade-manual-form]");
+            if (manualForm) {
+                event.preventDefault();
+                void this.declareManualResolution(manualForm.dataset.tsunadeManualForm, manualForm);
+                return;
+            }
             const form = event.target.closest("[data-tsunade-log-investigation]");
             if (!form) {
                 return;
@@ -304,6 +333,9 @@ export class IncidentsController {
     experienceAction(action) {
         const operation = String(action?.operation ?? "");
         const target = String(action?.target ?? "");
+        if (action?.kind === "manual") {
+            return `Action manuelle : « ${action.description ?? ""} »`;
+        }
         if (operation.startsWith("restart")) {
             return `Redémarrage de ${target}`;
         }
@@ -398,18 +430,103 @@ export class IncidentsController {
             return;
         }
         element.innerHTML = `<h3>Réparations à confirmer</h3>
-            <p>Shikamaru a vérifié ces réparations. Les enregistrer les ajoute aux réparations connues de Tsunade.</p>
+            <p>Shikamaru a constaté le retour à l’état sain après ces réparations ou actions manuelles. Rien n’est retenu sans votre accord.</p>
             <ul>${pending.map((incident) => {
+                const candidate = this.details.get(incident.incident_id)?.experience_candidate;
                 const repair = (incident.repairs ?? []).find((item) => item.status === "succeeded");
+                const what = candidate?.kind === "manual"
+                    ? `Action manuelle « ${candidate.action?.description ?? ""} »`
+                    : repair ? this.sentence(repair.action ?? "réparation supervisée") : "";
                 return `<li>
-                    <span><strong>${escapeHtml(this.incidentTitle(incident))}</strong>${repair ? ` · ${escapeHtml(this.sentence(repair.action ?? "réparation supervisée"))}` : ""}${incident.ended_at ? ` · résolu le ${escapeHtml(formatDate(incident.ended_at))}` : ""}</span>
-                    ${this.experienceButton(incident.incident_id)}
+                    <span><strong>${escapeHtml(this.incidentTitle(incident))}</strong>${what ? ` · ${escapeHtml(what)}` : ""}${incident.ended_at ? ` · résolu le ${escapeHtml(formatDate(incident.ended_at))}` : ""}${candidate?.caution ? `<br><small>${escapeHtml(candidate.caution)}</small>` : ""}</span>
+                    ${this.experienceButton(incident.incident_id, candidate?.kind)}
                 </li>`;
             }).join("")}</ul>`;
     }
 
-    experienceButton(incidentId) {
-        return `<button class="configuration-primary-button" data-tsunade-experience="${escapeHtml(incidentId)}" type="button">Enregistrer la réparation connue</button>`;
+    experienceButton(incidentId, kind = "repair") {
+        const label = kind === "manual" ? "Conserver comme piste connue" : "Enregistrer la réparation connue";
+        return `<button class="configuration-primary-button" data-tsunade-experience="${escapeHtml(incidentId)}" type="button">${label}</button>`;
+    }
+
+    canDeclareManual(incident) {
+        return incident.state === "active"
+            && !this.manualForms?.has(incident.incident_id)
+            && !(incident.manual_actions ?? []).some((action) => action.status === "verifying");
+    }
+
+    manualForm(incident) {
+        if (incident.state !== "active" || !this.manualForms?.has(incident.incident_id)) {
+            return "";
+        }
+        const id = escapeHtml(incident.incident_id);
+        return `<form class="incident-manual-form" data-tsunade-manual-form="${id}">
+            <label>Qu’avez-vous fait ?
+                <textarea name="description" minlength="3" maxlength="500" required rows="2">${escapeHtml(this.manualDrafts?.get(incident.incident_id) ?? "")}</textarea>
+            </label>
+            <small>Une note pour Tsunade : Ohana ne l’exécutera jamais. Shikamaru vérifiera ensuite le retour à l’état sain.</small>
+            <div class="incident-manual-form__actions">
+                <button class="configuration-primary-button" type="submit">Déclarer l’action</button>
+                <button class="configuration-secondary-button" data-tsunade-manual-cancel="${id}" type="button">Annuler</button>
+            </div>
+        </form>`;
+    }
+
+    manualStatus(incident) {
+        const action = (incident.manual_actions ?? [])[0];
+        if (!action) {
+            return "";
+        }
+        const labels = {
+            verifying: "Vérification Shikamaru en attente",
+            confirmed: "Retour à l’état sain constaté par Shikamaru",
+            unconfirmed: "Non confirmée par Shikamaru",
+        };
+        return `<p class="incident-card__repair"><strong>Action manuelle « ${escapeHtml(action.description)} »</strong> · ${escapeHtml(labels[action.status] ?? action.status)}${action.status !== "verifying" && action.result ? `<br><span>${escapeHtml(action.result)}</span>` : ""}</p>`;
+    }
+
+    manualLeads(incident) {
+        // Known manual leads for the same symptom: notes for the user, never
+        // an action Ohana can run.
+        if (incident.state !== "active" || !Array.isArray(this.experiences)) {
+            return "";
+        }
+        const leads = this.experiences.filter((experience) => experience.state === "active"
+            && experience.action?.kind === "manual"
+            && experience.equipment_id === incident.equipment_id
+            && experience.capability_id === incident.capability_id).slice(0, 3);
+        if (!leads.length) {
+            return "";
+        }
+        return `<div class="incident-card__known-repair">
+            <p><strong>Piste connue</strong> · action manuelle, à appliquer vous-même : Ohana ne l’exécute jamais</p>
+            <ul>${leads.map((lead) => `<li>« ${escapeHtml(lead.action.description)} » · ${escapeHtml(lead.success_count)} réussite(s)${lead.last_success_at ? `, dernière le ${escapeHtml(formatDate(lead.last_success_at))}` : ""}</li>`).join("")}</ul>
+        </div>`;
+    }
+
+    async declareManualResolution(incidentId, form) {
+        const description = String(new FormData(form).get("description") ?? "").trim();
+        const button = form.querySelector('button[type="submit"]');
+        if (button) {
+            button.disabled = true;
+        }
+        this.showError("");
+        try {
+            await requestJson(API.tsunadeManualResolution(incidentId), {
+                method: "POST",
+                body: JSON.stringify({description, source: "vision", declared_by: "utilisateur Vision"}),
+            });
+            this.manualForms.delete(incidentId);
+            this.manualDrafts.delete(incidentId);
+            this.showCommandStatus("Action manuelle déclarée : Shikamaru vérifie le retour à l’état sain.");
+            await this.load();
+        } catch (error) {
+            this.showError(`Déclaration impossible : ${this.errorMessage(error)}`);
+        } finally {
+            if (button) {
+                button.disabled = false;
+            }
+        }
     }
 
     incidentGroup(incident) {
@@ -511,11 +628,15 @@ export class IncidentsController {
                         ${proposedRepair && !proposedRepair.authorized_at ? `<button class="configuration-primary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-tsunade-repair-authorize="${escapeHtml(proposedRepair.repair_id)}" data-repair-risk="${escapeHtml(proposedRepair.risk ?? "low")}" type="button">Autoriser depuis Vision</button>
                         ${proposedRepair.deferred_until ? "" : `<button class="configuration-secondary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-repair-id="${escapeHtml(proposedRepair.repair_id)}" data-tsunade-repair-decision="defer" type="button">Plus tard</button>`}
                         <button class="configuration-secondary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-repair-id="${escapeHtml(proposedRepair.repair_id)}" data-tsunade-repair-decision="refuse" type="button">Refuser</button>` : ""}
+                        ${this.canDeclareManual(incident) ? `<button class="configuration-secondary-button" data-tsunade-manual-open="${escapeHtml(incident.incident_id)}" type="button">J’ai corrigé manuellement</button>` : ""}
                         <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${this.expandedDetails.has(incident.incident_id) ? "Fermer le dossier" : "Voir le dossier"}</button>
                     </div>
+                    ${this.manualForm(incident)}
+                    ${this.manualStatus(incident)}
+                    ${this.manualLeads(incident)}
                     ${repairs.length ? `<p class="incident-card__repair"><strong>${escapeHtml(this.sentence(repairs[0].action ?? "réparation supervisée"))}</strong> · ${escapeHtml(this.repairStatus(repairs[0]))}${repairs[0].status === "failed" && repairs[0].result ? `<br><span>${escapeHtml(repairs[0].result)}</span>` : ""}</p>` : ""}
                     ${proposedRepair ? this.pendingRepairRisk(proposedRepair) : ""}
-                    ${experience ? `<div class="incident-experience"><strong>${escapeHtml(experience.prompt)}</strong>${this.experienceButton(incident.incident_id)}</div>` : ""}
+                    ${experience ? `<div class="incident-experience"><strong>${escapeHtml(experience.prompt)}</strong>${experience.caution ? `<small>${escapeHtml(experience.caution)}</small>` : ""}${this.experienceButton(incident.incident_id, experience.kind)}</div>` : ""}
                     ${this.expandedDetails.has(incident.incident_id) ? `
                     <div class="incident-dossier">
                     ${this.tsunadeDecision(details ?? incident, decisionRecord)}
@@ -1298,7 +1419,7 @@ export class IncidentsController {
             });
             this.details.delete(incidentId);
             this.expandedDetails.delete(incidentId);
-            this.showCommandStatus("Réparation enregistrée dans la mémoire de Tsunade.");
+            this.showCommandStatus("Expérience enregistrée dans la mémoire de Tsunade.");
             await this.load();
         } catch (error) {
             this.showError(`Mémorisation impossible : ${this.errorMessage(error)}`);
@@ -1640,7 +1761,8 @@ export class IncidentsController {
 
     awaitsExperience(incident) {
         return incident.state === "resolved"
-            && (incident.repairs ?? []).some((repair) => repair.status === "succeeded");
+            && ((incident.repairs ?? []).some((repair) => repair.status === "succeeded")
+                || (incident.manual_actions ?? []).some((action) => action.status === "confirmed"));
     }
 
     equipmentLabel(nodeId) {

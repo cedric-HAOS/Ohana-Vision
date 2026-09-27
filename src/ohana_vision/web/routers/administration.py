@@ -250,6 +250,15 @@ def write_tsunade_log_policy(
     return _call(lambda: client.write_tsunade_log_policy(payload))
 
 
+@router.post("/tsunade/incidents/{incident_id}/manual-resolution")
+def declare_manual_resolution(
+    incident_id: str, payload: dict[str, Any], request: Request
+) -> dict[str, Any]:
+    """Record a manual action; Agent never executes its description."""
+    client = _client(request)
+    return _call(lambda: client.declare_manual_resolution(incident_id, payload))
+
+
 @router.get("/tsunade/experiences")
 def read_experiences(request: Request) -> dict[str, Any]:
     """List Tsunade's known repairs."""

@@ -200,6 +200,16 @@ class AgentAdministrationClient:
         """Apply Agent's scheduled Tsunade log-control policy."""
         return self._request("PUT", "/v1/incidents/logs", payload)
 
+    def declare_manual_resolution(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Record a manual action for Shikamaru to verify."""
+        return self._request(
+            "POST",
+            f"/v1/incidents/{quote(incident_id, safe='')}/manual-resolution",
+            payload,
+        )
+
     def read_experiences(self) -> dict[str, Any]:
         """List Tsunade's known repairs with their history and state."""
         return self._request("GET", "/v1/experiences")

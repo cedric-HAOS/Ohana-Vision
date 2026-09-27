@@ -228,6 +228,11 @@ class FakeAdministrationClient:
             **payload,
         }
 
+    def declare_manual_resolution(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {"incident_id": incident_id, "status": "verifying", **payload}
+
     def read_experiences(self) -> dict[str, Any]:
         return {"schema_version": 1, "experiences": [{"experience_id": "e1"}]}
 
@@ -576,3 +581,18 @@ def test_administration_routes_proxy_known_repairs() -> None:
 
     assert listed.json()["experiences"] == [{"experience_id": "e1"}]
     assert disabled.json() == {"experience_id": "e1", "state": "disabled"}
+
+
+def test_administration_routes_proxy_a_manual_resolution() -> None:
+    client = make_client(FakeAdministrationClient())
+
+    declared = client.post(
+        "/api/administration/tsunade/incidents/i1/manual-resolution",
+        json={"description": "Câble rebranché"},
+    )
+
+    assert declared.json() == {
+        "incident_id": "i1",
+        "status": "verifying",
+        "description": "Câble rebranché",
+    }

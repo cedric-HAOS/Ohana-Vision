@@ -86,6 +86,34 @@
     color: var(--ohana-health-critical);
 }
 
+.incident-manual-form {
+    display: grid;
+    gap: var(--ohana-space-2);
+    margin-top: var(--ohana-space-2);
+}
+
+.incident-manual-form__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ohana-space-2);
+}
+
+.incident-manual-form label {
+    display: grid;
+    gap: var(--ohana-space-1);
+}
+
+.incident-manual-form textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font: inherit;
+}
+
+.incident-manual-form small,
+.incident-experience small {
+    color: var(--ohana-text-muted);
+}
+
 .incident-card__known-repair {
     display: grid;
     gap: var(--ohana-space-1);

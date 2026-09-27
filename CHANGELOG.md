@@ -2,6 +2,13 @@
 
 ## Non publié
 
+- « J'ai corrigé manuellement » sur un incident actif : un formulaire
+  demande ce que l'utilisateur a fait. Le texte saisi survit au
+  rafraîchissement de la liste, et la carte suit ensuite la vérification de
+  Shikamaru. Une action confirmée apparaît dans « Réparations à confirmer »
+  avec l'avertissement sur la causalité et « Conserver comme piste connue ».
+  Les pistes manuelles connues s'affichent sur un incident semblable comme
+  actions à appliquer soi-même, et dans la liste des réparations connues.
 - Proposition de réparation : un encadré « Réparation connue » montre, avant
   toute décision, l'historique de la réparation reproduite et les critères
   explicites partagés (symptôme, preuve, action), avec l'éventuel

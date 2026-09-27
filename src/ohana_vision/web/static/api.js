@@ -14,6 +14,8 @@ export const API = Object.freeze({
         `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/diagnose`,
     tsunadeLogCheck: "/api/administration/tsunade/incidents/logs/check",
     tsunadeLogPolicy: "/api/administration/tsunade/incidents/logs",
+    tsunadeManualResolution: (incidentId) =>
+        `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/manual-resolution`,
     tsunadeExperiences: "/api/administration/tsunade/experiences",
     tsunadeExperienceState: (experienceId) =>
         `/api/administration/tsunade/experiences/${encodeURIComponent(experienceId)}/state`,
