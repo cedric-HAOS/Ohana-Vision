@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.28.0] — 2026-09-27 — Bruit de fond et anomalies connues
+
 - Santé des journaux : chaque source affiche « Sain », « Bruit de fond »
   (anomalies sans gravité ou acceptées) ou « À examiner » (incident actif), au
   lieu de « Anomalie » dès la moindre ligne suspecte. La liste des anomalies
