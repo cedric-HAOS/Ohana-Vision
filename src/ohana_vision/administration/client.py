@@ -200,6 +200,18 @@ class AgentAdministrationClient:
         """Apply Agent's scheduled Tsunade log-control policy."""
         return self._request("PUT", "/v1/incidents/logs", payload)
 
+    def read_experiences(self) -> dict[str, Any]:
+        """List Tsunade's known repairs with their history and state."""
+        return self._request("GET", "/v1/experiences")
+
+    def set_experience_state(
+        self, experience_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Disable, retire or reactivate one known repair."""
+        return self._request(
+            "POST", f"/v1/experiences/{quote(experience_id, safe='')}/state", payload
+        )
+
     def read_accepted_log_signatures(self) -> dict[str, Any]:
         """List log anomalies accepted as known noise in Tsunade."""
         return self._request("GET", "/v1/incidents/logs/accepted")

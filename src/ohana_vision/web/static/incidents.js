@@ -64,6 +64,7 @@ export class IncidentsController {
         this.summary = {};
         this.logHealth = null;
         this.acceptedLogSignatures = [];
+        this.experiences = null;
         this.logCheckAvailable = false;
         this.expandedLogAnomalies = new Set();
         this.filter = "active";
@@ -80,6 +81,7 @@ export class IncidentsController {
             learnedRepairCount: document.querySelector("#incidents-learned-repair-count"),
             repairSuccessRate: document.querySelector("#incidents-repair-success-rate"),
             logHealth: document.querySelector("#tsunade-log-health"),
+            experiences: document.querySelector("#tsunade-experiences"),
             filters: Array.from(document.querySelectorAll("[data-incidents-filter]")),
             logCheck: document.querySelector("#tsunade-log-check"),
             commandStatus: document.querySelector("#incidents-command-status"),
@@ -187,6 +189,16 @@ export class IncidentsController {
                 );
             }
         });
+        this.elements.experiences?.addEventListener("click", (event) => {
+            const stateButton = event.target.closest("[data-tsunade-experience-state]");
+            if (stateButton) {
+                void this.setExperienceState(
+                    stateButton.dataset.tsunadeExperienceState,
+                    stateButton.dataset.state,
+                    stateButton,
+                );
+            }
+        });
         this.elements.list?.addEventListener("submit", (event) => {
             const form = event.target.closest("[data-tsunade-log-investigation]");
             if (!form) {
@@ -226,6 +238,10 @@ export class IncidentsController {
             this.acceptedLogSignatures = await fetchJson(API.tsunadeAcceptedLogs)
                 .then((accepted) => (Array.isArray(accepted?.signatures) ? accepted.signatures : []))
                 .catch(() => []);
+            // An Agent older than 1.38.0 has no route: the section says so.
+            this.experiences = await fetchJson(API.tsunadeExperiences)
+                .then((payload) => (Array.isArray(payload?.experiences) ? payload.experiences : []))
+                .catch(() => null);
             this.logCheckAvailable = Array.isArray(capabilities?.operations)
                 && capabilities.operations.includes("incidents.logs.check");
             this.updateLogCheckButton();
@@ -242,8 +258,83 @@ export class IncidentsController {
         }
     }
 
+    renderExperiences() {
+        const container = this.elements.experiences;
+        if (!container) {
+            return;
+        }
+        if (this.experiences === null) {
+            container.innerHTML = "<p>Liste indisponible avec cette version d’Ohana-Agent.</p>";
+            return;
+        }
+        if (!this.experiences.length) {
+            container.innerHTML = "<p>Aucune réparation connue. Une réparation vérifiée par Shikamaru peut être enregistrée depuis son incident.</p>";
+            return;
+        }
+        const stateLabels = {active: "Active", disabled: "Désactivée", obsolete: "Obsolète"};
+        const items = this.experiences.map((experience) => {
+            const active = experience.state === "active";
+            const buttons = active
+                ? `<button class="configuration-secondary-button" data-tsunade-experience-state="${escapeHtml(experience.experience_id)}" data-state="disabled" type="button">Désactiver</button>
+                   <button class="configuration-secondary-button" data-tsunade-experience-state="${escapeHtml(experience.experience_id)}" data-state="obsolete" type="button">Rendre obsolète</button>`
+                : `<button class="configuration-secondary-button" data-tsunade-experience-state="${escapeHtml(experience.experience_id)}" data-state="active" type="button">Réactiver</button>`;
+            const attempts = experience.attempt_count ?? experience.success_count + experience.failure_count;
+            const lastSuccess = experience.last_success_at
+                ? `Dernière réussite le ${formatDate(experience.last_success_at)}`
+                : "Aucune réussite";
+            const lastFailure = experience.last_failure_at
+                ? ` · dernier échec le ${formatDate(experience.last_failure_at)}`
+                : "";
+            const changed = !active && experience.state_changed_at
+                ? ` depuis le ${formatDate(experience.state_changed_at)}`
+                : "";
+            return `<li class="${active ? "is-active" : "is-inactive"}">
+                <div class="incidents-experience__title">
+                    <strong>${escapeHtml(this.experienceAction(experience.action))}</strong>
+                    <span class="incidents-experience__state">${escapeHtml(stateLabels[experience.state] ?? experience.state)}${escapeHtml(changed)}</span>
+                </div>
+                <span>${escapeHtml(LOG_SOURCE_LABELS[experience.equipment_id] ?? experience.equipment_id)} · ${escapeHtml(experience.capability_id)} · ${escapeHtml(experience.validated_diagnostic)}</span>
+                <small>${escapeHtml(attempts)} tentative(s) · ${escapeHtml(experience.success_count)} réussite(s) · ${escapeHtml(experience.failure_count)} échec(s) · ${escapeHtml(lastSuccess)}${escapeHtml(lastFailure)}</small>
+                <div class="incidents-experience__actions">${buttons}</div>
+            </li>`;
+        }).join("");
+        container.innerHTML = `<ul>${items}</ul><p><small>Une réparation désactivée ou obsolète n’est plus proposée ; son historique est conservé.</small></p>`;
+    }
+
+    experienceAction(action) {
+        const operation = String(action?.operation ?? "");
+        const target = String(action?.target ?? "");
+        if (operation.startsWith("restart")) {
+            return `Redémarrage de ${target}`;
+        }
+        return [operation, target].filter(Boolean).join(" · ") || "Réparation";
+    }
+
+    async setExperienceState(experienceId, state, button) {
+        button.disabled = true;
+        this.showError("");
+        try {
+            await requestJson(API.tsunadeExperienceState(experienceId), {
+                method: "POST",
+                body: JSON.stringify({state}),
+            });
+            const messages = {
+                active: "Réparation connue réactivée : Tsunade peut de nouveau la proposer.",
+                disabled: "Réparation connue désactivée : Tsunade ne la proposera plus.",
+                obsolete: "Réparation connue rendue obsolète : Tsunade ne la proposera plus.",
+            };
+            this.showCommandStatus(messages[state] ?? "État de la réparation connue mis à jour.");
+            await this.load();
+        } catch (error) {
+            this.showError(`Changement impossible : ${this.errorMessage(error)}`);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
     render() {
         this.renderSummary();
+        this.renderExperiences();
         this.renderExperiencePending();
         this.elements.filters.forEach((button) => {
             const active = button.dataset.incidentsFilter === this.filter;

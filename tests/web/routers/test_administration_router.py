@@ -228,6 +228,14 @@ class FakeAdministrationClient:
             **payload,
         }
 
+    def read_experiences(self) -> dict[str, Any]:
+        return {"schema_version": 1, "experiences": [{"experience_id": "e1"}]}
+
+    def set_experience_state(
+        self, experience_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {"experience_id": experience_id, **payload}
+
     def read_accepted_log_signatures(self) -> dict[str, Any]:
         return {"schema_version": 1, "signatures": list(self.accepted)}
 
@@ -555,3 +563,16 @@ def test_administration_routes_proxy_accepted_log_signatures() -> None:
     assert accepted.json()["signatures"] == [signature]
     assert listed.json()["signatures"] == [signature]
     assert revoked.json()["signatures"] == []
+
+
+def test_administration_routes_proxy_known_repairs() -> None:
+    client = make_client(FakeAdministrationClient())
+
+    listed = client.get("/api/administration/tsunade/experiences")
+    disabled = client.post(
+        "/api/administration/tsunade/experiences/e1/state",
+        json={"state": "disabled"},
+    )
+
+    assert listed.json()["experiences"] == [{"experience_id": "e1"}]
+    assert disabled.json() == {"experience_id": "e1", "state": "disabled"}

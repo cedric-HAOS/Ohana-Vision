@@ -2,6 +2,12 @@
 
 ## Non publié
 
+- Réparations connues : une section du bilan Tsunade liste chaque réparation
+  connue avec ses tentatives, réussites, échecs, dernière réussite et son
+  état, et propose « Désactiver », « Rendre obsolète » ou « Réactiver ». La
+  carte du bilan devient « Réparations connues » et ne compte que les
+  actives. Routes relais `/api/administration/tsunade/experiences`.
+
 ## [1.28.0] — 2026-09-27 — Bruit de fond et anomalies connues
 
 - Santé des journaux : chaque source affiche « Sain », « Bruit de fond »

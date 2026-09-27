@@ -250,6 +250,22 @@ def write_tsunade_log_policy(
     return _call(lambda: client.write_tsunade_log_policy(payload))
 
 
+@router.get("/tsunade/experiences")
+def read_experiences(request: Request) -> dict[str, Any]:
+    """List Tsunade's known repairs."""
+    client = _client(request)
+    return _call(client.read_experiences)
+
+
+@router.post("/tsunade/experiences/{experience_id}/state")
+def set_experience_state(
+    experience_id: str, payload: dict[str, Any], request: Request
+) -> dict[str, Any]:
+    """Disable, retire or reactivate one known repair."""
+    client = _client(request)
+    return _call(lambda: client.set_experience_state(experience_id, payload))
+
+
 @router.get("/tsunade/incidents/logs/accepted")
 def read_accepted_log_signatures(request: Request) -> dict[str, Any]:
     """List log anomalies accepted as known noise."""

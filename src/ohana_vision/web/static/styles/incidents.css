@@ -86,6 +86,50 @@
     color: var(--ohana-health-critical);
 }
 
+/* Known repairs: one readable row each, with their history and actions. */
+.incidents-experiences__content ul {
+    display: grid;
+    gap: var(--ohana-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.incidents-experiences__content li {
+    display: grid;
+    gap: var(--ohana-space-1);
+    padding: var(--ohana-space-3);
+    border: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+    border-radius: var(--ohana-radius-sm);
+    overflow-wrap: anywhere;
+}
+
+.incidents-experiences__content li.is-inactive {
+    opacity: 0.7;
+}
+
+.incidents-experiences__content small,
+.incidents-experience__state {
+    color: var(--ohana-text-muted);
+}
+
+.incidents-experience__title,
+.incidents-experience__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ohana-space-2);
+}
+
+.incidents-experience__actions {
+    justify-content: flex-start;
+}
+
+.incidents-experiences__content p {
+    margin: 0;
+}
+
 /* Accepted signatures: one readable row each, never the source-tile grid. */
 .incidents-log-health__content .incidents-log-accepted ul {
     grid-template-columns: 1fr;
