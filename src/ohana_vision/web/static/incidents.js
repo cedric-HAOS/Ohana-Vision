@@ -63,6 +63,7 @@ export class IncidentsController {
         this.expandedDetails = new Set();
         this.summary = {};
         this.logHealth = null;
+        this.acceptedLogSignatures = [];
         this.logCheckAvailable = false;
         this.expandedLogAnomalies = new Set();
         this.filter = "active";
@@ -148,6 +149,16 @@ export class IncidentsController {
                 return;
             }
 
+            const acceptButton = event.target.closest("[data-tsunade-accept-log]");
+            if (acceptButton) {
+                void this.acceptLogSignature(
+                    acceptButton.dataset.tsunadeAcceptLog,
+                    Number(acceptButton.dataset.findingIndex),
+                    acceptButton,
+                );
+                return;
+            }
+
             const logAnomaliesButton = event.target.closest(
                 "[data-tsunade-log-anomalies]",
             );
@@ -166,6 +177,15 @@ export class IncidentsController {
                     void this.confirmExperience(experienceButton.dataset.tsunadeExperience, experienceButton);
                 }
             });
+        });
+        this.elements.logHealth?.addEventListener("click", (event) => {
+            const revokeButton = event.target.closest("[data-tsunade-revoke-log]");
+            if (revokeButton) {
+                void this.revokeLogSignature(
+                    Number(revokeButton.dataset.tsunadeRevokeLog),
+                    revokeButton,
+                );
+            }
         });
         this.elements.list?.addEventListener("submit", (event) => {
             const form = event.target.closest("[data-tsunade-log-investigation]");
@@ -203,6 +223,9 @@ export class IncidentsController {
                 ? payload.summary
                 : {};
             this.logHealth = payload?.log_health ?? null;
+            this.acceptedLogSignatures = await fetchJson(API.tsunadeAcceptedLogs)
+                .then((accepted) => (Array.isArray(accepted?.signatures) ? accepted.signatures : []))
+                .catch(() => []);
             this.logCheckAvailable = Array.isArray(capabilities?.operations)
                 && capabilities.operations.includes("incidents.logs.check");
             this.updateLogCheckButton();
@@ -1270,11 +1293,73 @@ export class IncidentsController {
         const bySource = new Map(result.sources.map((source) => [source.source, source]));
         const rows = Object.entries(LOG_SOURCE_LABELS).map(([sourceId, label]) => {
             const source = bySource.get(sourceId);
-            const healthy = source?.status === "OK";
-            const state = source ? (healthy ? "Sain" : "Anomalie") : "Non analysé";
-            return `<li class="${healthy ? "is-healthy" : source ? "is-unhealthy" : ""}"><strong>${escapeHtml(label)}</strong><span>${healthy ? "✓" : source ? "!" : "—"} ${escapeHtml(state)}</span></li>`;
+            const followed = this.incidents.some((incident) => incident.state === "active"
+                && incident.capability_id === "logs.health"
+                && incident.equipment_id === sourceId);
+            const noisy = Array.isArray(source?.findings) && source.findings.length > 0;
+            const [state, mark, css] = !source
+                ? ["Non analysé", "—", ""]
+                : followed
+                    ? ["À examiner", "!", "is-unhealthy"]
+                    : noisy
+                        ? ["Bruit de fond", "✓", "is-healthy"]
+                        : ["Sain", "✓", "is-healthy"];
+            return `<li class="${css}"><strong>${escapeHtml(label)}</strong><span>${mark} ${escapeHtml(state)}</span></li>`;
         }).join("");
-        this.elements.logHealth.innerHTML = `<ul>${rows}</ul><p>Contrôle global effectué le <strong>${escapeHtml(formatDate(result.analyzed_at ?? this.logHealth.finished_at))}</strong></p>`;
+        this.elements.logHealth.innerHTML = `<ul>${rows}</ul><p>Contrôle global effectué le <strong>${escapeHtml(formatDate(result.analyzed_at ?? this.logHealth.finished_at))}</strong></p>
+            <p><small>« Bruit de fond » : anomalies sans gravité ou acceptées, sans incident. Un incident n’est ouvert que pour une erreur ou un avertissement répété au moins 100 fois en 24 h.</small></p>
+            ${this.acceptedLogsReport()}`;
+    }
+
+    acceptedLogsReport() {
+        if (!this.acceptedLogSignatures.length) {
+            return "";
+        }
+        const items = this.acceptedLogSignatures.map((item, index) => `<li><strong>${escapeHtml(LOG_SOURCE_LABELS[item.source] ?? item.source)}</strong><span>${escapeHtml(item.summary ?? item.signature)}</span><small>acceptée le ${escapeHtml(formatDate(item.accepted_at))}</small><button class="configuration-secondary-button" data-tsunade-revoke-log="${index}" type="button">Compter à nouveau</button></li>`).join("");
+        return `<details class="incidents-log-accepted"><summary>Anomalies acceptées comme connues (${this.acceptedLogSignatures.length})</summary><ul>${items}</ul></details>`;
+    }
+
+    async acceptLogSignature(incidentId, index, button) {
+        const incident = this.incidents.find((item) => item.incident_id === incidentId);
+        const finding = incident?.context?.findings?.[index];
+        if (!incident || !finding?.signature) {
+            return;
+        }
+        button.disabled = true;
+        this.showError("");
+        try {
+            await requestJson(API.tsunadeAcceptedLogs, {
+                method: "POST",
+                body: JSON.stringify({source: incident.equipment_id, signature: finding.signature}),
+            });
+            this.showCommandStatus("Anomalie acceptée comme connue : elle ne comptera plus dans les incidents de journaux.");
+            await this.load();
+        } catch (error) {
+            this.showError(`Acceptation impossible : ${this.errorMessage(error)}`);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    async revokeLogSignature(index, button) {
+        const item = this.acceptedLogSignatures[index];
+        if (!item) {
+            return;
+        }
+        button.disabled = true;
+        this.showError("");
+        try {
+            await requestJson(API.tsunadeRevokeLog, {
+                method: "POST",
+                body: JSON.stringify({source: item.source, signature: item.signature}),
+            });
+            this.showCommandStatus("Anomalie de nouveau comptée à partir du prochain contrôle.");
+            await this.load();
+        } catch (error) {
+            this.showError(`Retrait impossible : ${this.errorMessage(error)}`);
+        } finally {
+            button.disabled = false;
+        }
     }
 
     logSynthesis(context, incidentId) {
@@ -1287,16 +1372,27 @@ export class IncidentsController {
         const state = context.status === "OK" ? "sain" : "anomalie";
         const window = this.analysisWindow(context);
         const expanded = this.expandedLogAnomalies.has(incidentId);
-        const items = findings.map((finding) => {
+        const classified = Array.isArray(context.background_findings);
+        const acceptable = classified && this.incidents.some((incident) => incident.incident_id === incidentId
+            && incident.state === "active");
+        const items = findings.map((finding, index) => {
             const reference = finding.reference_occurrences == null
                 ? "aucune référence antérieure"
                 : `${finding.reference_occurrences} / ${window}`;
             const trend = TREND_LABELS[finding.trend] ?? this.readableIdentifier(finding.trend);
-            return `<li><strong>${escapeHtml(finding.signature ?? finding.summary)}</strong><span>${escapeHtml(finding.occurrences ?? 0)} occurrence(s) / ${escapeHtml(window)}</span><small>Référence : ${escapeHtml(reference)} · Évolution : ${escapeHtml(trend)}</small></li>`;
+            const accept = acceptable && finding.signature
+                ? `<button class="configuration-secondary-button" data-tsunade-accept-log="${escapeHtml(incidentId)}" data-finding-index="${index}" type="button" title="Ne plus compter cette anomalie dans les incidents de journaux">Accepter comme connue</button>`
+                : "";
+            return `<li><strong>${escapeHtml(finding.signature ?? finding.summary)}</strong><span>${escapeHtml(finding.occurrences ?? 0)} occurrence(s) / ${escapeHtml(window)}</span><small>Référence : ${escapeHtml(reference)} · Évolution : ${escapeHtml(trend)}</small>${accept}</li>`;
         }).join("");
-        const anomalyLabel = allFindings.length === 0
-            ? "Aucune anomalie regroupée"
-            : `${allFindings.length} anomalie(s) regroupée(s)${allFindings.length > findings.length ? ` · ${findings.length} présentées` : ""}`;
+        const background = classified ? context.background_findings.length : 0;
+        const accepted = Array.isArray(context.accepted_findings) ? context.accepted_findings.length : 0;
+        const noun = classified ? "anomalie(s) significative(s)" : "anomalie(s) regroupée(s)";
+        const anomalyLabel = (allFindings.length === 0
+            ? `Aucune ${classified ? "anomalie significative" : "anomalie regroupée"}`
+            : `${allFindings.length} ${noun}${allFindings.length > findings.length ? ` · ${findings.length} présentées` : ""}`)
+            + (background ? ` · ${background} sans gravité non comptée(s)` : "")
+            + (accepted ? ` · ${accepted} acceptée(s)` : "");
         return `<section class="incident-log-synthesis ${expanded ? "is-expanded" : ""}">
             <header>
                 <div>

@@ -86,6 +86,28 @@
     color: var(--ohana-health-critical);
 }
 
+/* Accepted signatures: one readable row each, never the source-tile grid. */
+.incidents-log-health__content .incidents-log-accepted ul {
+    grid-template-columns: 1fr;
+    margin-top: var(--ohana-space-2);
+}
+
+.incidents-log-health__content .incidents-log-accepted li {
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.incidents-log-accepted li > span {
+    flex: 1 1 20rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.incidents-log-accepted small {
+    color: var(--ohana-text-muted);
+}
+
 .incidents-summary-card {
     display: grid;
     gap: var(--ohana-space-1);
@@ -246,6 +268,10 @@
 
 .incident-card__findings,
 .incident-card__result,
+.incident-log-synthesis li > button {
+    justify-self: start;
+}
+
 .incident-card__evolution {
     margin: 1rem 0 0;
     color: var(--ohana-text-secondary);

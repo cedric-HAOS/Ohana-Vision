@@ -2,6 +2,15 @@
 
 ## Non publié
 
+- Santé des journaux : chaque source affiche « Sain », « Bruit de fond »
+  (anomalies sans gravité ou acceptées) ou « À examiner » (incident actif), au
+  lieu de « Anomalie » dès la moindre ligne suspecte. La liste des anomalies
+  acceptées comme connues propose « Compter à nouveau ».
+- Carte d'incident de journaux : chaque anomalie significative porte
+  « Accepter comme connue ». Le nombre d'anomalies sans gravité non comptées
+  et d'anomalies acceptées est indiqué à part. Routes relais
+  `/api/administration/tsunade/incidents/logs/accepted` et `…/revoke`.
+
 ## [1.27.1] — 2026-09-26 — Espace disque et cause des échecs
 
 - Carte d'incident : la cause d'une réparation en échec (« chrony.service est

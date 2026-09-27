@@ -250,6 +250,27 @@ def write_tsunade_log_policy(
     return _call(lambda: client.write_tsunade_log_policy(payload))
 
 
+@router.get("/tsunade/incidents/logs/accepted")
+def read_accepted_log_signatures(request: Request) -> dict[str, Any]:
+    """List log anomalies accepted as known noise."""
+    client = _client(request)
+    return _call(client.read_accepted_log_signatures)
+
+
+@router.post("/tsunade/incidents/logs/accepted")
+def accept_log_signature(payload: dict[str, Any], request: Request) -> dict[str, Any]:
+    """Accept one log anomaly as known noise in Tsunade."""
+    client = _client(request)
+    return _call(lambda: client.accept_log_signature(payload))
+
+
+@router.post("/tsunade/incidents/logs/accepted/revoke")
+def revoke_log_signature(payload: dict[str, Any], request: Request) -> dict[str, Any]:
+    """Count one accepted log anomaly again."""
+    client = _client(request)
+    return _call(lambda: client.revoke_log_signature(payload))
+
+
 @router.get("/tsunade/incidents/{incident_id}")
 def read_tsunade_incident(incident_id: str, request: Request) -> dict[str, Any]:
     """Expose one incident evolution through the existing administration proxy."""

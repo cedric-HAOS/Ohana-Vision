@@ -228,6 +228,17 @@ class FakeAdministrationClient:
             **payload,
         }
 
+    def read_accepted_log_signatures(self) -> dict[str, Any]:
+        return {"schema_version": 1, "signatures": list(self.accepted)}
+
+    def accept_log_signature(self, payload: dict[str, Any]) -> dict[str, Any]:
+        self.accepted.append(payload)
+        return self.read_accepted_log_signatures()
+
+    def revoke_log_signature(self, payload: dict[str, Any]) -> dict[str, Any]:
+        self.accepted.remove(payload)
+        return self.read_accepted_log_signatures()
+
     def read_job(self, job_id: str) -> dict[str, Any]:
         return {
             "job_id": job_id,
@@ -525,3 +536,22 @@ def test_administration_routes_translate_agent_errors() -> None:
 
     assert response.status_code == 422
     assert response.json()["detail"] == ("invalid DHCP configuration")
+
+
+def test_administration_routes_proxy_accepted_log_signatures() -> None:
+    fake = FakeAdministrationClient()
+    fake.accepted = []
+    client = make_client(fake)
+    signature = {"source": "ha-01", "signature": "tapo max retries"}
+
+    accepted = client.post(
+        "/api/administration/tsunade/incidents/logs/accepted", json=signature
+    )
+    listed = client.get("/api/administration/tsunade/incidents/logs/accepted")
+    revoked = client.post(
+        "/api/administration/tsunade/incidents/logs/accepted/revoke", json=signature
+    )
+
+    assert accepted.json()["signatures"] == [signature]
+    assert listed.json()["signatures"] == [signature]
+    assert revoked.json()["signatures"] == []

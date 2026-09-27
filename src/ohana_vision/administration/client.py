@@ -200,6 +200,18 @@ class AgentAdministrationClient:
         """Apply Agent's scheduled Tsunade log-control policy."""
         return self._request("PUT", "/v1/incidents/logs", payload)
 
+    def read_accepted_log_signatures(self) -> dict[str, Any]:
+        """List log anomalies accepted as known noise in Tsunade."""
+        return self._request("GET", "/v1/incidents/logs/accepted")
+
+    def accept_log_signature(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Stop counting one known log anomaly in Tsunade incidents."""
+        return self._request("POST", "/v1/incidents/logs/accepted", payload)
+
+    def revoke_log_signature(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Count one accepted log anomaly again from the next review."""
+        return self._request("POST", "/v1/incidents/logs/accepted/revoke", payload)
+
     def read_job(self, job_id: str) -> dict[str, Any]:
         """Read one distributed job while Vision follows its durable state."""
         return self._request("GET", f"/v1/jobs/{quote(job_id, safe='')}")
