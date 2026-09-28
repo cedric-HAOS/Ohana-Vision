@@ -1083,3 +1083,11 @@
     cursor: pointer;
     margin-bottom: var(--ohana-space-2);
 }
+
+.incidents-preventive__backfill {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ohana-space-2);
+}

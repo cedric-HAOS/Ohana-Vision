@@ -278,6 +278,13 @@ def read_preventive(request: Request) -> dict[str, Any]:
     return _call(client.read_preventive)
 
 
+@router.post("/tsunade/preventive/backfill")
+def request_preventive_backfill(request: Request) -> dict[str, Any]:
+    """Queue the Katsuyu history backfill; it never touches Konoha."""
+    client = _client(request)
+    return _call(client.request_preventive_backfill)
+
+
 @router.post("/tsunade/experiences/{experience_id}/state")
 def set_experience_state(
     experience_id: str, payload: dict[str, Any], request: Request

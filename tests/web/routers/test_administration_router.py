@@ -241,6 +241,9 @@ class FakeAdministrationClient:
     ) -> dict[str, Any]:
         return {"experience_id": experience_id, **payload}
 
+    def request_preventive_backfill(self) -> dict[str, Any]:
+        return {"type": "trends.history_backfill", "status": "QUEUED"}
+
     def read_preventive(self) -> dict[str, Any]:
         return {"schema_version": 1, "status": "stable", "watch": []}
 
@@ -614,6 +617,8 @@ def test_administration_routes_proxy_the_preventive_synthesis() -> None:
     response = client.get("/api/administration/tsunade/preventive")
 
     assert response.json() == {"schema_version": 1, "status": "stable", "watch": []}
+    queued = client.post("/api/administration/tsunade/preventive/backfill")
+    assert queued.json() == {"type": "trends.history_backfill", "status": "QUEUED"}
 
 
 def test_administration_routes_proxy_a_manual_resolution() -> None:

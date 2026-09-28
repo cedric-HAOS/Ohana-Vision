@@ -212,6 +212,12 @@ export class IncidentsController {
                 );
             }
         });
+        this.elements.preventive?.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-tsunade-preventive-backfill]");
+            if (button) {
+                void this.requestPreventiveBackfill(button);
+            }
+        });
         this.elements.experiences?.addEventListener("click", (event) => {
             const stateButton = event.target.closest("[data-tsunade-experience-state]");
             if (stateButton) {
@@ -398,7 +404,56 @@ export class IncidentsController {
                 <summary>Règles appliquées sur ${escapeHtml(preventive.window_days)} jours · évaluées le ${escapeHtml(formatDate(preventive.generated_at))}</summary>
                 <ul>${checks}</ul>
                 <p><small>La maintenance préventive signale seulement : elle n’ouvre pas d’incident et ne déclenche aucune réparation.</small></p>
-            </details>`;
+            </details>
+            ${this.preventiveBackfill(preventive.backfill)}`;
+    }
+
+    preventiveBackfill(backfill) {
+        if (!backfill?.available) {
+            return "";
+        }
+        const labels = {
+            CREATED: "en attente de Katsuyu",
+            QUEUED: "en attente de Katsuyu",
+            WAITING_WORKER: "en attente de Katsuyu",
+            RUNNING: "en cours",
+            SUCCEEDED: "terminé",
+            FAILED: "échoué",
+            TIMEOUT: "expiré sans Katsuyu",
+            CANCELLED: "annulé",
+        };
+        const job = backfill.job;
+        let status = "Aucun rattrapage demandé pour l’instant.";
+        let busy = false;
+        if (job) {
+            busy = ["CREATED", "QUEUED", "WAITING_WORKER", "RUNNING"].includes(job.status);
+            status = `Dernier rattrapage : ${labels[job.status] ?? job.status}, demandé le ${formatDate(job.created_at)}`;
+            if (job.status === "SUCCEEDED") {
+                status += job.days
+                    ? ` · ${job.days} jour(s) lu(s) dans Home Assistant${job.entity_id ? ` (${job.entity_id})` : ""}`
+                    : " · aucune statistique trouvée dans Home Assistant";
+            } else if (job.error) {
+                status += ` · ${job.error}`;
+            }
+            status += ".";
+        }
+        return `<div class="incidents-preventive__backfill">
+            <p><small>${escapeHtml(status)} Un jour mesuré par l’Agent n’est jamais remplacé.</small></p>
+            <button class="configuration-secondary-button" data-tsunade-preventive-backfill type="button"${busy ? " disabled" : ""}>Rattraper l’historique avec Katsuyu</button>
+        </div>`;
+    }
+
+    async requestPreventiveBackfill(button) {
+        button.disabled = true;
+        this.showError("");
+        try {
+            await requestJson(API.tsunadePreventiveBackfill, {method: "POST"});
+            this.showCommandStatus("Rattrapage demandé : Katsuyu lira l’historique de Home Assistant dès qu’il sera disponible.");
+            await this.load();
+        } catch (error) {
+            this.showError(`Rattrapage impossible : ${this.errorMessage(error)}`);
+            button.disabled = false;
+        }
     }
 
     preventiveFacts(check) {
@@ -411,10 +466,11 @@ export class IncidentsController {
         return nodes.map((node) => {
             if (check.id === "disk_growth") {
                 if (node.state === "insufficient_data") {
-                    return `${label(node.node_id)} : ${node.days} jour(s) mesuré(s)`;
+                    return `${label(node.node_id)} : ${node.days} jour(s) mesuré(s) sur 4 nécessaires`;
                 }
                 const slope = Number(node.slope_points_per_day ?? 0);
-                return `${label(node.node_id)} : ${number(node.latest_percent)} %, ${slope >= 0 ? "+" : ""}${number(slope)} point/jour`;
+                const rebuilt = node.rebuilt_days ? ` (dont ${node.rebuilt_days} reconstruit(s) depuis Home Assistant)` : "";
+                return `${label(node.node_id)} : ${number(node.latest_percent)} %, ${slope >= 0 ? "+" : ""}${number(slope)} point/jour sur ${node.days} jours${rebuilt}`;
             }
             return `${label(node.node_id)} : ${node.count} en ${this.preventive.window_days} jours`;
         }).join(" · ");

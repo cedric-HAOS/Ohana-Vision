@@ -218,6 +218,10 @@ class AgentAdministrationClient:
         """Phase 4: the preventive synthesis and the detail of each rule."""
         return self._request("GET", "/v1/preventive")
 
+    def request_preventive_backfill(self) -> dict[str, Any]:
+        """Ask Katsuyu to rebuild missing days from Home Assistant."""
+        return self._request("POST", "/v1/preventive/backfill")
+
     def set_experience_state(
         self, experience_id: str, payload: dict[str, Any]
     ) -> dict[str, Any]:
