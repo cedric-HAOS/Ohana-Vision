@@ -117,6 +117,9 @@ def create_app(
 
     if context is not None:
         app.state.context = context
+        gateway = getattr(context.runtime, "shizune_gateway", None)
+        if gateway is not None:
+            gateway.configured = companion_client is not None
 
     app.state.websocket_hub = websocket_hub or WebSocketHub()
 

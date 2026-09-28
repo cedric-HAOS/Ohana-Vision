@@ -2,6 +2,11 @@
 
 ## Non publié
 
+- Phase 5, lot 4 : Vision mesure sa passerelle Shizune (`shizune_gateway`
+  dans `GET /api/runtime/vitals`) : `unconfigured`, `unused`, `available`,
+  `failing`, dernier succès et dernier échec à l'heure de Paris avec la
+  cause. Seuls un Agent injoignable ou une erreur 5xx comptent comme panne ;
+  un refus de l'Agent (4xx) prouve que le pont fonctionne. Mémoire seule.
 - Phase 5, lot 3 : Vision repère l'Agent silencieux après 300 s sans
   ingestion avec sa propre horloge monotone (`agent` dans les vitaux).
   Bandeau global actualisé toutes les 15 s sans dépendre d'événements Agent ;

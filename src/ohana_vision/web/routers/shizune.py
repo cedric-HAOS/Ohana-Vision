@@ -7,6 +7,7 @@ from fastapi import APIRouter, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
 from ohana_vision.administration import AgentCompanionClient, AgentCompanionError
+from ohana_vision.runtime.shizune_gateway import ShizuneGateway, record_call
 
 router = APIRouter(prefix="/shizune", tags=["shizune"])
 
@@ -21,16 +22,25 @@ def _client(request: Request) -> AgentCompanionClient:
     return client
 
 
-def _call(operation: Callable[[], dict[str, Any]]) -> JSONResponse:
+def _gateway(request: Request) -> tuple[ShizuneGateway | None, Callable[[], Any]]:
+    runtime = getattr(getattr(request.app.state, "context", None), "runtime", None)
+    gateway = getattr(runtime, "shizune_gateway", None)
+    if gateway is None:
+        return None, lambda: None
+    return gateway, runtime.clock
+
+
+def _call(request: Request, operation: Callable[[], dict[str, Any]]) -> JSONResponse:
+    gateway, clock = _gateway(request)
     try:
         document = operation()
     except AgentCompanionError as error:
-        status_code = (
-            error.status_code
-            if error.status_code is not None and 400 <= error.status_code < 500
-            else status.HTTP_502_BAD_GATEWAY
-        )
+        answered = error.status_code is not None and 400 <= error.status_code < 500
+        # Phase 5: an Agent refusal still proves the bridge; not an outage.
+        record_call(gateway, clock, reached_agent=answered, reason=str(error))
+        status_code = error.status_code if answered else status.HTTP_502_BAD_GATEWAY
         raise HTTPException(status_code=status_code, detail=str(error)) from error
+    record_call(gateway, clock, reached_agent=True)
     return JSONResponse(document, headers={"Cache-Control": "no-store"})
 
 
@@ -49,7 +59,7 @@ def _identity(
 
 @router.post("/pairings")
 def create_pairing(request: Request, payload: dict[str, Any]) -> JSONResponse:
-    return _call(lambda: _client(request).create_pairing(payload))
+    return _call(request, lambda: _client(request).create_pairing(payload))
 
 
 @router.post("/pairings/{pairing_id}/poll")
@@ -58,7 +68,7 @@ def poll_pairing(
     request: Request,
     payload: dict[str, Any],
 ) -> JSONResponse:
-    return _call(lambda: _client(request).poll_pairing(pairing_id, payload))
+    return _call(request, lambda: _client(request).poll_pairing(pairing_id, payload))
 
 
 @router.get("/summary")
@@ -68,7 +78,7 @@ def read_summary(
     companion_id: str | None = Header(default=None, alias="X-Ohana-Companion-Id"),
 ) -> JSONResponse:
     device_id, token = _identity(authorization, companion_id)
-    return _call(lambda: _client(request).read_summary(device_id, token))
+    return _call(request, lambda: _client(request).read_summary(device_id, token))
 
 
 @router.get("/requests")
@@ -78,7 +88,7 @@ def read_requests(
     companion_id: str | None = Header(default=None, alias="X-Ohana-Companion-Id"),
 ) -> JSONResponse:
     device_id, token = _identity(authorization, companion_id)
-    return _call(lambda: _client(request).read_requests(device_id, token))
+    return _call(request, lambda: _client(request).read_requests(device_id, token))
 
 
 @router.get("/activity")
@@ -88,7 +98,7 @@ def read_activity(
     companion_id: str | None = Header(default=None, alias="X-Ohana-Companion-Id"),
 ) -> JSONResponse:
     device_id, token = _identity(authorization, companion_id)
-    return _call(lambda: _client(request).read_activity(device_id, token))
+    return _call(request, lambda: _client(request).read_activity(device_id, token))
 
 
 @router.post("/requests/{request_id}/response")
@@ -101,12 +111,13 @@ def respond(
 ) -> JSONResponse:
     device_id, token = _identity(authorization, companion_id)
     return _call(
+        request,
         lambda: _client(request).respond(
             request_id,
             payload,
             device_id,
             token,
-        )
+        ),
     )
 
 
@@ -118,4 +129,6 @@ def diagnose(
     companion_id: str | None = Header(default=None, alias="X-Ohana-Companion-Id"),
 ) -> JSONResponse:
     device_id, token = _identity(authorization, companion_id)
-    return _call(lambda: _client(request).diagnose(incident_id, device_id, token))
+    return _call(
+        request, lambda: _client(request).diagnose(incident_id, device_id, token)
+    )

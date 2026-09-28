@@ -4,8 +4,12 @@ from typing import Any, cast
 
 from fastapi.testclient import TestClient
 
-from ohana_vision.administration import AgentCompanionClient
+from ohana_vision.administration import AgentCompanionClient, AgentCompanionError
+from ohana_vision.domain import ObservationStore
+from ohana_vision.runtime import BackendRuntime
+from ohana_vision.timeline import TimelineEngine
 from ohana_vision.web import create_app
+from ohana_vision.web.application_context import ApplicationContext
 
 
 class FakeCompanionClient:
@@ -132,3 +136,55 @@ def test_structured_response_is_forwarded_without_free_form_action() -> None:
             "scoped-secret",
         )
     ]
+
+
+def _gateway_client(
+    companion: object | None,
+) -> tuple[TestClient, BackendRuntime]:
+    runtime = BackendRuntime()
+    context = ApplicationContext(
+        runtime=runtime,
+        observation_store=cast(ObservationStore, object()),
+        timeline_engine=cast(TimelineEngine, object()),
+    )
+    app = create_app(context, companion_client=cast(AgentCompanionClient, companion))
+    return TestClient(app), runtime
+
+
+SESSION = {"Authorization": "Bearer scoped-secret", "X-Ohana-Companion-Id": "pwa"}
+
+
+def test_gateway_state_follows_relayed_calls() -> None:
+    class Flaky(FakeCompanionClient):
+        def __init__(self) -> None:
+            super().__init__()
+            self.error: AgentCompanionError | None = None
+
+        def read_summary(self, device_id: str, token: str) -> dict[str, Any]:
+            if self.error is not None:
+                raise self.error
+            return super().read_summary(device_id, token)
+
+    companion = Flaky()
+    client, runtime = _gateway_client(companion)
+    assert runtime.shizune_gateway.snapshot()["state"] == "unused"
+
+    assert client.get("/api/shizune/summary", headers=SESSION).status_code == 200
+    assert runtime.shizune_gateway.snapshot()["state"] == "available"
+
+    companion.error = AgentCompanionError("Agent injoignable")
+    assert client.get("/api/shizune/summary", headers=SESSION).status_code == 502
+    failing = runtime.shizune_gateway.snapshot()
+    assert failing["state"] == "failing"
+    assert failing["last_failure"] == "Agent injoignable"
+    assert str(failing["last_failure_at"]).endswith(("+01:00", "+02:00"))
+
+    # A refusal answered by the Agent proves the bridge works again.
+    companion.error = AgentCompanionError("Session révoquée", status_code=401)
+    assert client.get("/api/shizune/summary", headers=SESSION).status_code == 401
+    assert runtime.shizune_gateway.snapshot()["state"] == "available"
+
+
+def test_gateway_is_unconfigured_without_companion_client() -> None:
+    _, runtime = _gateway_client(None)
+    assert runtime.vitals()["shizune_gateway"]["state"] == "unconfigured"

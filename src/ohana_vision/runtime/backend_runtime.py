@@ -13,6 +13,7 @@ from ohana_vision.runtime.backend_runtime_state import (
 )
 from ohana_vision.runtime.runtime_snapshot import RuntimeSnapshot
 from ohana_vision.runtime.runtime_statistics import RuntimeStatistics
+from ohana_vision.runtime.shizune_gateway import ShizuneGateway
 
 
 class BackendRuntimeError(RuntimeError):
@@ -38,6 +39,7 @@ class BackendRuntime:
 
     clock: Callable[[], datetime] = utc_now
     agent_presence: AgentPresence = field(default_factory=AgentPresence)
+    shizune_gateway: ShizuneGateway = field(default_factory=ShizuneGateway)
     state: BackendRuntimeState = field(
         default=BackendRuntimeState.CREATED,
         init=False,
@@ -185,6 +187,7 @@ class BackendRuntime:
             "errors": self.statistics.errors,
             "generated_at": _paris_iso(now),
             "agent": self.agent_presence.snapshot(now=now, running=self.running),
+            "shizune_gateway": self.shizune_gateway.snapshot(),
         }
 
     def snapshot(
