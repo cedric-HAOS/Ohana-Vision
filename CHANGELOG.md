@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Version de Shizune au pied de page lue sans cache : après le déploiement de
+  Shizune 0.4.0 le 28 septembre, un navigateur affichait encore v0.3.0.
+
 ## [1.30.0] — 2026-09-28 — Maintenance préventive
 
 Publiée le jour même de 1.29.1, à la demande de l'utilisateur. Requiert

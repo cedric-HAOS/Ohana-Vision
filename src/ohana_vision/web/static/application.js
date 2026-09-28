@@ -3,6 +3,7 @@
 import {
     API,
     fetchJson,
+    requestJson,
 } from "./api.js";
 
 import {
@@ -683,8 +684,11 @@ export class ApplicationController {
         }
 
         try {
-            const payload = await fetchJson(
+            // Static file: without no-store a browser kept showing the
+            // previous Shizune version after an update (28 September).
+            const payload = await requestJson(
                 API.shizuneVersion,
+                {method: "GET", cache: "no-store"},
             );
             const version = String(
                 payload?.version
