@@ -388,6 +388,13 @@
         url("../assets/icons/services/braces.svg");
 }
 
+.sidebar-navigation__icon--ohana {
+    mask-image:
+        url("../assets/icons/observability/heart-pulse.svg");
+    -webkit-mask-image:
+        url("../assets/icons/observability/heart-pulse.svg");
+}
+
 .sidebar-navigation__icon--host {
     mask-image:
         url("../assets/icons/hardware/cpu.svg");

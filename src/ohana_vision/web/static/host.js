@@ -28,6 +28,10 @@ const REASON_LABELS = Object.freeze({
     agent_restarts_degraded: "Redémarrages Agent détectés",
     agent_restarts_critical: "Boucle de redémarrage Agent",
     systemd_units_failed: "Unités systemd Ohana en échec",
+    systemd_units_inactive: "Unités systemd Ohana arrêtées",
+    agent_components_stale: "Composant interne de l’Agent muet",
+    vision_http_unavailable: "Vision injoignable",
+    vision_ingestion_stale: "Vision n’ingère plus",
 });
 
 const RESOURCE_THRESHOLDS = Object.freeze({

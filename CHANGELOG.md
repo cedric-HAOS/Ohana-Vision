@@ -2,6 +2,11 @@
 
 ## Non publié
 
+- Phase 5, lot 5 : vue **Ohana** (navigation, après « Hôte ») avec une carte
+  par composant — Agent, Vision, Katsuyu, Shizune —, chacune lue à sa propre
+  source : une source indisponible n'en masque aucune autre. Katsuyu éteint
+  est « Hors ligne », présenté comme normal. Heures de Paris. La page Hôte
+  nomme les raisons de la Phase 5.
 - Shizune servi avec `Cache-Control: no-cache`, comme l'interface Vision :
   sans cet en-tête, Safari sur iPhone pouvait garder l'ancien `app.js` de
   Shizune pendant un à deux jours (fraîcheur heuristique) et n'affichait pas

@@ -1,0 +1,127 @@
+/* Phase 5: vital state of Ohana's own components. */
+.ohana-view {
+    display: grid;
+    gap: var(--ohana-space-5);
+}
+
+.ohana-view__updated,
+.ohana-view__note {
+    color: var(--ohana-text-muted);
+    font-size: 0.85rem;
+}
+
+.ohana-components {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: var(--ohana-space-5);
+}
+
+.ohana-component {
+    --component-color: var(--ohana-health-unknown);
+    --component-soft: var(--ohana-health-unknown-soft);
+    display: grid;
+    align-content: start;
+    gap: var(--ohana-space-3);
+    min-width: 0;
+    padding: var(--ohana-space-5);
+    border: var(--ohana-border-width-thin) solid var(--ohana-border-default);
+    border-top: 3px solid var(--component-color);
+    border-radius: var(--ohana-radius-xl);
+    background: var(--ohana-background-surface);
+    box-shadow: var(--ohana-shadow-sm);
+    overflow-wrap: anywhere;
+}
+
+.ohana-component[data-state="healthy"],
+.ohana-component__rows li[data-state="healthy"] {
+    --component-color: var(--ohana-health-healthy);
+    --component-soft: var(--ohana-health-healthy-soft);
+}
+
+.ohana-component[data-state="degraded"],
+.ohana-component__rows li[data-state="degraded"] {
+    --component-color: var(--ohana-health-degraded);
+    --component-soft: var(--ohana-health-degraded-soft);
+}
+
+.ohana-component[data-state="critical"],
+.ohana-component__rows li[data-state="critical"] {
+    --component-color: var(--ohana-health-critical);
+    --component-soft: var(--ohana-health-critical-soft);
+}
+
+.ohana-component__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ohana-space-3);
+}
+
+.ohana-component__header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+}
+
+.ohana-component__badge {
+    padding: 0.2rem 0.7rem;
+    border: 1px solid color-mix(in srgb, var(--component-color) 55%, transparent);
+    border-radius: var(--ohana-radius-round);
+    background: var(--component-soft);
+    color: var(--ohana-text-primary);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.ohana-component__summary {
+    margin: 0;
+    color: var(--ohana-text-secondary);
+}
+
+.ohana-component__facts {
+    display: grid;
+    gap: var(--ohana-space-2);
+    margin: 0;
+}
+
+.ohana-component__facts div {
+    display: grid;
+    grid-template-columns: minmax(8rem, 40%) 1fr;
+    gap: var(--ohana-space-3);
+}
+
+.ohana-component__facts dt {
+    color: var(--ohana-text-muted);
+}
+
+.ohana-component__facts dd {
+    margin: 0;
+}
+
+.ohana-component__rows {
+    display: grid;
+    gap: var(--ohana-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ohana-component__rows li {
+    --component-color: var(--ohana-health-unknown);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.15rem var(--ohana-space-3);
+    padding: var(--ohana-space-3);
+    border-left: 3px solid var(--component-color);
+    border-radius: var(--ohana-radius-md);
+    background: var(--ohana-background-canvas);
+}
+
+.ohana-component__rows small {
+    grid-column: 1 / -1;
+    color: var(--ohana-text-muted);
+}
+
+.ohana-component__empty {
+    margin: 0;
+    color: var(--ohana-text-muted);
+}

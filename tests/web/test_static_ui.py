@@ -1702,6 +1702,7 @@ def test_stylesheet_entrypoint_imports_all_responsibility_modules() -> None:
         '@import url("./styles/topology.css");',
         '@import url("./styles/services.css");',
         '@import url("./styles/host.css");',
+        '@import url("./styles/ohana.css");',
         '@import url("./styles/device-details.css");',
         '@import url("./styles/timeline.css");',
         '@import url("./styles/configuration.css");',
@@ -3140,3 +3141,50 @@ def test_only_refused_or_failed_requests_reach_the_journal(caplog) -> None:
     assert [record.levelno for record in records] == [logging.INFO]
     assert '"GET /ui/missing.js" 404' in records[0].getMessage()
     assert "query-secret" not in caplog.text
+
+
+def test_ohana_view_is_reachable_from_the_sidebar() -> None:
+    """Phase 5: the Ohana components view has its own navigation entry."""
+    response = make_client().get("/ui/")
+
+    assert response.status_code == 200
+    assert 'data-navigation-target="ohana"' in response.text
+    assert 'data-view="ohana"' in response.text
+    assert 'id="ohana-components"' in response.text
+
+
+def test_ohana_view_reads_each_component_at_its_own_source() -> None:
+    """One unavailable source must never hide the other components."""
+    script = make_client().get("/ui/ohana.js").text
+
+    for source in (
+        "API.runtimeVitals",
+        "API.hostHealth",
+        "API.administrationWorkers",
+        "API.administrationCompanions",
+    ):
+        assert source in script
+    # Each read is settled on its own instead of failing the whole view.
+    assert "async function settle(url)" in script
+    # Katsuyu offline is informative, never a failure.
+    assert '"offline"' in script
+    assert 'timeZone: "Europe/Paris"' in script
+
+
+def test_application_loads_the_ohana_view_on_activation() -> None:
+    script = make_client().get("/ui/application.js").text
+
+    assert 'import {OhanaController} from "./ohana.js";' in script
+    assert 'viewName === "ohana"' in script
+
+
+def test_host_labels_phase_5_reasons() -> None:
+    script = make_client().get("/ui/host.js").text
+
+    for reason in (
+        "agent_components_stale",
+        "vision_http_unavailable",
+        "vision_ingestion_stale",
+        "systemd_units_inactive",
+    ):
+        assert f"{reason}:" in script

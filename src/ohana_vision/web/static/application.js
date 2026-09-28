@@ -28,6 +28,7 @@ import {
 } from "./host.js";
 
 import {AgentPresenceController} from "./agent_presence.js";
+import {OhanaController} from "./ohana.js";
 
 import {
     NavigationController,
@@ -263,8 +264,13 @@ export class ApplicationController {
             });
 
         this.host = new HostController();
+        this.ohana = new OhanaController();
         this.agentPresence = new AgentPresenceController({
-            onUpdate: (presence) => this.host.setAgentPresence(presence),
+            onUpdate: (presence) => {
+                this.host.setAgentPresence(presence);
+                // Phase 5: the Ohana view follows the same 15 s reading.
+                if (this.navigation?.activeView === "ohana") void this.ohana.load();
+            },
         });
 
         this.navigation =
@@ -353,6 +359,10 @@ export class ApplicationController {
 
         if (viewName === "host") {
             void this.host.load();
+        }
+
+        if (viewName === "ohana") {
+            void this.ohana.load();
         }
 
         if (
@@ -595,6 +605,10 @@ export class ApplicationController {
                 dataOperations.push(
                     this.host.load(),
                 );
+            }
+
+            if (this.navigation.activeView === "ohana") {
+                dataOperations.push(this.ohana.load());
             }
 
             if (
