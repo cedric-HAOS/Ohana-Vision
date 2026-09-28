@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.29.1] — 2026-09-28 — Réparations connues accessibles et cause des 502
+
 - Administration : quand l'Agent échoue sans refus explicite, Vision répond
   toujours 502 mais journalise la cause en `WARNING` (« Ohana-Agent
   administration failed: … »). Le 28 septembre, seize 502 sur la liste des
