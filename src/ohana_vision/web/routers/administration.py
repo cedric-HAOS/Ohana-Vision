@@ -271,6 +271,13 @@ def read_experiences(request: Request) -> dict[str, Any]:
     return _call(client.read_experiences)
 
 
+@router.get("/tsunade/preventive")
+def read_preventive(request: Request) -> dict[str, Any]:
+    """Tsunade's preventive synthesis: drifts to watch, never repairs."""
+    client = _client(request)
+    return _call(client.read_preventive)
+
+
 @router.post("/tsunade/experiences/{experience_id}/state")
 def set_experience_state(
     experience_id: str, payload: dict[str, Any], request: Request

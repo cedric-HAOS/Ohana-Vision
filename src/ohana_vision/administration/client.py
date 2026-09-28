@@ -214,6 +214,10 @@ class AgentAdministrationClient:
         """List Tsunade's known repairs with their history and state."""
         return self._request("GET", "/v1/experiences")
 
+    def read_preventive(self) -> dict[str, Any]:
+        """Phase 4: the preventive synthesis and the detail of each rule."""
+        return self._request("GET", "/v1/preventive")
+
     def set_experience_state(
         self, experience_id: str, payload: dict[str, Any]
     ) -> dict[str, Any]:

@@ -68,6 +68,8 @@ export class IncidentsController {
         this.acceptedLogSignatures = [];
         // undefined until loaded; null when the Agent has no experience route.
         this.experiences = undefined;
+        // Same convention for the Phase 4 preventive synthesis.
+        this.preventive = undefined;
         // Manual forms survive the periodic re-render, with their draft.
         this.manualForms = new Set();
         this.manualDrafts = new Map();
@@ -88,6 +90,7 @@ export class IncidentsController {
             repairSuccessRate: document.querySelector("#incidents-repair-success-rate"),
             logHealth: document.querySelector("#tsunade-log-health"),
             experiences: document.querySelector("#tsunade-experiences"),
+            preventive: document.querySelector("#tsunade-preventive"),
             filters: Array.from(document.querySelectorAll("[data-incidents-filter]")),
             logCheck: document.querySelector("#tsunade-log-check"),
             commandStatus: document.querySelector("#incidents-command-status"),
@@ -259,6 +262,13 @@ export class IncidentsController {
                 }
             });
         }
+        const preventiveRequest = fetchJson(API.tsunadePreventive)
+            .then((payload) => (payload && typeof payload === "object" ? payload : null))
+            .catch(() => null);
+        void preventiveRequest.then((preventive) => {
+            this.preventive = preventive;
+            this.renderPreventive();
+        });
         const acceptedRequest = fetchJson(API.tsunadeAcceptedLogs)
             .then((accepted) => (Array.isArray(accepted?.signatures) ? accepted.signatures : []))
             .catch(() => []);
@@ -349,6 +359,67 @@ export class IncidentsController {
         container.innerHTML = `<ul>${items}</ul><p><small>Une réparation désactivée ou obsolète n’est plus proposée ; son historique est conservé.</small></p>`;
     }
 
+    renderPreventive() {
+        const container = this.elements.preventive;
+        if (!container) {
+            return;
+        }
+        if (this.preventive === undefined) {
+            container.innerHTML = "<p>Évaluation des tendances…</p>";
+            return;
+        }
+        if (this.preventive === null) {
+            container.innerHTML = "<p>Maintenance préventive indisponible avec cette version d’Ohana-Agent.</p>";
+            return;
+        }
+        const preventive = this.preventive;
+        const watch = Array.isArray(preventive.watch) ? preventive.watch : [];
+        const drifts = watch.length
+            ? `<ul class="incidents-preventive__watch">${watch.map((item) => `<li class="${item.urgent ? "is-urgent" : ""}">
+                <strong>${escapeHtml(item.title)}</strong>
+                <small>${escapeHtml(item.detail ?? "")}</small>
+            </li>`).join("")}</ul>`
+            : "<p>Aucune dérive détectée.</p>";
+        const stateLabels = {ok: "Normal", watch: "À surveiller", insufficient_data: "Historique insuffisant"};
+        const checks = (Array.isArray(preventive.checks) ? preventive.checks : []).map((check) => `<li class="is-${escapeHtml(check.state)}">
+                <div class="incidents-experience__title">
+                    <strong>${escapeHtml(check.title)}</strong>
+                    <span class="incidents-experience__state">${escapeHtml(stateLabels[check.state] ?? check.state)}</span>
+                </div>
+                <small>${escapeHtml(check.rule)}</small>
+                <small>${escapeHtml(this.preventiveFacts(check))}</small>
+            </li>`).join("");
+        // The periodic refresh must not fold the rules the user just opened.
+        const open = container.querySelector("details")?.open ? " open" : "";
+        container.innerHTML = `<p><strong>${escapeHtml(preventive.headline)}</strong></p>
+            ${drifts}
+            <p class="incidents-preventive__conclusion">${escapeHtml(preventive.conclusion)}</p>
+            <details class="incidents-preventive__rules"${open}>
+                <summary>Règles appliquées sur ${escapeHtml(preventive.window_days)} jours · évaluées le ${escapeHtml(formatDate(preventive.generated_at))}</summary>
+                <ul>${checks}</ul>
+                <p><small>La maintenance préventive signale seulement : elle n’ouvre pas d’incident et ne déclenche aucune réparation.</small></p>
+            </details>`;
+    }
+
+    preventiveFacts(check) {
+        const nodes = Array.isArray(check.nodes) ? check.nodes : [];
+        if (!nodes.length) {
+            return "Aucune donnée pour l’instant.";
+        }
+        const label = (id) => LOG_SOURCE_LABELS[id] ?? String(id).toUpperCase();
+        const number = (value) => Number(value ?? 0).toLocaleString("fr-FR", {maximumFractionDigits: 1});
+        return nodes.map((node) => {
+            if (check.id === "disk_growth") {
+                if (node.state === "insufficient_data") {
+                    return `${label(node.node_id)} : ${node.days} jour(s) mesuré(s)`;
+                }
+                const slope = Number(node.slope_points_per_day ?? 0);
+                return `${label(node.node_id)} : ${number(node.latest_percent)} %, ${slope >= 0 ? "+" : ""}${number(slope)} point/jour`;
+            }
+            return `${label(node.node_id)} : ${node.count} en ${this.preventive.window_days} jours`;
+        }).join(" · ");
+    }
+
     experienceAction(action) {
         const operation = String(action?.operation ?? "");
         const target = String(action?.target ?? "");
@@ -386,6 +457,7 @@ export class IncidentsController {
     render() {
         this.renderSummary();
         this.renderExperiences();
+        this.renderPreventive();
         this.renderExperiencePending();
         this.elements.filters.forEach((button) => {
             const active = button.dataset.incidentsFilter === this.filter;

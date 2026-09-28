@@ -241,6 +241,9 @@ class FakeAdministrationClient:
     ) -> dict[str, Any]:
         return {"experience_id": experience_id, **payload}
 
+    def read_preventive(self) -> dict[str, Any]:
+        return {"schema_version": 1, "status": "stable", "watch": []}
+
     def read_accepted_log_signatures(self) -> dict[str, Any]:
         return {"schema_version": 1, "signatures": list(self.accepted)}
 
@@ -603,6 +606,14 @@ def test_administration_routes_proxy_known_repairs() -> None:
 
     assert listed.json()["experiences"] == [{"experience_id": "e1"}]
     assert disabled.json() == {"experience_id": "e1", "state": "disabled"}
+
+
+def test_administration_routes_proxy_the_preventive_synthesis() -> None:
+    client = make_client(FakeAdministrationClient())
+
+    response = client.get("/api/administration/tsunade/preventive")
+
+    assert response.json() == {"schema_version": 1, "status": "stable", "watch": []}
 
 
 def test_administration_routes_proxy_a_manual_resolution() -> None:

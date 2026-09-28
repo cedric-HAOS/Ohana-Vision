@@ -1043,3 +1043,43 @@
         background: var(--ohana-border-default);
     }
 }
+
+/* Phase 4: preventive synthesis, rules folded below it. */
+.incidents-preventive__content {
+    display: grid;
+    gap: var(--ohana-space-2);
+}
+
+.incidents-preventive__content ul {
+    display: grid;
+    gap: var(--ohana-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.incidents-preventive__content li {
+    display: grid;
+    gap: var(--ohana-space-1);
+    padding: var(--ohana-space-2) var(--ohana-space-3);
+    border: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+    border-radius: var(--ohana-radius-sm);
+    overflow-wrap: anywhere;
+}
+
+.incidents-preventive__watch li {
+    border-left: 3px solid var(--ohana-health-degraded, var(--ohana-border-subtle));
+}
+
+.incidents-preventive__watch li.is-urgent {
+    border-left-color: var(--ohana-health-critical);
+}
+
+.incidents-preventive__content small {
+    color: var(--ohana-text-muted);
+}
+
+.incidents-preventive__rules summary {
+    cursor: pointer;
+    margin-bottom: var(--ohana-space-2);
+}
