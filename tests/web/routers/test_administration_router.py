@@ -551,6 +551,28 @@ def test_administration_routes_translate_agent_errors() -> None:
     assert response.json()["detail"] == ("invalid DHCP configuration")
 
 
+def test_administration_gateway_errors_log_the_agent_cause(caplog) -> None:
+    # 28 September: sixteen 502 on the incident list, none with a cause.
+    class TimingOutClient(FakeAdministrationClient):
+        def read_dhcp(self) -> dict[str, Any]:
+            raise AgentAdministrationError(
+                "Ohana-Agent administration is unavailable: timed out"
+            )
+
+    with caplog.at_level("WARNING", logger="ohana_vision.web.routers.administration"):
+        response = make_client(TimingOutClient()).get("/api/administration/dhcp")
+
+    assert response.status_code == 502
+    assert [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "ohana_vision.web.routers.administration"
+    ] == [
+        "Ohana-Agent administration failed: "
+        "Ohana-Agent administration is unavailable: timed out"
+    ]
+
+
 def test_administration_routes_proxy_accepted_log_signatures() -> None:
     fake = FakeAdministrationClient()
     fake.accepted = []

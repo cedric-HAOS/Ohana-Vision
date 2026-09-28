@@ -1,5 +1,6 @@
 """Administration routes proxied to the Agent-owned API."""
 
+import logging
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
@@ -8,6 +9,8 @@ from ohana_vision.administration import (
     AgentAdministrationClient,
     AgentAdministrationError,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/administration",
@@ -35,6 +38,8 @@ def _call(operation: Any) -> dict[str, Any]:
             status_code = error.status_code
         else:
             status_code = status.HTTP_502_BAD_GATEWAY
+            # The access log line only shows "502": keep the Agent-side cause.
+            LOGGER.warning("Ohana-Agent administration failed: %s", error)
 
         raise HTTPException(
             status_code=status_code,

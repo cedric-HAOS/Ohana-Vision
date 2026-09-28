@@ -2,6 +2,10 @@
 
 ## Non publié
 
+- Administration : quand l'Agent échoue sans refus explicite, Vision répond
+  toujours 502 mais journalise la cause en `WARNING` (« Ohana-Agent
+  administration failed: … »). Le 28 septembre, seize 502 sur la liste des
+  incidents Tsunade ne laissaient que la ligne d'accès.
 - Tsunade : « Contrôles, bilan et réparations connues » déplié défile dans
   sa propre zone. Le panneau coupait tout ce qui dépassait sa hauteur, et le
   bouton « Réactiver » d'une réparation connue devenait inaccessible.
