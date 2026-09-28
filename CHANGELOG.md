@@ -2,6 +2,26 @@
 
 ## Non publié
 
+## [1.30.0] — 2026-09-28 — Maintenance préventive
+
+Publiée le jour même de 1.29.1, à la demande de l'utilisateur. Requiert
+Ohana-Agent 1.39.0 ; avec un Agent plus ancien, la section l'indique.
+
+- Tsunade : section « Maintenance préventive », hors de l'historique replié.
+  Elle affiche la synthèse de Tsunade (« Konoha est stable. », dérives à
+  surveiller avec leur détail, les urgentes marquées, conclusion), puis les
+  règles appliquées sur 7 jours avec leur état (Normal, À surveiller,
+  Historique insuffisant) et les faits par nœud, nombres en français. Les
+  règles restent dépliées d'une actualisation à l'autre.
+- Rattrapage de l'historique : état du dernier rattrapage Katsuyu (en
+  attente, en cours, terminé avec les jours lus dans Home Assistant, échoué,
+  expiré) et bouton « Rattraper l'historique avec Katsuyu » quand l'Agent le
+  propose. Les faits du disque indiquent les jours reconstruits depuis Home
+  Assistant.
+- Routes `GET /api/administration/tsunade/preventive` et
+  `POST /api/administration/tsunade/preventive/backfill`, relais des routes
+  de l'Agent.
+
 ## [1.29.1] — 2026-09-28 — Réparations connues accessibles et cause des 502
 
 - Administration : quand l'Agent échoue sans refus explicite, Vision répond
