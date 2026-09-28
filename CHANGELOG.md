@@ -2,6 +2,11 @@
 
 ## Non publié
 
+## [1.31.0] — 2026-09-28 — Ohana supervise Ohana
+
+Publiée le jour même de 1.30.0, à la demande de l'utilisateur.
+À déployer **avant** Ohana-Agent 1.40.0, qui lit `/api/runtime/vitals`.
+
 - Phase 5, lot 5 : vue **Ohana** (navigation, après « Hôte ») avec une carte
   par composant — Agent, Vision, Katsuyu, Shizune —, chacune lue à sa propre
   source : une source indisponible n'en masque aucune autre. Katsuyu éteint
