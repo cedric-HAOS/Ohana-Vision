@@ -3,7 +3,9 @@
 import {API, fetchJson, requestJson} from "./api.js";
 import {escapeHtml, formatDate} from "./utils.js";
 
-const SEVERITY_LABELS = Object.freeze({degraded: "Dégradé", critical: "Critique"});
+// Mirrors Ohana-Agent: a manual fix can be declared 10 minutes after recovery.
+const MANUAL_LATE_DECLARATION_MS = 10 * 60 * 1000;
+const SEVERITY_LABELS =Object.freeze({degraded: "Dégradé", critical: "Critique"});
 const WORKFLOW_LABELS = Object.freeze({
     new: "Nouveau",
     in_progress: "En cours",
@@ -64,7 +66,8 @@ export class IncidentsController {
         this.summary = {};
         this.logHealth = null;
         this.acceptedLogSignatures = [];
-        this.experiences = null;
+        // undefined until loaded; null when the Agent has no experience route.
+        this.experiences = undefined;
         // Manual forms survive the periodic re-render, with their draft.
         this.manualForms = new Set();
         this.manualDrafts = new Map();
@@ -243,6 +246,22 @@ export class IncidentsController {
 
     async load() {
         this.showError("");
+        // Requested with the incidents: on INFRA-01 the incident details take
+        // several seconds, and the section said "none" meanwhile.
+        const experiencesRequest = fetchJson(API.tsunadeExperiences)
+            .then((payload) => (Array.isArray(payload?.experiences) ? payload.experiences : []))
+            .catch(() => null);
+        if (this.experiences === undefined) {
+            void experiencesRequest.then((experiences) => {
+                if (this.experiences === undefined) {
+                    this.experiences = experiences;
+                    this.renderExperiences();
+                }
+            });
+        }
+        const acceptedRequest = fetchJson(API.tsunadeAcceptedLogs)
+            .then((accepted) => (Array.isArray(accepted?.signatures) ? accepted.signatures : []))
+            .catch(() => []);
         try {
             const [payload, capabilities] = await Promise.all([
                 fetchJson(`${API.tsunadeIncidents}?state=all`),
@@ -264,13 +283,9 @@ export class IncidentsController {
                 ? payload.summary
                 : {};
             this.logHealth = payload?.log_health ?? null;
-            this.acceptedLogSignatures = await fetchJson(API.tsunadeAcceptedLogs)
-                .then((accepted) => (Array.isArray(accepted?.signatures) ? accepted.signatures : []))
-                .catch(() => []);
+            this.acceptedLogSignatures = await acceptedRequest;
             // An Agent older than 1.38.0 has no route: the section says so.
-            this.experiences = await fetchJson(API.tsunadeExperiences)
-                .then((payload) => (Array.isArray(payload?.experiences) ? payload.experiences : []))
-                .catch(() => null);
+            this.experiences = await experiencesRequest;
             this.logCheckAvailable = Array.isArray(capabilities?.operations)
                 && capabilities.operations.includes("incidents.logs.check");
             this.updateLogCheckButton();
@@ -290,6 +305,10 @@ export class IncidentsController {
     renderExperiences() {
         const container = this.elements.experiences;
         if (!container) {
+            return;
+        }
+        if (this.experiences === undefined) {
+            container.innerHTML = "<p>Chargement des réparations connues…</p>";
             return;
         }
         if (this.experiences === null) {
@@ -387,7 +406,9 @@ export class IncidentsController {
                 return true;
             }
             if (this.filter === "active") {
-                return incident.state === "active";
+                // A form being filled stays in view when the incident closes.
+                return incident.state === "active"
+                    || (this.manualForms.has(incident.incident_id) && this.manualDeclarable(incident));
             }
             return incident.workflow_state === this.filter;
         });
@@ -449,14 +470,27 @@ export class IncidentsController {
         return `<button class="configuration-primary-button" data-tsunade-experience="${escapeHtml(incidentId)}" type="button">${label}</button>`;
     }
 
+    manualDeclarable(incident) {
+        const actions = incident.manual_actions ?? [];
+        if (incident.state === "active") {
+            return !actions.some((action) => action.status === "verifying");
+        }
+        // The Agent still accepts a declaration 10 minutes after the recovery,
+        // when the user fixed the service before telling Tsunade.
+        const endedAt = Date.parse(incident.ended_at ?? "");
+        return incident.state === "resolved"
+            && Number.isFinite(endedAt)
+            && Date.now() - endedAt <= MANUAL_LATE_DECLARATION_MS
+            && actions.length === 0
+            && !(incident.repairs ?? []).some((repair) => repair.status === "succeeded");
+    }
+
     canDeclareManual(incident) {
-        return incident.state === "active"
-            && !this.manualForms?.has(incident.incident_id)
-            && !(incident.manual_actions ?? []).some((action) => action.status === "verifying");
+        return this.manualDeclarable(incident) && !this.manualForms?.has(incident.incident_id);
     }
 
     manualForm(incident) {
-        if (incident.state !== "active" || !this.manualForms?.has(incident.incident_id)) {
+        if (!this.manualForms?.has(incident.incident_id) || !this.manualDeclarable(incident)) {
             return "";
         }
         const id = escapeHtml(incident.incident_id);
@@ -512,13 +546,15 @@ export class IncidentsController {
         }
         this.showError("");
         try {
-            await requestJson(API.tsunadeManualResolution(incidentId), {
+            const action = await requestJson(API.tsunadeManualResolution(incidentId), {
                 method: "POST",
                 body: JSON.stringify({description, source: "vision", declared_by: "utilisateur Vision"}),
             });
             this.manualForms.delete(incidentId);
             this.manualDrafts.delete(incidentId);
-            this.showCommandStatus("Action manuelle déclarée : Shikamaru vérifie le retour à l’état sain.");
+            this.showCommandStatus(action?.status === "confirmed"
+                ? "Action manuelle enregistrée : Shikamaru avait déjà constaté le retour à l’état sain."
+                : "Action manuelle déclarée : Shikamaru vérifie le retour à l’état sain.");
             await this.load();
         } catch (error) {
             this.showError(`Déclaration impossible : ${this.errorMessage(error)}`);

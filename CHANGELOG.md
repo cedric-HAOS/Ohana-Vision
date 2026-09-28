@@ -2,6 +2,16 @@
 
 ## Non publié
 
+- Tsunade : « Contrôles, bilan et réparations connues » déplié défile dans
+  sa propre zone. Le panneau coupait tout ce qui dépassait sa hauteur, et le
+  bouton « Réactiver » d'une réparation connue devenait inaccessible.
+- Réparations connues : la section indique « Chargement des réparations
+  connues… » au lieu de « Aucune réparation connue. » pendant le chargement,
+  et s'affiche dès leur réception sans attendre le détail des incidents.
+- « J'ai corrigé manuellement » reste disponible 10 minutes après la
+  résolution d'un incident, comme le permet Ohana-Agent. Un formulaire en
+  cours de saisie reste affiché si l'incident se résout entre-temps.
+
 ## [1.29.0] — 2026-09-28 — Réparations connues, résolution manuelle et WAL hors ingestion
 
 - Ingestion : Vision ne recopie plus le WAL SQLite dans `vision.db`
