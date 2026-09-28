@@ -15,6 +15,7 @@ from uuid import UUID
 
 from ohana_vision.domain.health import HealthStatus
 from ohana_vision.domain.observation import Observation
+from ohana_vision.domain.wal_checkpointer import WalCheckpointer
 
 LOGGER = logging.getLogger(__name__)
 
@@ -29,6 +30,8 @@ class ObservationStore:
     _PURGE_BATCH_SIZE = 1_000
     _WAL_SIZE_LIMIT_BYTES = 16 * 1024 * 1024
     _SCHEMA_VERSION = 2
+    # Konoha writes about 26,000 observations a day: 30 s keeps the WAL small.
+    _CHECKPOINT_INTERVAL_SECONDS = 30.0
 
     def __init__(
         self,
@@ -37,8 +40,14 @@ class ObservationStore:
         retention_days: int | None = None,
         purge_interval_seconds: float = 3600,
         history_max_rows: int = 50_000,
+        background_checkpoint: bool = False,
     ) -> None:
-        """Initialize an in-memory store or a bounded SQLite-backed store."""
+        """Initialize an in-memory store or a bounded SQLite-backed store.
+
+        With background_checkpoint, commits never checkpoint the WAL: the
+        store runs a WalCheckpointer for its file until close(). Other
+        connections to that file must disable automatic checkpoints too.
+        """
         if retention_days is not None and retention_days <= 0:
             raise ValueError("retention_days must be greater than zero.")
         if purge_interval_seconds <= 0:
@@ -54,10 +63,18 @@ class ObservationStore:
         self._retention_days = retention_days
         self._purge_interval_seconds = purge_interval_seconds
         self._history_max_rows = history_max_rows
+        self._background_checkpoint = background_checkpoint
+        self._checkpointer: WalCheckpointer | None = None
         self._next_purge_at = monotonic() + purge_interval_seconds
 
         if self._database_path is not None:
             self._open_database()
+            if background_checkpoint:
+                self._checkpointer = WalCheckpointer(
+                    self._database_path,
+                    interval_seconds=self._CHECKPOINT_INTERVAL_SECONDS,
+                )
+                self._checkpointer.start()
             self.purge_expired()
 
     @property
@@ -454,6 +471,9 @@ class ObservationStore:
 
     def close(self) -> None:
         """Close the optional SQLite connection."""
+        if self._checkpointer is not None:
+            self._checkpointer.stop()
+            self._checkpointer = None
         with self._lock:
             if self._connection is not None:
                 self._connection.close()
@@ -476,6 +496,8 @@ class ObservationStore:
         connection.execute("PRAGMA busy_timeout=5000")
         connection.execute("PRAGMA cache_size=-2048")
         connection.execute("PRAGMA temp_store=FILE")
+        if self._background_checkpoint:
+            connection.execute("PRAGMA wal_autocheckpoint=0")
         self._enable_incremental_vacuum(connection)
         version = int(connection.execute("PRAGMA user_version").fetchone()[0])
         if version > self._SCHEMA_VERSION:
@@ -556,7 +578,7 @@ class ObservationStore:
 
     def _checkpoint_wal(self) -> None:
         """Checkpoint without waiting for readers or blocking observation writes."""
-        if self._connection is None:
+        if self._connection is None or self._background_checkpoint:
             return
         self._connection.execute("PRAGMA wal_checkpoint(PASSIVE)").fetchone()
 

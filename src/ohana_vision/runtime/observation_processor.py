@@ -6,6 +6,7 @@ from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from threading import RLock
 from time import monotonic
 from typing import Protocol
 
@@ -78,6 +79,8 @@ class ObservationProcessor:
         default_factory=dict,
         init=False,
     )
+    # Ingestion runs in worker threads so a slow disk never stalls the loop.
+    _lock: RLock = field(default_factory=RLock, init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         """Restore only the compact current state needed during ingestion."""
@@ -95,6 +98,10 @@ class ObservationProcessor:
 
     def process(self, observation: Observation) -> ProcessingResult:
         """Process an observation through the backend pipeline."""
+        with self._lock:
+            return self._process(observation)
+
+    def _process(self, observation: Observation) -> ProcessingResult:
         started = self.timer()
 
         if not self.runtime.running:

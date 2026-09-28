@@ -27,7 +27,13 @@ class IncidentNotFoundError(LookupError):
 class IncidentStore:
     """Persist incident transitions, acknowledgements and silences."""
 
-    def __init__(self, database_path: Path | str | None = None) -> None:
+    def __init__(
+        self,
+        database_path: Path | str | None = None,
+        *,
+        background_checkpoint: bool = False,
+    ) -> None:
+        self._background_checkpoint = background_checkpoint
         self.database_path = Path(database_path) if database_path is not None else None
         if self.database_path is not None:
             self.database_path.parent.mkdir(parents=True, exist_ok=True)
@@ -157,6 +163,9 @@ class IncidentStore:
         self._connection.execute("PRAGMA journal_mode=WAL")
         self._connection.execute("PRAGMA synchronous=NORMAL")
         self._connection.execute("PRAGMA busy_timeout=5000")
+        if self._background_checkpoint:
+            # A commit crossing 1000 WAL pages would otherwise checkpoint.
+            self._connection.execute("PRAGMA wal_autocheckpoint=0")
         self._connection.execute(
             """
             CREATE TABLE IF NOT EXISTS incidents (

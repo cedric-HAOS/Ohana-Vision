@@ -2,6 +2,13 @@
 
 ## Non publié
 
+- Ingestion : Vision ne recopie plus le WAL SQLite dans `vision.db`
+  pendant le commit d'une observation. Un thread dédié le fait toutes les
+  30 s avec sa propre connexion (`wal_autocheckpoint=0` sur les connexions
+  d'écriture). Sur la carte SD d'INFRA-01, cette recopie bloquait la requête
+  plus de 5 s environ toutes les 4 minutes, et l'Agent abandonnait la
+  livraison. Le traitement d'une observation quitte aussi la boucle asyncio :
+  une écriture lente ne fige plus l'interface ni le WebSocket.
 - « J'ai corrigé manuellement » sur un incident actif : un formulaire
   demande ce que l'utilisateur a fait. Le texte saisi survit au
   rafraîchissement de la liste, et la carte suit ensuite la vérification de

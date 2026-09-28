@@ -1,5 +1,6 @@
 """Tests for the Ohana-Vision observation API router."""
 
+import asyncio
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import cast
@@ -452,3 +453,41 @@ def test_post_observation_does_not_broadcast_after_rejection() -> None:
         "message": "Observation rejected.",
     }
     assert websocket_hub.messages == []
+
+
+class LoopProbeProcessor(FakeObservationProcessor):
+    """Processor recording whether it ran on the event loop thread."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ran_on_event_loop: bool | None = None
+
+    def process(self, observation: Observation) -> FakeProcessingResult:
+        """Record where processing ran."""
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            self.ran_on_event_loop = False
+        else:
+            self.ran_on_event_loop = True
+        return super().process(observation)
+
+
+def test_post_observation_processes_off_the_event_loop() -> None:
+    """A slow SQLite commit must not freeze the loop serving the UI."""
+    processor = LoopProbeProcessor()
+    client = make_ingestion_client(processor)
+
+    response = client.post(
+        "/api/observations",
+        json={
+            "capability_id": "dns.resolve",
+            "service_id": "dns-primary",
+            "node_id": "infra-01",
+            "status": "healthy",
+            "observed_at": datetime(2026, 9, 28, 9, 0, tzinfo=UTC).isoformat(),
+        },
+    )
+
+    assert response.status_code == 202
+    assert processor.ran_on_event_loop is False

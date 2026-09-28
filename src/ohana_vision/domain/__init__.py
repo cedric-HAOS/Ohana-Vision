@@ -20,6 +20,7 @@ from ohana_vision.domain.observation_store import (
     ObservationStore,
 )
 from ohana_vision.domain.service_state import ServiceState
+from ohana_vision.domain.wal_checkpointer import WalCheckpointer
 
 __all__ = [
     "Incident",
@@ -35,6 +36,7 @@ __all__ = [
     "Observation",
     "ObservationStore",
     "ServiceState",
+    "WalCheckpointer",
     "aggregate_health",
     "Criticality",
 ]

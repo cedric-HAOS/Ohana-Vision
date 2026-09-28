@@ -28,13 +28,18 @@ def build_application_context(
 ) -> ApplicationContext:
     """Build the default Ohana-Vision application context."""
     runtime = BackendRuntime()
+    background_checkpoint = database_path is not None
     observation_store = ObservationStore(
         database_path=database_path,
         retention_days=retention_days,
         purge_interval_seconds=purge_interval_seconds,
         history_max_rows=history_max_rows,
+        background_checkpoint=background_checkpoint,
     )
-    incident_store = IncidentStore(database_path=database_path)
+    incident_store = IncidentStore(
+        database_path=database_path,
+        background_checkpoint=background_checkpoint,
+    )
     if database_path is None:
         incident_store.rebuild(observation_store.observations)
     else:

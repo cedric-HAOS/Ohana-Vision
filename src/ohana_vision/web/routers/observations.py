@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi.concurrency import run_in_threadpool
 
 from ohana_vision.domain.observation import Observation
 from ohana_vision.web.dependencies import (
@@ -75,7 +76,8 @@ async def ingest_observation(
 ) -> ObservationIngestionResponse:
     """Receive, process, and broadcast an observation."""
     observation = ObservationMapper.to_domain(observation_request)
-    result = processor.process(observation)
+    # SQLite writes can wait on the disk: keep the event loop serving the UI.
+    result = await run_in_threadpool(processor.process, observation)
 
     if result.accepted:
         await request.app.state.websocket_hub.broadcast(
