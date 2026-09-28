@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.29.0] — 2026-09-28 — Réparations connues, résolution manuelle et WAL hors ingestion
+
 - Ingestion : Vision ne recopie plus le WAL SQLite dans `vision.db`
   pendant le commit d'une observation. Un thread dédié le fait toutes les
   30 s avec sa propre connexion (`wal_autocheckpoint=0` sur les connexions
