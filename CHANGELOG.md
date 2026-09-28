@@ -2,6 +2,18 @@
 
 ## Non publié
 
+- Phase 5, lot 3 : Vision repère l'Agent silencieux après 300 s sans
+  ingestion avec sa propre horloge monotone (`agent` dans les vitaux).
+  Bandeau global actualisé toutes les 15 s sans dépendre d'événements Agent ;
+  ancienne santé de l'hôte affichée comme état actuel inconnu. Au démarrage,
+  attente de réception, jamais sain par défaut ; une erreur de lecture
+  Vision est distincte du silence Agent. Aucun redémarrage automatique.
+- Vitaux de Vision (Phase 5) : `GET /api/runtime/vitals`, sans cache, lu par
+  l'Agent. État, démarrage, dernière ingestion et silence d'ingestion, heures
+  de Paris. La dernière ingestion est l'heure de réception par Vision
+  (`last_ingested_at`, aussi dans `/api/runtime`), pas l'heure de
+  l'observation rejouée. Nouvelle dépendance `tzdata`.
+
 - Version de Shizune au pied de page lue sans cache : après le déploiement de
   Shizune 0.4.0 le 28 septembre, un navigateur affichait encore v0.3.0.
 

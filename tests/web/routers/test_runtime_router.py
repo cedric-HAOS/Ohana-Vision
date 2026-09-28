@@ -172,6 +172,7 @@ def test_runtime_router_serializes_snapshot() -> None:
             "observations_rejected": 0,
             "errors": 0,
             "last_observation_at": None,
+            "last_ingested_at": None,
             "last_error_at": None,
             "last_processing_ms": None,
             "average_processing_ms": 0.0,

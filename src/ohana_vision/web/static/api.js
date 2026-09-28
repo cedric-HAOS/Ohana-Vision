@@ -4,6 +4,7 @@ export const API = Object.freeze({
     version: "/api/version",
     shizuneVersion: "/shizune/version.json",
     runtime: "/api/runtime",
+    runtimeVitals: "/api/runtime/vitals",
     observations: "/api/observations",
     hostHealth: "/api/host-health",
     incidents: "/api/incidents",

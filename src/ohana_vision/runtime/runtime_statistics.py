@@ -15,6 +15,9 @@ class RuntimeStatistics:
     observations_rejected: int = 0
     errors: int = 0
     last_observation_at: datetime | None = None
+    # Phase 5: when Vision last processed an observation, by its own clock;
+    # last_observation_at is the observation's time and can be old on replay.
+    last_ingested_at: datetime | None = None
     last_error_at: datetime | None = None
     last_processing_ms: float | None = None
     average_processing_ms: float = 0.0
@@ -54,6 +57,7 @@ class RuntimeStatistics:
     def record_accepted(
         self,
         processing_ms: float | None = None,
+        ingested_at: datetime | None = None,
     ) -> RuntimeStatistics:
         """Return statistics including one accepted observation."""
 
@@ -63,12 +67,14 @@ class RuntimeStatistics:
         updated = replace(
             self,
             observations_accepted=self.observations_accepted + 1,
+            last_ingested_at=ingested_at or self.last_ingested_at,
         )
         return updated._record_processing(processing_ms)
 
     def record_rejected(
         self,
         processing_ms: float | None = None,
+        ingested_at: datetime | None = None,
     ) -> RuntimeStatistics:
         """Return statistics including one rejected observation."""
 
@@ -78,6 +84,7 @@ class RuntimeStatistics:
         updated = replace(
             self,
             observations_rejected=self.observations_rejected + 1,
+            last_ingested_at=ingested_at or self.last_ingested_at,
         )
         return updated._record_processing(processing_ms)
 

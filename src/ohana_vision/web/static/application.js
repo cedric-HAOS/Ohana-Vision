@@ -27,6 +27,8 @@ import {
     HostController,
 } from "./host.js";
 
+import {AgentPresenceController} from "./agent_presence.js";
+
 import {
     NavigationController,
 } from "./navigation.js";
@@ -71,6 +73,7 @@ export class ApplicationController {
         this.deviceDetails = null;
         this.incidents = null;
         this.host = null;
+        this.agentPresence = null;
         this.navigation = null;
         this.observations = null;
         this.services = null;
@@ -136,6 +139,7 @@ export class ApplicationController {
         this.createControllers();
         this.bindApplicationEvents();
         this.initializeControllers();
+        this.agentPresence.initialize();
 
         void this.loadVisionVersion();
         void this.loadShizuneVersion();
@@ -259,6 +263,9 @@ export class ApplicationController {
             });
 
         this.host = new HostController();
+        this.agentPresence = new AgentPresenceController({
+            onUpdate: (presence) => this.host.setAgentPresence(presence),
+        });
 
         this.navigation =
             new NavigationController({
@@ -548,6 +555,7 @@ export class ApplicationController {
      * Refresh all backend-backed frontend data.
      */
     async refresh() {
+        void this.agentPresence?.load();
         this.setRefreshing(true);
 
         try {

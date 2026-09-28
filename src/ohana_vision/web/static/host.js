@@ -41,6 +41,8 @@ const RESOURCE_THRESHOLDS = Object.freeze({
 export class HostController {
     constructor() {
         this.loaded = false;
+        this.snapshot = null;
+        this.agentPresence = {state: "unknown"};
         this.elements = {
             view: document.querySelector("#host-supervision"),
             error: document.querySelector("#host-error"),
@@ -95,10 +97,17 @@ export class HostController {
         }
     }
 
+    setAgentPresence(presence) {
+        this.agentPresence = presence;
+        if (this.snapshot) this.render(this.snapshot);
+    }
+
     render(snapshot) {
+        this.snapshot = snapshot;
         this.hideError();
+        const current = this.agentPresence?.state === "active";
         const requestedState = String(snapshot?.state ?? "unknown").toLowerCase();
-        const state = Object.hasOwn(STATUS_LABELS, requestedState)
+        const state = current && Object.hasOwn(STATUS_LABELS, requestedState)
             ? requestedState
             : "unknown";
         const reasons = Array.isArray(snapshot?.reasons) ? snapshot.reasons : [];
@@ -116,10 +125,13 @@ export class HostController {
             );
         }
         if (this.elements.stateLabel) {
-            this.elements.stateLabel.textContent = STATUS_LABELS[state];
+            this.elements.stateLabel.textContent = current
+                ? STATUS_LABELS[state] : "État actuel inconnu";
         }
         if (this.elements.stateMessage) {
-            this.elements.stateMessage.textContent = this.statusMessage(
+            this.elements.stateMessage.textContent = !current
+                ? "Dernières mesures conservées ; réception de l’Agent à confirmer"
+                : this.statusMessage(
                 state,
                 reasons,
             );
@@ -143,6 +155,14 @@ export class HostController {
         this.renderResources(snapshot);
         this.renderAvailability(snapshot);
         this.renderDiagnostic(state, reasons, failedUnits);
+        if (!current) {
+            if (this.elements.availabilityLabel) {
+                this.elements.availabilityLabel.textContent = "Dernier état connu";
+            }
+            if (this.elements.diagnosticState) {
+                this.elements.diagnosticState.textContent = "À confirmer";
+            }
+        }
     }
 
     renderResources(snapshot) {

@@ -3,6 +3,27 @@
     gap: var(--ohana-space-5);
 }
 
+.agent-presence {
+    display: grid;
+    gap: var(--ohana-space-2);
+    margin: 0.8rem 0.8rem 0;
+    padding: var(--ohana-space-4);
+    border: 1px solid var(--ohana-health-degraded);
+    border-radius: var(--ohana-radius-md);
+    background: var(--ohana-health-degraded-soft);
+    color: var(--ohana-text-primary);
+    overflow-wrap: anywhere;
+}
+
+.application-content:has(> .agent-presence:not(.hidden)) {
+    grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.agent-presence[data-state="silent"] {
+    border-color: var(--ohana-health-critical);
+    background: var(--ohana-health-critical-soft);
+}
+
 .host-cockpit {
     --host-state-color: var(--ohana-health-unknown);
     --host-state-soft: var(--ohana-health-unknown-soft);
