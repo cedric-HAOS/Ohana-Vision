@@ -2,6 +2,11 @@
 
 ## Non publié
 
+- Shizune servi avec `Cache-Control: no-cache`, comme l'interface Vision :
+  sans cet en-tête, Safari sur iPhone pouvait garder l'ancien `app.js` de
+  Shizune pendant un à deux jours (fraîcheur heuristique) et n'affichait pas
+  la carte « Prévention » de Shizune 0.4.0. Les fichiers inchangés restent à
+  un aller-retour 304.
 - Phase 5, lot 4 : Vision mesure sa passerelle Shizune (`shizune_gateway`
   dans `GET /api/runtime/vitals`) : `unconfigured`, `unused`, `available`,
   `failing`, dernier succès et dernier échec à l'heure de Paris avec la

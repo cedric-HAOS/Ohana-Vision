@@ -138,9 +138,11 @@ def create_app(
 
     # Shizune is a static PWA installed by Ohana-Installer.  It deliberately
     # shares Vision's listener so no additional port or service is required.
+    # Revalidated too: Safari kept Shizune 0.3.0's app.js from its heuristic
+    # HTTP cache, even inside the 0.4.0 service-worker cache.
     app.mount(
         "/shizune",
-        StaticFiles(
+        RevalidatedStaticFiles(
             directory=SHIZUNE_DIRECTORY,
             html=True,
             check_dir=False,

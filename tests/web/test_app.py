@@ -64,6 +64,8 @@ def test_shizune_is_exposed_under_vision_listener(monkeypatch, tmp_path) -> None
 
     assert response.status_code == 200
     assert "Shizune" in response.text
+    # Without it Safari kept an old app.js, even inside the new PWA cache.
+    assert response.headers["cache-control"] == "no-cache"
 
 
 def test_api_endpoint_returns_api_status() -> None:
