@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.32.0] — 2026-09-29 — Historique et vue Ohana détaillée
+
 - Vue Ohana (durcissement de la Phase 5) : l'Agent y montre le retard de son
   planificateur, sa file vers Vision, ses travaux Katsuyu, la taille et la
   croissance de ses bases et sa version comparée à la recommandée ; Vision
