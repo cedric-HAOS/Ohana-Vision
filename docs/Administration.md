@@ -18,7 +18,8 @@ http://ADRESSE_DU_SERVEUR:8000/shizune/
 
 Vision expose également `/api/shizune`, une passerelle strictement limitée au
 contrat compagnon synthétique d’Agent/Tsunade. Elle relaie l’association, la
-synthèse, les demandes, l’activité et les réponses structurées, sans conserver
+synthèse, les demandes (en attente ou déjà traitées, `GET
+/api/shizune/requests/recent`), l’activité et les réponses structurées, sans conserver
 le jeton compagnon et sans exposer les routes d’administration.
 2. Choisir **Configuration** dans la barre latérale.
 3. Choisir **Réseau Agent**, **Baux DHCP**, **Architecture** ou **Plugins**.
