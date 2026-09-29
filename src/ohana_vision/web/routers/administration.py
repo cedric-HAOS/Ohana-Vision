@@ -285,6 +285,19 @@ def read_preventive(request: Request) -> dict[str, Any]:
     return _call(client.read_preventive)
 
 
+@router.post("/tsunade/preventive/mute")
+def mute_preventive(request: Request, payload: dict[str, Any]) -> dict[str, Any]:
+    """Fewer useless alerts: one drift set aside, still shown."""
+    client = _client(request)
+    return _call(lambda: client.mute_preventive(payload))
+
+
+@router.post("/tsunade/preventive/unmute")
+def unmute_preventive(request: Request, payload: dict[str, Any]) -> dict[str, Any]:
+    client = _client(request)
+    return _call(lambda: client.unmute_preventive(payload))
+
+
 @router.post("/tsunade/preventive/backfill")
 def request_preventive_backfill(request: Request) -> dict[str, Any]:
     """Queue the Katsuyu history backfill; it never touches Konoha."""

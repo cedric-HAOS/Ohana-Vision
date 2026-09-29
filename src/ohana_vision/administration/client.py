@@ -214,6 +214,13 @@ class AgentAdministrationClient:
         """List Tsunade's known repairs with their history and state."""
         return self._request("GET", "/v1/experiences")
 
+    def mute_preventive(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Set one preventive drift aside for a number of days."""
+        return self._request("POST", "/v1/preventive/mute", payload)
+
+    def unmute_preventive(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._request("POST", "/v1/preventive/unmute", payload)
+
     def read_agent_vitals(self) -> dict[str, Any]:
         """Phase 5: scheduler, queues, storage, retention and versions."""
         return self._request("GET", "/v1/vitals")

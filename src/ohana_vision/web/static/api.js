@@ -21,6 +21,8 @@ export const API = Object.freeze({
     tsunadePreventive: "/api/administration/tsunade/preventive",
     agentVitals: "/api/administration/agent/vitals",
     tsunadePreventiveBackfill: "/api/administration/tsunade/preventive/backfill",
+    tsunadePreventiveMute: "/api/administration/tsunade/preventive/mute",
+    tsunadePreventiveUnmute: "/api/administration/tsunade/preventive/unmute",
     tsunadeExperienceState: (experienceId) =>
         `/api/administration/tsunade/experiences/${encodeURIComponent(experienceId)}/state`,
     tsunadeAcceptedLogs: "/api/administration/tsunade/incidents/logs/accepted",

@@ -250,6 +250,12 @@ class FakeAdministrationClient:
     def read_agent_vitals(self) -> dict[str, Any]:
         return {"schema_version": 1, "scheduler": {"state": "on_time"}}
 
+    def mute_preventive(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return {**payload, "muted_until": "2026-10-29T12:00:00+01:00"}
+
+    def unmute_preventive(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return {**payload, "muted_until": None}
+
     def read_accepted_log_signatures(self) -> dict[str, Any]:
         return {"schema_version": 1, "signatures": list(self.accepted)}
 
@@ -622,6 +628,17 @@ def test_administration_routes_proxy_the_preventive_synthesis() -> None:
     assert response.json() == {"schema_version": 1, "status": "stable", "watch": []}
     queued = client.post("/api/administration/tsunade/preventive/backfill")
     assert queued.json() == {"type": "trends.history_backfill", "status": "QUEUED"}
+
+
+def test_administration_routes_proxy_preventive_mutes() -> None:
+    client = make_client(FakeAdministrationClient())
+    payload = {"rule": "memory_growth", "subject": "infra-01:memory_percent"}
+
+    muted = client.post("/api/administration/tsunade/preventive/mute", json=payload)
+    unmuted = client.post("/api/administration/tsunade/preventive/unmute", json=payload)
+
+    assert muted.json()["muted_until"].startswith("2026-10-29")
+    assert unmuted.json()["muted_until"] is None
 
 
 def test_administration_routes_proxy_the_agent_vitals_detail() -> None:

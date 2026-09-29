@@ -216,6 +216,11 @@ export class IncidentsController {
             const button = event.target.closest("[data-tsunade-preventive-backfill]");
             if (button) {
                 void this.requestPreventiveBackfill(button);
+                return;
+            }
+            const muteButton = event.target.closest("[data-tsunade-preventive-mute]");
+            if (muteButton) {
+                void this.setPreventiveMute(muteButton);
             }
         });
         this.elements.experiences?.addEventListener("click", (event) => {
@@ -380,12 +385,33 @@ export class IncidentsController {
         }
         const preventive = this.preventive;
         const watch = Array.isArray(preventive.watch) ? preventive.watch : [];
+        // Older Agents have no mute: the button needs the drift's subject.
+        const muteButton = (item, mute) => item.subject
+            ? `<button class="configuration-secondary-button" data-tsunade-preventive-mute="${mute ? "mute" : "unmute"}" data-rule="${escapeHtml(item.rule)}" data-subject="${escapeHtml(item.subject)}" data-title="${escapeHtml(item.title)}" type="button">${mute ? "Ignorer 30 jours" : "Surveiller de nouveau"}</button>`
+            : "";
         const drifts = watch.length
             ? `<ul class="incidents-preventive__watch">${watch.map((item) => `<li class="${item.urgent ? "is-urgent" : ""}">
                 <strong>${escapeHtml(item.title)}</strong>
                 <small>${escapeHtml(item.detail ?? "")}</small>
+                ${Array.isArray(item.correlated_with) && item.correlated_with.length
+        ? `<small>Simultané avec : ${escapeHtml(item.correlated_with.join(" ; "))} (simultanéité, pas une cause).</small>`
+        : ""}
+                ${muteButton(item, true)}
             </li>`).join("")}</ul>`
             : "<p>Aucune dérive détectée.</p>";
+        const followed = Array.isArray(preventive.followed_by_incident) ? preventive.followed_by_incident : [];
+        const muted = Array.isArray(preventive.muted) ? preventive.muted : [];
+        const apart = [
+            followed.length
+                ? `<p><small>Déjà suivi par un incident ouvert : ${escapeHtml(followed.map((item) => item.title).join(" ; "))}.</small></p>`
+                : "",
+            muted.length
+                ? `<ul class="incidents-preventive__muted">${muted.map((item) => `<li>
+                    <small><strong>${escapeHtml(item.title)}</strong> · ignoré jusqu’au ${escapeHtml(formatDate(item.muted_until))}</small>
+                    ${muteButton(item, false)}
+                </li>`).join("")}</ul>`
+                : "",
+        ].join("");
         const stateLabels = {ok: "Normal", watch: "À surveiller", insufficient_data: "Historique insuffisant"};
         const checks = (Array.isArray(preventive.checks) ? preventive.checks : []).map((check) => `<li class="is-${escapeHtml(check.state)}">
                 <div class="incidents-experience__title">
@@ -399,6 +425,7 @@ export class IncidentsController {
         const open = container.querySelector("details")?.open ? " open" : "";
         container.innerHTML = `<p><strong>${escapeHtml(preventive.headline)}</strong></p>
             ${drifts}
+            ${apart}
             <p class="incidents-preventive__conclusion">${escapeHtml(preventive.conclusion)}</p>
             <details class="incidents-preventive__rules"${open}>
                 <summary>Règles appliquées sur ${escapeHtml(preventive.window_days)} jours · évaluées le ${escapeHtml(formatDate(preventive.generated_at))}</summary>
@@ -443,6 +470,30 @@ export class IncidentsController {
         </div>`;
     }
 
+    async setPreventiveMute(button) {
+        const mute = button.dataset.tsunadePreventiveMute === "mute";
+        button.disabled = true;
+        this.showError("");
+        try {
+            await requestJson(mute ? API.tsunadePreventiveMute : API.tsunadePreventiveUnmute, {
+                method: "POST",
+                body: JSON.stringify({
+                    rule: button.dataset.rule,
+                    subject: button.dataset.subject,
+                    title: button.dataset.title,
+                    days: 30,
+                }),
+            });
+            this.showCommandStatus(mute
+                ? "Dérive ignorée 30 jours : elle reste visible, sans alerte."
+                : "Dérive de nouveau surveillée.");
+            await this.load();
+        } catch (error) {
+            this.showError(`Changement impossible : ${this.errorMessage(error)}`);
+            button.disabled = false;
+        }
+    }
+
     async requestPreventiveBackfill(button) {
         button.disabled = true;
         this.showError("");
@@ -464,6 +515,10 @@ export class IncidentsController {
         const label = (id) => LOG_SOURCE_LABELS[id] ?? String(id).toUpperCase();
         const number = (value) => Number(value ?? 0).toLocaleString("fr-FR", {maximumFractionDigits: 1});
         return nodes.map((node) => {
+            // Newer rules phrase their own facts on the Agent side.
+            if (node.summary) {
+                return node.summary;
+            }
             if (check.id === "disk_growth") {
                 if (node.state === "insufficient_data") {
                     return `${label(node.node_id)} : ${node.days} jour(s) mesuré(s) sur 4 nécessaires`;

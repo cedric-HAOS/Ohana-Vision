@@ -12,6 +12,10 @@
   association (à surveiller sous 14 jours). `/api/runtime/vitals` ajoute
   `version`, `ingestion_lag`, `storage` et `websocket` ; relais
   `/api/administration/agent/vitals`.
+- Maintenance préventive : faits des nouvelles règles, dérives simultanées,
+  dérives déjà suivies par un incident, bouton « Ignorer 30 jours » et liste
+  des dérives ignorées avec « Surveiller de nouveau » ; relais
+  `/api/administration/tsunade/preventive/mute` et `/unmute`.
 
 ## [1.31.0] — 2026-09-28 — Ohana supervise Ohana
 
