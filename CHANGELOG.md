@@ -2,6 +2,10 @@
 
 ## Non publié
 
+## [1.33.0] — 2026-09-29 — Page Tsunade en deux colonnes, composants de journaux et statistiques
+
+Publiée le jour même de 1.32.0, à la demande de l'utilisateur.
+
 ### Ajouté
 
 - Journaux lus par composant : l'onglet « Journaux » de la page Tsunade liste,
