@@ -7,8 +7,27 @@ est disponible et la fraîcheur des éléments analysés. Une conclusion antéri
 est distingué des huit exemples présentés.
 
 « Voir le dossier » ouvre les journaux, hypothèses, décisions, propositions et
-événements. Les statistiques et contrôles de journaux sont repliables. Une demande
-explicite de diagnostic conserve l’intention de l’opérateur jusqu’à Agent.
+événements. Une demande explicite de diagnostic conserve l’intention de
+l’opérateur jusqu’à Agent.
+
+## Disposition de la page
+
+Sur écran large, la page Tsunade a deux colonnes qui défilent chacune de leur
+côté : à gauche les incidents (filtres avec leurs compteurs et « Contrôler les
+journaux » figés en haut), à droite la surveillance en quatre onglets.
+Un bandeau d’une ligne donne le nombre de dérives à surveiller et l’heure du
+dernier contrôle des journaux. Sous 1000 px, une seule colonne et un seul
+défilement. L’onglet choisi est retenu pour la session.
+
+| Onglet | Contenu |
+| --- | --- |
+| À surveiller | synthèse préventive, dérives (avec dépendances déclarées et incident amont), règles appliquées (une ligne par règle, critère au clic), rattrapage de l’historique |
+| Journaux | par source, les composants (Tapo, Kasa, Shelly...) avec occurrences et gravité, « Accepter » ou « Compter à nouveau », anomalies acceptées |
+| Réparations connues | réparations classées par fiabilité (`#1`, fiable, instable...), désactivation, obsolescence |
+| Bilan | contrôles de journaux, réparations connues, taux de réussite et statistiques détaillées (7 jours, 30 jours, depuis le début ; par réparation et par équipement) |
+
+Le dossier d’un incident de journaux groupe ses anomalies par composant, toutes
+présentées, avec « Accepter <composant> ».
 
 Shizune affiche l’essentiel et permet d’ouvrir le dossier Vision de l’incident,
 ou de demander un diagnostic via la passerelle compagnon authentifiée. Une
