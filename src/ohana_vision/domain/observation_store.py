@@ -12,12 +12,21 @@ from pathlib import Path
 from threading import RLock
 from time import monotonic
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from ohana_vision.domain.health import HealthStatus
 from ohana_vision.domain.observation import Observation
 from ohana_vision.domain.wal_checkpointer import WalCheckpointer
 
 LOGGER = logging.getLogger(__name__)
+PARIS = ZoneInfo("Europe/Paris")
+
+
+def _file_size(path: Path) -> int | None:
+    try:
+        return path.stat().st_size
+    except OSError:
+        return None
 
 
 class DuplicateObservationError(ValueError):
@@ -397,6 +406,40 @@ class ObservationStore:
                 kept.append(observation)
             previous[key] = observation
         return tuple(kept)
+
+    def vitals(self, *, now: datetime | None = None) -> dict[str, object]:
+        """Phase 5: database size and retention, for the Ohana view."""
+        current = now or datetime.now(UTC)
+        database_bytes = wal_bytes = None
+        if self._database_path is not None:
+            database_bytes = _file_size(self._database_path)
+            wal_bytes = _file_size(Path(f"{self._database_path}-wal"))
+        with self._lock:
+            if self._connection is None:
+                oldest = min(
+                    (item.observed_at for item in self._observations), default=None
+                )
+            else:
+                row = self._connection.execute(
+                    "SELECT MIN(observed_at) FROM observations"
+                ).fetchone()
+                oldest = datetime.fromisoformat(row[0]) if row and row[0] else None
+        overdue = False
+        if oldest is not None and self._retention_days is not None:
+            # The purge runs every purge interval: two of them is late.
+            late_after = timedelta(
+                days=self._retention_days, seconds=2 * self._purge_interval_seconds
+            )
+            overdue = oldest < current - late_after
+        return {
+            "database_bytes": database_bytes,
+            "wal_bytes": wal_bytes,
+            "retention_days": self._retention_days,
+            "oldest_observed_at": (
+                oldest.astimezone(PARIS).isoformat() if oldest is not None else None
+            ),
+            "retention_overdue": overdue,
+        }
 
     def purge_expired(self, *, now: datetime | None = None) -> int:
         """Purge expired observations and their incident deduplication rows."""

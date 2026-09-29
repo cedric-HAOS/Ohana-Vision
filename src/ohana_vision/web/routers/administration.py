@@ -271,6 +271,13 @@ def read_experiences(request: Request) -> dict[str, Any]:
     return _call(client.read_experiences)
 
 
+@router.get("/agent/vitals")
+def read_agent_vitals(request: Request) -> dict[str, Any]:
+    """The Agent's own detail for the Ohana view."""
+    client = _client(request)
+    return _call(client.read_agent_vitals)
+
+
 @router.get("/tsunade/preventive")
 def read_preventive(request: Request) -> dict[str, Any]:
     """Tsunade's preventive synthesis: drifts to watch, never repairs."""

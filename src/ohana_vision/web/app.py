@@ -122,6 +122,11 @@ def create_app(
             gateway.configured = companion_client is not None
 
     app.state.websocket_hub = websocket_hub or WebSocketHub()
+    if context is not None and hasattr(context.runtime, "detail_sources"):
+        hub = app.state.websocket_hub
+        context.runtime.detail_sources["websocket"] = lambda: {
+            "clients": hub.connection_count
+        }
 
     app.include_router(root_router)
     app.include_router(api_router)

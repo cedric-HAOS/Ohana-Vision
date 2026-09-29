@@ -2,6 +2,17 @@
 
 ## Non publié
 
+- Vue Ohana (durcissement de la Phase 5) : l'Agent y montre le retard de son
+  planificateur, sa file vers Vision, ses travaux Katsuyu, la taille et la
+  croissance de ses bases et sa version comparée à la recommandée ; Vision
+  son retard d'ingestion (médiane, 95 %, maximum sur 15 min), la taille et la
+  croissance de `vision.db`, sa rétention, ses pages ouvertes (WebSocket) et
+  sa version ; Katsuyu son espace de travail, le détail du runtime IA et sa
+  version comparée à la dernière publiée ; Shizune l'échéance de chaque
+  association (à surveiller sous 14 jours). `/api/runtime/vitals` ajoute
+  `version`, `ingestion_lag`, `storage` et `websocket` ; relais
+  `/api/administration/agent/vitals`.
+
 ## [1.31.0] — 2026-09-28 — Ohana supervise Ohana
 
 Publiée le jour même de 1.30.0, à la demande de l'utilisateur.

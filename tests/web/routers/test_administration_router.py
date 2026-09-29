@@ -247,6 +247,9 @@ class FakeAdministrationClient:
     def read_preventive(self) -> dict[str, Any]:
         return {"schema_version": 1, "status": "stable", "watch": []}
 
+    def read_agent_vitals(self) -> dict[str, Any]:
+        return {"schema_version": 1, "scheduler": {"state": "on_time"}}
+
     def read_accepted_log_signatures(self) -> dict[str, Any]:
         return {"schema_version": 1, "signatures": list(self.accepted)}
 
@@ -619,6 +622,14 @@ def test_administration_routes_proxy_the_preventive_synthesis() -> None:
     assert response.json() == {"schema_version": 1, "status": "stable", "watch": []}
     queued = client.post("/api/administration/tsunade/preventive/backfill")
     assert queued.json() == {"type": "trends.history_backfill", "status": "QUEUED"}
+
+
+def test_administration_routes_proxy_the_agent_vitals_detail() -> None:
+    client = make_client(FakeAdministrationClient())
+
+    response = client.get("/api/administration/agent/vitals")
+
+    assert response.json()["scheduler"] == {"state": "on_time"}
 
 
 def test_administration_routes_proxy_a_manual_resolution() -> None:

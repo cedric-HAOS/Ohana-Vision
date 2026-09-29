@@ -53,6 +53,7 @@ def build_application_context(
         timeline_engine=timeline_engine,
     )
 
+    runtime.detail_sources["storage"] = observation_store.vitals
     runtime.start()
 
     return ApplicationContext(

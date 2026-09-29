@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from zoneinfo import ZoneInfo
 
+from ohana_vision import __version__
 from ohana_vision.runtime.agent_presence import AgentPresence
 from ohana_vision.runtime.backend_runtime_state import (
     BackendRuntimeState,
@@ -21,6 +24,9 @@ class BackendRuntimeError(RuntimeError):
 
 
 PARIS = ZoneInfo("Europe/Paris")
+# Delay between an observation and its ingestion, over the last minutes.
+LAG_WINDOW = timedelta(minutes=15)
+LAG_SAMPLES = 500
 
 
 def utc_now() -> datetime:
@@ -40,6 +46,15 @@ class BackendRuntime:
     clock: Callable[[], datetime] = utc_now
     agent_presence: AgentPresence = field(default_factory=AgentPresence)
     shizune_gateway: ShizuneGateway = field(default_factory=ShizuneGateway)
+    version: str = __version__
+    # Phase 5 hardening: storage, retention, WebSocket clients, each read on
+    # demand from the component that owns it.
+    detail_sources: dict[str, Callable[[], dict[str, Any] | None]] = field(
+        default_factory=dict
+    )
+    _lags: deque[tuple[datetime, float]] = field(
+        default_factory=lambda: deque(maxlen=LAG_SAMPLES), init=False
+    )
     state: BackendRuntimeState = field(
         default=BackendRuntimeState.CREATED,
         init=False,
@@ -134,6 +149,8 @@ class BackendRuntime:
 
         self._validate_datetime(received_at)
         self.statistics = self.statistics.record_received(received_at)
+        now = self.clock()
+        self._lags.append((now, max((now - received_at).total_seconds(), 0.0)))
 
     def record_accepted(self, processing_ms: float | None = None) -> None:
         """Record an accepted observation."""
@@ -188,7 +205,36 @@ class BackendRuntime:
             "generated_at": _paris_iso(now),
             "agent": self.agent_presence.snapshot(now=now, running=self.running),
             "shizune_gateway": self.shizune_gateway.snapshot(),
+            "version": self.version,
+            "ingestion_lag": self._lag_summary(now),
+            **{
+                name: self._detail(source)
+                for name, source in self.detail_sources.items()
+            },
         }
+
+    def _lag_summary(self, now: datetime) -> dict[str, object]:
+        lags = sorted(lag for at, lag in tuple(self._lags) if now - at <= LAG_WINDOW)
+        if not lags:
+            return {
+                "samples": 0,
+                "p50_seconds": None,
+                "p95_seconds": None,
+                "max_seconds": None,
+            }
+        return {
+            "samples": len(lags),
+            "p50_seconds": round(lags[len(lags) // 2], 1),
+            "p95_seconds": round(lags[min(int(len(lags) * 0.95), len(lags) - 1)], 1),
+            "max_seconds": round(lags[-1], 1),
+        }
+
+    @staticmethod
+    def _detail(source: Callable[[], dict[str, Any] | None]) -> dict[str, Any] | None:
+        try:
+            return source()
+        except Exception as error:  # noqa: BLE001 - vitals must always answer.
+            return {"error": type(error).__name__}
 
     def snapshot(
         self,
