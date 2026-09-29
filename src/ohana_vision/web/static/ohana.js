@@ -374,20 +374,24 @@ function pendingJobsText(pending) {
 export function katsuyuPowerRows(worker, now = Date.now()) {
     const cycles = [];
     for (const event of [...(worker.power_events ?? [])].reverse()) {
-        const startsCycle = event.kind === "wake_sent" || event.kind === "wake_failed";
+        // A retry continues the cycle whose wake stayed unanswered.
+        const startsCycle = (event.kind === "wake_sent" && event.detail.trigger !== "retry")
+            || event.kind === "wake_failed";
         if (startsCycle || !cycles.length || cycles[cycles.length - 1].closed) {
             cycles.push({events: [], closed: false});
         }
         const cycle = cycles[cycles.length - 1];
         cycle.events.push(event);
-        if (event.kind === "wake_failed" || event.kind === "shutdown_started"
-            || event.kind === "shutdown_vetoed") {
+        if (event.kind === "wake_failed" || event.kind === "wake_abandoned"
+            || event.kind === "shutdown_started" || event.kind === "shutdown_vetoed") {
             cycle.closed = true;
         }
     }
     return cycles.slice(-POWER_CYCLES_SHOWN).reverse().map((cycle) => {
         const byKind = Object.fromEntries(cycle.events.map((event) => [event.kind, event]));
-        const wake = byKind.wake_sent ?? byKind.wake_failed;
+        const wake = cycle.events.find((event) => event.kind === "wake_sent") ?? byKind.wake_failed;
+        const attempts = cycle.events.filter((event) => event.kind === "wake_sent").length;
+        const lastWake = [...cycle.events].reverse().find((event) => event.kind === "wake_sent");
         const parts = [];
         let state = "healthy";
         let value = "Cycle terminé";
@@ -399,14 +403,34 @@ export function katsuyuPowerRows(worker, now = Date.now()) {
             const trigger = wake.detail.trigger === "manual" ? "test manuel depuis Vision" : "travaux en attente";
             parts.push(`Réveil ${formatParis(wake.occurred_at)} : ${trigger} (${pendingJobsText(wake.detail.pending_jobs)})`);
         }
-        if (byKind.worker_online) {
-            parts.push(`en ligne après ${byKind.worker_online.detail.after_seconds} s`);
-        } else if (wake && byKind.wake_sent) {
-            const expired = instant(wake.occurred_at) + (wake.detail.timeout_seconds ?? 0) * 1000 < now;
+        if (attempts > 1) {
+            parts.push(`${attempts} tentatives`);
+        }
+        const online = byKind.worker_online;
+        if (online?.detail.manual) {
+            state = "unknown";
+            value = "PC démarré à la main";
+            parts.push("connecté bien après l'attente : démarrage manuel");
+        } else if (online) {
+            parts.push(`en ligne après ${online.detail.after_seconds} s${online.detail.late ? " (en retard, arrêt non pris en charge par Ohana)" : ""}`);
+            if (online.detail.late) {
+                state = "degraded";
+                value = "Connecté en retard";
+            }
+        } else if (byKind.wake_abandoned) {
+            state = "degraded";
+            value = "Réveil abandonné";
+            parts.push(`aucune réponse après ${byKind.wake_abandoned.detail.attempts} tentatives, les travaux en attente suivent leur délai`);
+        } else if (byKind.wake_timeout) {
+            state = "degraded";
+            value = "Sans réponse";
+            parts.push(`aucune connexion après ${lastWake?.detail.timeout_seconds ?? "?"} s`);
+        } else if (wake && lastWake) {
+            const expired = instant(lastWake.occurred_at) + (lastWake.detail.timeout_seconds ?? 0) * 1000 < now;
             if (expired && !byKind.shutdown_granted) {
                 state = "degraded";
                 value = "Sans réponse";
-                parts.push(`aucune connexion après ${wake.detail.timeout_seconds} s`);
+                parts.push(`aucune connexion après ${lastWake.detail.timeout_seconds} s`);
             } else if (!byKind.shutdown_granted) {
                 state = "unknown";
                 value = "En attente de connexion";
@@ -429,12 +453,35 @@ export function katsuyuPowerRows(worker, now = Date.now()) {
             value = "PC laissé allumé";
         } else if (granted && state === "healthy") {
             value = "Arrêt accordé";
-        } else if (byKind.worker_online && !granted && state !== "degraded") {
+        } else if (online && !online.detail.manual && !granted && state !== "degraded") {
             state = "unknown";
             value = "Travail en cours";
         }
         return {label: "Cycle de réveil", state, value, detail: parts.join(" · ")};
     });
+}
+
+/** Phase 6, lot 2: how often Wake-on-LAN got an answer, and how fast. */
+export function katsuyuWakeStatsRow(worker) {
+    const stats = worker.wake_stats;
+    if (!stats || !stats.attempts) return [];
+    const answered = stats.on_time + stats.late;
+    const bad = stats.unanswered + stats.abandoned + stats.send_failures;
+    const parts = [];
+    if (stats.median_seconds !== null && stats.median_seconds !== undefined) {
+        parts.push(`médiane ${stats.median_seconds} s, maximum ${stats.max_seconds} s`);
+    }
+    if (stats.late) parts.push(`${stats.late} en retard`);
+    if (stats.unanswered) parts.push(`${stats.unanswered} sans réponse`);
+    if (stats.abandoned) parts.push(`${stats.abandoned} abandonné(s)`);
+    if (stats.send_failures) parts.push(`${stats.send_failures} envoi(s) impossible(s)`);
+    if (stats.since) parts.push(`depuis le ${formatParis(stats.since)}`);
+    return [{
+        label: "Fiabilité du réveil",
+        state: bad && answered / stats.attempts < 0.8 ? "degraded" : "healthy",
+        value: `${answered}/${stats.attempts} réveils suivis d'une connexion`,
+        detail: parts.join(" · "),
+    }];
 }
 
 export function katsuyuCard(workersDocument, error, latestKatsuyu = null) {
@@ -511,7 +558,7 @@ export function katsuyuCard(workersDocument, error, latestKatsuyu = null) {
             ["Dernier contact", formatParis(worker.last_seen_at)],
             ["Runtimes déclarés", worker.runtimes_reported_at ? formatParis(worker.runtimes_reported_at) : "Jamais (Katsuyu antérieur)"],
         ],
-        rows: [...rows, ...katsuyuPowerRows(worker), ...katsuyuHostRows(worker, latestKatsuyu)],
+        rows: [...rows, ...katsuyuWakeStatsRow(worker), ...katsuyuPowerRows(worker), ...katsuyuHostRows(worker, latestKatsuyu)],
         emptyRows: "Aucune capacité annoncée.",
     };
 }

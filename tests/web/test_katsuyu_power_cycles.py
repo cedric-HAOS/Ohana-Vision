@@ -19,7 +19,7 @@ const context = vm.createContext({
     escapeHtml: value => String(value), API: {}, fetchJson: async () => ({}),
     Intl, Date, Object, Number, Math, String, Array,
 });
-vm.runInContext(source + '\nglobalThis.rows = katsuyuPowerRows;', context);
+vm.runInContext(source + '\nglobalThis.rows = katsuyuPowerRows; globalThis.stats = katsuyuWakeStatsRow;', context);
 const rows = context.rows;
 const at = (hour, minute, second = 0) =>
     `2026-09-29T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}+02:00`;
@@ -101,6 +101,62 @@ assert.equal(listed.length, 3);
 assert.match(listed[0].detail, /Réveil 2[^ ]* /);
 
 assert.equal(rows({}, now).length, 0);
+
+// unanswered wake, retried, then abandoned explicitly (one cycle, three tries)
+const wakeSent = (minute, trigger, attempt) => ({kind: 'wake_sent', occurred_at: at(5, minute), detail: {trigger, attempt, pending_jobs: {'logs.health_check': 1}, timeout_seconds: 180}});
+const abandoned = {power_events: [
+    {kind: 'wake_abandoned', occurred_at: at(5, 32), detail: {attempts: 3, pending_jobs: {'logs.health_check': 1}}},
+    {kind: 'wake_timeout', occurred_at: at(5, 32), detail: {attempt: 3}},
+    wakeSent(29, 'retry', 3),
+    {kind: 'wake_timeout', occurred_at: at(5, 16), detail: {attempt: 2}},
+    wakeSent(13, 'retry', 2),
+    {kind: 'wake_timeout', occurred_at: at(5, 3), detail: {attempt: 1}},
+    wakeSent(0, 'queued_jobs', 1),
+]};
+const listedAbandoned = rows(abandoned, now);
+assert.equal(listedAbandoned.length, 1);
+assert.equal(listedAbandoned[0].state, 'degraded');
+assert.equal(listedAbandoned[0].value, 'Réveil abandonné');
+assert.match(listedAbandoned[0].detail, /3 tentatives/);
+assert.match(listedAbandoned[0].detail, /suivent leur délai/);
+
+const oneTimeout = {power_events: [
+    {kind: 'wake_timeout', occurred_at: at(5, 3), detail: {attempt: 1}},
+    wakeSent(0, 'queued_jobs', 1),
+]};
+[row] = rows(oneTimeout, now);
+assert.equal(row.value, 'Sans réponse');
+assert.match(row.detail, /aucune connexion après 180 s/);
+
+const late = {power_events: [
+    {kind: 'worker_online', occurred_at: at(5, 4), detail: {late: true, after_seconds: 240}},
+    {kind: 'wake_timeout', occurred_at: at(5, 3), detail: {attempt: 1}},
+    wakeSent(0, 'queued_jobs', 1),
+]};
+[row] = rows(late, now);
+assert.equal(row.value, 'Connecté en retard');
+assert.match(row.detail, /en retard/);
+
+const manual = {power_events: [
+    {kind: 'worker_online', occurred_at: at(9, 0), detail: {manual: true}},
+    {kind: 'wake_timeout', occurred_at: at(5, 3), detail: {attempt: 1}},
+    wakeSent(0, 'queued_jobs', 1),
+]};
+[row] = rows(manual, now);
+assert.equal(row.value, 'PC démarré à la main');
+
+// reliability row
+assert.equal(context.stats({}).length, 0);
+assert.equal(context.stats({wake_stats: {attempts: 0}}).length, 0);
+const [reliable] = context.stats({wake_stats: {attempts: 10, on_time: 9, late: 1, unanswered: 0, abandoned: 0, send_failures: 0, median_seconds: 61, max_seconds: 140, since: at(1, 0)}});
+assert.equal(reliable.state, 'healthy');
+assert.equal(reliable.value, "10/10 réveils suivis d'une connexion");
+assert.match(reliable.detail, /médiane 61 s, maximum 140 s/);
+const [shaky] = context.stats({wake_stats: {attempts: 10, on_time: 5, late: 0, unanswered: 4, abandoned: 1, send_failures: 1, median_seconds: 90, max_seconds: 170, since: null}});
+assert.equal(shaky.state, 'degraded');
+assert.match(shaky.detail, /4 sans réponse/);
+assert.match(shaky.detail, /1 abandonné/);
+assert.match(shaky.detail, /1 envoi/);
 """
 
 

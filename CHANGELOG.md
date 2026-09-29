@@ -9,6 +9,10 @@
   manuel), en combien de secondes il s'est connecté, ce qu'il a exécuté et
   comment le cycle s'est terminé (PC éteint, PC laissé allumé avec la raison,
   sans réponse, réveil impossible à envoyer).
+- Carte Katsuyu : ligne « Fiabilité du réveil » (réveils suivis d'une
+  connexion, délai médian et maximal, retards, sans-réponse, abandons) ; un
+  cycle réveillé plusieurs fois affiche ses tentatives, « Réveil abandonné »,
+  « Connecté en retard » ou « PC démarré à la main ».
 
 ## [1.33.0] — 2026-09-29 — Page Tsunade en deux colonnes, composants de journaux et statistiques
 
