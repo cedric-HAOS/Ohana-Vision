@@ -16,6 +16,11 @@
   dérives déjà suivies par un incident, bouton « Ignorer 30 jours » et liste
   des dérives ignorées avec « Surveiller de nouveau » ; relais
   `/api/administration/tsunade/preventive/mute` et `/unmute`.
+- Vue « Historique » (durcissement de la Phase 3) : recherche des incidents
+  par période, équipement, capacité et issue, fiche par équipement, frise des
+  30 derniers jours avec les réparations ; bouton « Incidents semblables » sur
+  chaque carte d'incident (ressemblance expliquée et issue des incidents
+  passés).
 
 ## [1.31.0] — 2026-09-28 — Ohana supervise Ohana
 

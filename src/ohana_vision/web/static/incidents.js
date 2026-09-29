@@ -73,6 +73,8 @@ export class IncidentsController {
         // Manual forms survive the periodic re-render, with their draft.
         this.manualForms = new Set();
         this.manualDrafts = new Map();
+        // Phase 3 hardening: similar past incidents, read when asked.
+        this.similar = new Map();
         this.logCheckAvailable = false;
         this.expandedLogAnomalies = new Set();
         this.filter = "active";
@@ -113,6 +115,12 @@ export class IncidentsController {
             const copyButton = event.target.closest("[data-tsunade-copy-command]");
             if (copyButton) {
                 void this.copyCommand(copyButton);
+                return;
+            }
+
+            const similarButton = event.target.closest("[data-tsunade-similar]");
+            if (similarButton) {
+                void this.toggleSimilar(similarButton.dataset.tsunadeSimilar);
                 return;
             }
 
@@ -543,6 +551,47 @@ export class IncidentsController {
         return [operation, target].filter(Boolean).join(" · ") || "Réparation";
     }
 
+    async toggleSimilar(incidentId) {
+        if (this.similar.has(incidentId)) {
+            this.similar.delete(incidentId);
+            this.render();
+            return;
+        }
+        this.similar.set(incidentId, null);
+        this.render();
+        try {
+            this.similar.set(incidentId, await fetchJson(API.tsunadeSimilarIncidents(incidentId)));
+        } catch (error) {
+            this.similar.set(incidentId, {error: this.errorMessage(error)});
+        }
+        this.render();
+    }
+
+    similarView(incidentId) {
+        if (!this.similar?.has(incidentId)) {
+            return "";
+        }
+        const result = this.similar.get(incidentId);
+        if (result === null) {
+            return '<div class="incident-similar"><small>Recherche des incidents semblables…</small></div>';
+        }
+        if (result.error) {
+            return `<div class="incident-similar"><small>Recherche impossible : ${escapeHtml(result.error)}</small></div>`;
+        }
+        const outcomes = {repaired: "réparé (vérifié)", manual: "action manuelle confirmée", resolved: "revenu seul", ongoing: "en cours"};
+        const items = (result.similar ?? []).map((item) => `<li>
+                <strong>${escapeHtml(formatDate(item.started_at))} · ${escapeHtml(String(item.equipment_id).toUpperCase())}</strong>
+                · ${escapeHtml(outcomes[item.outcome] ?? item.outcome)}${item.repair_failed ? " (une réparation a échoué)" : ""}
+                · ressemblance ${escapeHtml(Math.round((item.similarity?.score ?? 0) * 100))} %
+                <small>${escapeHtml([...(item.similarity?.matched ?? []), ...(item.similarity?.differences ?? [])].join(" · "))}</small>
+                ${item.final_result ? `<small>${escapeHtml(item.final_result)}</small>` : ""}
+            </li>`).join("");
+        return `<div class="incident-similar">
+            ${items ? `<ul>${items}</ul>` : "<p><small>Aucun incident passé assez semblable.</small></p>"}
+            <small>${escapeHtml(result.note ?? "")}</small>
+        </div>`;
+    }
+
     async setExperienceState(experienceId, state, button) {
         button.disabled = true;
         this.showError("");
@@ -849,7 +898,9 @@ export class IncidentsController {
                         <button class="configuration-secondary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-repair-id="${escapeHtml(proposedRepair.repair_id)}" data-tsunade-repair-decision="refuse" type="button">Refuser</button>` : ""}
                         ${this.canDeclareManual(incident) ? `<button class="configuration-secondary-button" data-tsunade-manual-open="${escapeHtml(incident.incident_id)}" type="button">J’ai corrigé manuellement</button>` : ""}
                         <button class="configuration-secondary-button" data-tsunade-details="${escapeHtml(incident.incident_id)}" type="button">${this.expandedDetails.has(incident.incident_id) ? "Fermer le dossier" : "Voir le dossier"}</button>
+                        <button class="configuration-secondary-button" data-tsunade-similar="${escapeHtml(incident.incident_id)}" type="button">${this.similar?.has(incident.incident_id) ? "Masquer les incidents semblables" : "Incidents semblables"}</button>
                     </div>
+                    ${this.similarView(incident.incident_id)}
                     ${this.manualForm(incident)}
                     ${this.manualStatus(incident)}
                     ${this.manualLeads(incident)}

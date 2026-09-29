@@ -1703,6 +1703,7 @@ def test_stylesheet_entrypoint_imports_all_responsibility_modules() -> None:
         '@import url("./styles/services.css");',
         '@import url("./styles/host.css");',
         '@import url("./styles/ohana.css");',
+        '@import url("./styles/history.css");',
         '@import url("./styles/device-details.css");',
         '@import url("./styles/timeline.css");',
         '@import url("./styles/configuration.css");',

@@ -221,6 +221,23 @@ class AgentAdministrationClient:
     def unmute_preventive(self, payload: dict[str, Any]) -> dict[str, Any]:
         return self._request("POST", "/v1/preventive/unmute", payload)
 
+    def search_incident_history(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Phase 3: past and open incidents matching the filters."""
+        return self._request("POST", "/v1/incidents/history", payload)
+
+    def read_equipment_history(self, equipment_id: str) -> dict[str, Any]:
+        return self._request(
+            "GET", f"/v1/equipment/{quote(equipment_id, safe='')}/history"
+        )
+
+    def read_incident_timeline(self) -> dict[str, Any]:
+        return self._request("GET", "/v1/incidents/timeline")
+
+    def read_similar_incidents(self, incident_id: str) -> dict[str, Any]:
+        return self._request(
+            "GET", f"/v1/incidents/{quote(incident_id, safe='')}/similar"
+        )
+
     def read_agent_vitals(self) -> dict[str, Any]:
         """Phase 5: scheduler, queues, storage, retention and versions."""
         return self._request("GET", "/v1/vitals")

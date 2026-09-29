@@ -70,6 +70,10 @@
       <span aria-hidden="true" class="sidebar-navigation__icon sidebar-navigation__icon--ohana"></span>
       <span>Ohana</span>
      </button>
+     <button class="sidebar-navigation__item" data-navigation-target="history" type="button">
+      <span aria-hidden="true" class="sidebar-navigation__icon sidebar-navigation__icon--timeline"></span>
+      <span>Historique</span>
+     </button>
      <button class="sidebar-navigation__item" data-navigation-target="timeline" type="button">
       <span
     aria-hidden="true"
@@ -704,6 +708,22 @@
         Constats sans action automatique : un composant muet est signalé, jamais redémarré par Ohana.
         L’absence de Katsuyu ou de Shizune est normale et n’ouvre pas d’incident.
        </p>
+      </div>
+     </section>
+     <section aria-labelledby="history-heading" class="application-view" data-view="history" hidden="">
+      <div class="history-view">
+       <div class="panel-heading">
+        <div>
+         <p class="panel-heading__kicker">Tsunade · mémoire</p>
+         <h2 id="history-heading">Historique des incidents</h2>
+         <p class="panel-heading__description">
+          Incidents passés et en cours, fiche par équipement et frise des 30 derniers jours.
+         </p>
+        </div>
+       </div>
+       <div id="history-content" aria-live="polite">
+        <p class="history-empty">Lecture de l’historique…</p>
+       </div>
       </div>
      </section>
      <section aria-labelledby="timeline-heading" class="application-view" data-view="timeline" hidden="">

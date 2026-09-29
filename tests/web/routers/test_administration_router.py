@@ -250,6 +250,18 @@ class FakeAdministrationClient:
     def read_agent_vitals(self) -> dict[str, Any]:
         return {"schema_version": 1, "scheduler": {"state": "on_time"}}
 
+    def search_incident_history(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return {"filters": payload, "incidents": []}
+
+    def read_incident_timeline(self) -> dict[str, Any]:
+        return {"incidents": [], "repairs": []}
+
+    def read_equipment_history(self, equipment_id: str) -> dict[str, Any]:
+        return {"equipment_id": equipment_id}
+
+    def read_similar_incidents(self, incident_id: str) -> dict[str, Any]:
+        return {"incident_id": incident_id, "similar": []}
+
     def mute_preventive(self, payload: dict[str, Any]) -> dict[str, Any]:
         return {**payload, "muted_until": "2026-10-29T12:00:00+01:00"}
 
@@ -628,6 +640,27 @@ def test_administration_routes_proxy_the_preventive_synthesis() -> None:
     assert response.json() == {"schema_version": 1, "status": "stable", "watch": []}
     queued = client.post("/api/administration/tsunade/preventive/backfill")
     assert queued.json() == {"type": "trends.history_backfill", "status": "QUEUED"}
+
+
+def test_administration_routes_proxy_the_incident_history() -> None:
+    client = make_client(FakeAdministrationClient())
+
+    searched = client.get(
+        "/api/administration/tsunade/history",
+        params={"equipment_id": "infra-01", "outcome": "repaired"},
+    )
+    timeline = client.get("/api/administration/tsunade/timeline")
+    sheet = client.get("/api/administration/tsunade/equipment/infra-01/history")
+    similar = client.get("/api/administration/tsunade/incidents/i-1/similar")
+
+    assert searched.json()["filters"] == {
+        "equipment_id": "infra-01",
+        "outcome": "repaired",
+        "limit": 200,
+    }
+    assert timeline.json() == {"incidents": [], "repairs": []}
+    assert sheet.json() == {"equipment_id": "infra-01"}
+    assert similar.json() == {"incident_id": "i-1", "similar": []}
 
 
 def test_administration_routes_proxy_preventive_mutes() -> None:

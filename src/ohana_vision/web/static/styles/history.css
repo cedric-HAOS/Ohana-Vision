@@ -1,0 +1,185 @@
+/* Phase 3 hardening: Tsunade's incident history. */
+.history-view {
+    display: grid;
+    gap: var(--ohana-space-5);
+}
+
+.history-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ohana-space-3);
+}
+
+.history-filters label {
+    display: grid;
+    gap: var(--ohana-space-1);
+    color: var(--ohana-text-muted);
+    font-size: 0.85rem;
+}
+
+.history-count,
+.history-empty,
+.history-timeline__range,
+.history-timeline__legend {
+    color: var(--ohana-text-muted);
+    font-size: 0.85rem;
+}
+
+.history-table-wrapper {
+    overflow-x: auto;
+    border: var(--ohana-border-width-thin) solid var(--ohana-border-default);
+    border-radius: var(--ohana-radius-xl);
+    background: var(--ohana-background-surface);
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.history-table th,
+.history-table td {
+    padding: var(--ohana-space-2) var(--ohana-space-3);
+    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-default);
+    text-align: left;
+    vertical-align: top;
+}
+
+.history-table td small {
+    display: block;
+    color: var(--ohana-text-muted);
+    overflow-wrap: anywhere;
+}
+
+.history-table tr[data-outcome="ongoing"] .history-outcome {
+    color: var(--ohana-health-degraded);
+}
+
+.history-table tr[data-outcome="repaired"] .history-outcome,
+.history-table tr[data-outcome="manual"] .history-outcome {
+    color: var(--ohana-health-healthy);
+}
+
+.history-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ohana-brand-primary);
+    font: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.history-sheet {
+    display: grid;
+    gap: var(--ohana-space-3);
+    padding: var(--ohana-space-5);
+    border: var(--ohana-border-width-thin) solid var(--ohana-border-default);
+    border-radius: var(--ohana-radius-xl);
+    background: var(--ohana-background-surface);
+}
+
+.history-sheet header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--ohana-space-3);
+}
+
+.history-sheet__facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: var(--ohana-space-3);
+}
+
+.history-sheet__facts dd {
+    margin: 0;
+}
+
+.history-sheet__facts dt {
+    color: var(--ohana-text-muted);
+    font-size: 0.8rem;
+}
+
+.history-timeline {
+    display: grid;
+    gap: var(--ohana-space-2);
+}
+
+.history-timeline__row {
+    display: grid;
+    grid-template-columns: 7rem 1fr;
+    align-items: center;
+    gap: var(--ohana-space-3);
+}
+
+.history-timeline__track {
+    position: relative;
+    height: 1.4rem;
+    border-radius: var(--ohana-radius-md);
+    background: var(--ohana-background-surface-raised);
+}
+
+.history-timeline__track .history-timeline__bar {
+    position: absolute;
+    top: 0.2rem;
+    bottom: 0.2rem;
+}
+
+.history-timeline__bar {
+    display: inline-block;
+    min-width: 0.6rem;
+    min-height: 0.8rem;
+    border-radius: 3px;
+    background: var(--ohana-health-degraded);
+}
+
+.history-timeline__bar[data-severity="critical"] {
+    background: var(--ohana-health-critical);
+}
+
+.history-timeline__repair {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--ohana-health-healthy);
+}
+
+.history-timeline__track .history-timeline__repair {
+    position: absolute;
+    top: -0.25rem;
+    transform: translateX(-50%);
+}
+
+.history-timeline__repair[data-status="failed"] {
+    background: var(--ohana-health-critical);
+}
+
+@media (max-width: 640px) {
+    .history-timeline__row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.incident-similar {
+    display: grid;
+    gap: var(--ohana-space-2);
+    padding: var(--ohana-space-3);
+    border-radius: var(--ohana-radius-md);
+    background: var(--ohana-background-surface-raised);
+    overflow-wrap: anywhere;
+}
+
+.incident-similar ul {
+    display: grid;
+    gap: var(--ohana-space-2);
+    margin: 0;
+    padding-left: var(--ohana-space-4);
+}
+
+.incident-similar small {
+    display: block;
+    color: var(--ohana-text-muted);
+}

@@ -271,6 +271,54 @@ def read_experiences(request: Request) -> dict[str, Any]:
     return _call(client.read_experiences)
 
 
+@router.get("/tsunade/history")
+def search_incident_history(
+    request: Request,
+    equipment_id: str | None = None,
+    capability_id: str | None = None,
+    since: str | None = None,
+    until: str | None = None,
+    outcome: str | None = None,
+    limit: int = 200,
+) -> dict[str, Any]:
+    """Past and open incidents, filtered; the Agent takes the filters as a body."""
+    client = _client(request)
+    payload: dict[str, Any] = {
+        key: value
+        for key, value in {
+            "equipment_id": equipment_id,
+            "capability_id": capability_id,
+            "since": since,
+            "until": until,
+            "outcome": outcome,
+        }.items()
+        if value
+    }
+    payload["limit"] = limit
+    return _call(lambda: client.search_incident_history(payload))
+
+
+@router.get("/tsunade/timeline")
+def read_incident_timeline(request: Request) -> dict[str, Any]:
+    """Incidents and executed repairs of the last 30 days."""
+    client = _client(request)
+    return _call(client.read_incident_timeline)
+
+
+@router.get("/tsunade/equipment/{equipment_id}/history")
+def read_equipment_history(request: Request, equipment_id: str) -> dict[str, Any]:
+    """One equipment's incidents, repairs and known repairs."""
+    client = _client(request)
+    return _call(lambda: client.read_equipment_history(equipment_id))
+
+
+@router.get("/tsunade/incidents/{incident_id}/similar")
+def read_similar_incidents(request: Request, incident_id: str) -> dict[str, Any]:
+    """Past incidents alike this one, and what resolved them."""
+    client = _client(request)
+    return _call(lambda: client.read_similar_incidents(incident_id))
+
+
 @router.get("/agent/vitals")
 def read_agent_vitals(request: Request) -> dict[str, Any]:
     """The Agent's own detail for the Ohana view."""

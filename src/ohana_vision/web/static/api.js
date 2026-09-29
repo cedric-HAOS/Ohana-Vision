@@ -20,6 +20,12 @@ export const API = Object.freeze({
     tsunadeExperiences: "/api/administration/tsunade/experiences",
     tsunadePreventive: "/api/administration/tsunade/preventive",
     agentVitals: "/api/administration/agent/vitals",
+    tsunadeHistory: "/api/administration/tsunade/history",
+    tsunadeTimeline: "/api/administration/tsunade/timeline",
+    tsunadeEquipmentHistory: (equipmentId) =>
+        `/api/administration/tsunade/equipment/${encodeURIComponent(equipmentId)}/history`,
+    tsunadeSimilarIncidents: (incidentId) =>
+        `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/similar`,
     tsunadePreventiveBackfill: "/api/administration/tsunade/preventive/backfill",
     tsunadePreventiveMute: "/api/administration/tsunade/preventive/mute",
     tsunadePreventiveUnmute: "/api/administration/tsunade/preventive/unmute",
