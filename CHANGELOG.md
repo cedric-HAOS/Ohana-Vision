@@ -2,6 +2,10 @@
 
 ## Non publié
 
+## [1.35.0] — 2026-09-29 — Suivi des décisions dans la passerelle Shizune
+
+Publiée le jour même de 1.34.1, à la demande de l'utilisateur.
+
 ### Ajouté
 
 - Passerelle Shizune : `GET /api/shizune/requests/recent` relaie les demandes
