@@ -91,6 +91,18 @@ def read_requests(
     return _call(request, lambda: _client(request).read_requests(device_id, token))
 
 
+@router.get("/requests/recent")
+def read_recent_requests(
+    request: Request,
+    authorization: str | None = Header(default=None),
+    companion_id: str | None = Header(default=None, alias="X-Ohana-Companion-Id"),
+) -> JSONResponse:
+    device_id, token = _identity(authorization, companion_id)
+    return _call(
+        request, lambda: _client(request).read_recent_requests(device_id, token)
+    )
+
+
 @router.get("/activity")
 def read_activity(
     request: Request,

@@ -2,6 +2,12 @@
 
 ## Non publié
 
+### Ajouté
+
+- Passerelle Shizune : `GET /api/shizune/requests/recent` relaie les demandes
+  Tsunade déjà traitées (contrat Agent existant `/v1/incidents/requests/all`)
+  pour le suivi des décisions dans Shizune.
+
 ## [1.34.1] — 2026-09-29 — Réveil provoqué par un contrôle manuel
 
 Publiée le jour même de 1.34.0, à la demande de l'utilisateur.

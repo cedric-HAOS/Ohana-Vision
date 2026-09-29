@@ -64,6 +64,15 @@ class AgentCompanionClient:
             token=token,
         )
 
+    def read_recent_requests(self, device_id: str, token: str) -> dict[str, Any]:
+        """Pending and already handled requests, for the decision follow-up."""
+        return self._request(
+            "GET",
+            "/v1/incidents/requests/all",
+            device_id=device_id,
+            token=token,
+        )
+
     def read_activity(self, device_id: str, token: str) -> dict[str, Any]:
         return self._request(
             "GET",
