@@ -2,6 +2,10 @@
 
 ## Non publié
 
+## [1.34.0] — 2026-09-29 — Cycles de réveil et fiabilité du réveil de Katsuyu dans la vue Ohana
+
+Publiée le jour même de 1.33.0, à la demande de l'utilisateur.
+
 ### Ajouté
 
 - Vue « Ohana », carte Katsuyu : une ligne « Cycle de réveil » par cycle (trois
