@@ -120,6 +120,12 @@ assert.equal(listedAbandoned[0].value, 'Réveil abandonné');
 assert.match(listedAbandoned[0].detail, /3 tentatives/);
 assert.match(listedAbandoned[0].detail, /suivent leur délai/);
 
+const manualCheck = {power_events: [
+    {kind: 'wake_sent', occurred_at: at(3, 0), detail: {trigger: 'manual_check', pending_jobs: {'logs.health_check': 1}, timeout_seconds: 180}},
+]};
+[row] = rows(manualCheck, Date.parse(at(3, 1)));
+assert.match(row.detail, /contrôle demandé depuis Vision \(Contrôle des journaux ×1\)/);
+
 const oneTimeout = {power_events: [
     {kind: 'wake_timeout', occurred_at: at(5, 3), detail: {attempt: 1}},
     wakeSent(0, 'queued_jobs', 1),

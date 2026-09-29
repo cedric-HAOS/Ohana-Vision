@@ -400,7 +400,10 @@ export function katsuyuPowerRows(worker, now = Date.now()) {
             value = "Réveil non envoyé";
             parts.push(`Wake-on-LAN impossible (${byKind.wake_failed.detail.error ?? "erreur"})`);
         } else if (wake) {
-            const trigger = wake.detail.trigger === "manual" ? "test manuel depuis Vision" : "travaux en attente";
+            const trigger = {
+                manual: "test manuel depuis Vision",
+                manual_check: "contrôle demandé depuis Vision",
+            }[wake.detail.trigger] ?? "travaux en attente";
             parts.push(`Réveil ${formatParis(wake.occurred_at)} : ${trigger} (${pendingJobsText(wake.detail.pending_jobs)})`);
         }
         if (attempts > 1) {

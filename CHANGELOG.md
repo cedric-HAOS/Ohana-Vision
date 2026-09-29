@@ -2,6 +2,10 @@
 
 ## Non publié
 
+### Corrigé
+
+- Carte Katsuyu : un réveil provoqué par le « contrôle manuel des journaux »
+  s'affiche « contrôle demandé depuis Vision ».
 ## [1.34.0] — 2026-09-29 — Cycles de réveil et fiabilité du réveil de Katsuyu dans la vue Ohana
 
 Publiée le jour même de 1.33.0, à la demande de l'utilisateur.
