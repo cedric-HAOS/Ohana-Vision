@@ -2,6 +2,10 @@
 
 ## Non publié
 
+## [1.34.1] — 2026-09-29 — Réveil provoqué par un contrôle manuel
+
+Publiée le jour même de 1.34.0, à la demande de l'utilisateur.
+
 ### Corrigé
 
 - Carte Katsuyu : un réveil provoqué par le « contrôle manuel des journaux »
