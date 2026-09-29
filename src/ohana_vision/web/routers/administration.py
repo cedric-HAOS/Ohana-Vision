@@ -383,6 +383,27 @@ def revoke_log_signature(payload: dict[str, Any], request: Request) -> dict[str,
     return _call(lambda: client.revoke_log_signature(payload))
 
 
+@router.get("/tsunade/repairs/statistics")
+def read_repair_statistics(request: Request) -> dict[str, Any]:
+    """Expose the Agent's detailed repair statistics and ranking."""
+    client = _client(request)
+    return _call(client.read_repair_statistics)
+
+
+@router.post("/tsunade/incidents/logs/accepted-components")
+def accept_log_component(payload: dict[str, Any], request: Request) -> dict[str, Any]:
+    """Accept the non-critical anomalies of one log component as known noise."""
+    client = _client(request)
+    return _call(lambda: client.accept_log_component(payload))
+
+
+@router.post("/tsunade/incidents/logs/accepted-components/revoke")
+def revoke_log_component(payload: dict[str, Any], request: Request) -> dict[str, Any]:
+    """Count one accepted log component again."""
+    client = _client(request)
+    return _call(lambda: client.revoke_log_component(payload))
+
+
 @router.get("/tsunade/incidents/{incident_id}")
 def read_tsunade_incident(incident_id: str, request: Request) -> dict[str, Any]:
     """Expose one incident evolution through the existing administration proxy."""

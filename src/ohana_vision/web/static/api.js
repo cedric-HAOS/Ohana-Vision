@@ -34,6 +34,11 @@ export const API = Object.freeze({
     tsunadeAcceptedLogs: "/api/administration/tsunade/incidents/logs/accepted",
     tsunadeRevokeLog:
         "/api/administration/tsunade/incidents/logs/accepted/revoke",
+    tsunadeRepairStatistics: "/api/administration/tsunade/repairs/statistics",
+    tsunadeAcceptLogComponent:
+        "/api/administration/tsunade/incidents/logs/accepted-components",
+    tsunadeRevokeLogComponent:
+        "/api/administration/tsunade/incidents/logs/accepted-components/revoke",
     administrationJob: (jobId) =>
         `/api/administration/jobs/${encodeURIComponent(jobId)}`,
     tsunadeLogInvestigate: (incidentId) =>

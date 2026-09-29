@@ -269,7 +269,22 @@ class FakeAdministrationClient:
         return {**payload, "muted_until": None}
 
     def read_accepted_log_signatures(self) -> dict[str, Any]:
-        return {"schema_version": 1, "signatures": list(self.accepted)}
+        return {
+            "schema_version": 1,
+            "signatures": list(self.accepted),
+            "components": list(getattr(self, "accepted_components", [])),
+        }
+
+    def read_repair_statistics(self) -> dict[str, Any]:
+        return {"schema_version": 1, "periods": {"all": {"proposed": 2}}, "ranking": []}
+
+    def accept_log_component(self, payload: dict[str, Any]) -> dict[str, Any]:
+        self.accepted_components = [*getattr(self, "accepted_components", []), payload]
+        return self.read_accepted_log_signatures()
+
+    def revoke_log_component(self, payload: dict[str, Any]) -> dict[str, Any]:
+        self.accepted_components.remove(payload)
+        return self.read_accepted_log_signatures()
 
     def accept_log_signature(self, payload: dict[str, Any]) -> dict[str, Any]:
         self.accepted.append(payload)
@@ -617,6 +632,34 @@ def test_administration_routes_proxy_accepted_log_signatures() -> None:
     assert accepted.json()["signatures"] == [signature]
     assert listed.json()["signatures"] == [signature]
     assert revoked.json()["signatures"] == []
+
+
+def test_administration_routes_proxy_accepted_log_components() -> None:
+    fake = FakeAdministrationClient()
+    fake.accepted = []
+    client = make_client(fake)
+    component = {"source": "ha-01", "component": "tapo_control", "label": "Tapo"}
+
+    accepted = client.post(
+        "/api/administration/tsunade/incidents/logs/accepted-components",
+        json=component,
+    )
+    revoked = client.post(
+        "/api/administration/tsunade/incidents/logs/accepted-components/revoke",
+        json=component,
+    )
+
+    assert accepted.json()["components"] == [component]
+    assert revoked.json()["components"] == []
+
+
+def test_administration_routes_proxy_repair_statistics() -> None:
+    client = make_client(FakeAdministrationClient())
+
+    response = client.get("/api/administration/tsunade/repairs/statistics")
+
+    assert response.status_code == 200
+    assert response.json()["periods"]["all"]["proposed"] == 2
 
 
 def test_administration_routes_proxy_known_repairs() -> None:

@@ -14,9 +14,7 @@
     box-shadow: var(--ohana-shadow-md);
 }
 
-.incidents-history { order: 10; padding: var(--ohana-space-4) var(--ohana-space-5); border-top: 1px solid var(--ohana-border-subtle); }
-.incidents-history > summary { cursor: pointer; color: var(--ohana-text-secondary); }
-.incidents-cycle-summary { margin: 0; padding: 0 var(--ohana-space-5) var(--ohana-space-3); color: var(--ohana-text-secondary); }
+.incidents-cycle-summary { margin: 0; color: var(--ohana-text-secondary); font-size: var(--ohana-font-size-sm, inherit); }
 .incidents-group-heading { margin: var(--ohana-space-3) 0 0; font-size: var(--ohana-font-size-md); color: var(--ohana-text-secondary); }
 .incident-compact-decision { display: grid; gap: var(--ohana-space-2); padding: var(--ohana-space-3) 0; }
 .incident-compact-decision small { color: var(--ohana-text-muted); }
@@ -41,19 +39,6 @@
     gap: var(--ohana-space-3);
     padding: var(--ohana-space-4) var(--ohana-space-5);
     border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
-}
-
-.incidents-log-health {
-    display: grid;
-    grid-template-columns: minmax(12rem, 0.35fr) minmax(18rem, 1fr);
-    gap: var(--ohana-space-4);
-    padding: var(--ohana-space-4) var(--ohana-space-5);
-    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
-}
-
-.incidents-log-health h3,
-.incidents-log-health p {
-    margin: 0;
 }
 
 .incidents-log-health__content,
@@ -965,7 +950,6 @@
         padding-inline: var(--ohana-space-3);
     }
 
-    .incidents-log-health,
     .incidents-log-health__content ul {
         grid-template-columns: 1fr;
     }
@@ -991,6 +975,9 @@
 }
 
 @media (min-width: 1001px) {
+    /* The panel has the viewport height and hides its overflow: the incidents
+       and the side column each scroll on their own, so nothing a section
+       shows can squeeze the other one to zero height. */
     .incidents-panel {
         display: flex;
         flex-direction: column;
@@ -998,25 +985,50 @@
         overflow: hidden;
     }
 
-    /* The panel has the viewport height and hides its overflow: opened, the
-       review scrolls on its own instead of being cut off below the list. */
-    .incidents-history[open] {
-        flex: 0 1 auto;
+    .incidents-layout {
+        display: grid;
+        flex: 1 1 auto;
+        grid-template-columns: minmax(0, 1fr) minmax(20rem, 27rem);
         min-height: 0;
-        max-height: 70%;
-        overflow-y: auto;
-        overscroll-behavior-y: contain;
     }
 
-    .incidents-list {
+    .incidents-main,
+    .incidents-side {
         display: flex;
-        flex: 1 1 auto;
         flex-direction: column;
         min-height: 0;
-        overflow-y: auto;
+    }
+
+    .incidents-main__scroll,
+    .incidents-side__scroll {
+        flex: 1 1 auto;
+        min-height: 0;
         overflow-x: hidden;
+        overflow-y: auto;
         overscroll-behavior-y: contain;
         scrollbar-gutter: stable;
+        scrollbar-width: thin;
+        scrollbar-color: var(--ohana-border-default) transparent;
+    }
+
+    .incidents-main__scroll::-webkit-scrollbar,
+    .incidents-side__scroll::-webkit-scrollbar {
+        width: 0.55rem;
+    }
+
+    .incidents-main__scroll::-webkit-scrollbar-track,
+    .incidents-side__scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .incidents-main__scroll::-webkit-scrollbar-thumb,
+    .incidents-side__scroll::-webkit-scrollbar-thumb {
+        border-radius: var(--ohana-radius-round);
+        background: var(--ohana-border-default);
+    }
+
+    .incidents-side {
+        border-left: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
     }
 
     .incident-card {
@@ -1024,23 +1036,123 @@
     }
 
     .incidents-list {
-        scrollbar-width: thin;
-        scrollbar-color:
-            var(--ohana-border-default)
-            transparent;
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+/* Status bar: what to watch and the last log check, one line. */
+.incidents-statusbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ohana-space-2) var(--ohana-space-3);
+    padding: var(--ohana-space-3) var(--ohana-space-5);
+    border-top: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+}
+
+.incidents-statusbar__chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--ohana-space-2);
+    padding: var(--ohana-space-1) var(--ohana-space-3);
+    border: var(--ohana-border-width-thin) solid var(--ohana-border-default);
+    border-radius: var(--ohana-radius-round);
+    color: var(--ohana-text-secondary);
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+}
+
+.incidents-statusbar__chip strong {
+    color: var(--ohana-text-primary);
+    font-family: var(--ohana-font-family-mono);
+}
+
+.incidents-statusbar__chip:hover,
+.incidents-statusbar__chip:focus-visible {
+    border-color: var(--ohana-brand-primary);
+}
+
+.incidents-layout {
+    min-height: 0;
+}
+
+/* Filters carry the incident counts. */
+.incidents-filter b {
+    margin-left: var(--ohana-space-1);
+    color: var(--ohana-text-primary);
+    font-family: var(--ohana-font-family-mono);
+    font-weight: 600;
+}
+
+.incidents-main .incidents-toolbar {
+    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+}
+
+/* Side column: tabs above one panel. */
+.incidents-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ohana-space-1);
+    padding: var(--ohana-space-3) var(--ohana-space-4) 0;
+    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+}
+
+.incidents-tab {
+    padding: var(--ohana-space-2) var(--ohana-space-3);
+    border: 0;
+    border-bottom: 2px solid transparent;
+    color: var(--ohana-text-secondary);
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+}
+
+.incidents-tab.is-active {
+    border-bottom-color: var(--ohana-brand-primary);
+    color: var(--ohana-text-primary);
+    font-weight: 600;
+}
+
+.incidents-tabpanel {
+    display: grid;
+    align-content: start;
+    gap: var(--ohana-space-3);
+    padding: var(--ohana-space-4) var(--ohana-space-4);
+}
+
+.incidents-tabpanel[hidden] {
+    display: none;
+}
+
+.incidents-tabpanel .panel-heading__kicker {
+    margin: 0;
+}
+
+.incidents-side .incidents-summary {
+    grid-template-columns: 1fr;
+    padding: 0;
+    border-bottom: 0;
+}
+
+.incidents-side .incidents-log-health__content ul {
+    grid-template-columns: 1fr;
+}
+
+.incidents-side .incidents-experiences__content ul {
+    grid-template-columns: 1fr;
+}
+
+@media (max-width: 1000px) {
+    /* One column, one page scroll: the side column follows the incidents. */
+    .incidents-layout {
+        display: block;
     }
 
-    .incidents-list::-webkit-scrollbar {
-        width: 0.55rem;
-    }
-
-    .incidents-list::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .incidents-list::-webkit-scrollbar-thumb {
-        border-radius: var(--ohana-radius-round);
-        background: var(--ohana-border-default);
+    .incidents-side {
+        border-top: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
     }
 }
 
@@ -1079,9 +1191,49 @@
     color: var(--ohana-text-muted);
 }
 
+.incidents-preventive__rules-title {
+    margin: var(--ohana-space-2) 0 0;
+}
+
+.incidents-preventive__rules,
+.incidents-preventive__rules tbody {
+    display: block;
+}
+
+/* The side column is narrow: one row per rule, title and state on the first
+   line, the measure below; the header row only serves screen readers. */
+.incidents-preventive__rules thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+
+.incidents-preventive__rules tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--ohana-space-1) var(--ohana-space-3);
+    padding: var(--ohana-space-2) 0;
+    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+}
+
+.incidents-preventive__rules td {
+    padding: 0;
+    overflow-wrap: anywhere;
+}
+
+.incidents-preventive__rules td:nth-child(3) {
+    grid-column: 1 / -1;
+}
+
 .incidents-preventive__rules summary {
     cursor: pointer;
-    margin-bottom: var(--ohana-space-2);
+}
+
+.incidents-preventive__rules details small {
+    display: block;
+    margin-top: var(--ohana-space-1);
 }
 
 .incidents-preventive__backfill {
@@ -1090,4 +1242,129 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--ohana-space-2);
+}
+
+/* Log anomalies by component (Tapo, Kasa, Shelly...): named, then acceptable. */
+.incidents-log-health__content li.incidents-log-source {
+    display: block;
+    padding: 0;
+}
+
+.incidents-log-source > details > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ohana-space-2);
+    padding: var(--ohana-space-2) var(--ohana-space-3);
+    cursor: pointer;
+}
+
+.incidents-log-health__content .incidents-log-components {
+    grid-template-columns: 1fr;
+    gap: 0;
+    border-top: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+}
+
+.incidents-log-components > li {
+    align-items: center;
+    gap: var(--ohana-space-3);
+    border: 0;
+    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+    border-radius: 0;
+}
+
+.incidents-log-components > li > span {
+    display: grid;
+    min-width: 0;
+    gap: var(--ohana-space-1);
+    overflow-wrap: anywhere;
+    color: var(--ohana-text-primary);
+}
+
+.incidents-log-components small {
+    color: var(--ohana-text-muted);
+}
+
+.incidents-log-components > li.is-accepted > span {
+    color: var(--ohana-text-muted);
+}
+
+.incidents-log-components > li.is-error > span strong,
+.incidents-log-components > li.is-critical > span strong {
+    color: var(--ohana-health-critical);
+}
+
+.incident-log-component {
+    padding-bottom: var(--ohana-space-2);
+    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+}
+
+.incident-log-component__header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ohana-space-2) var(--ohana-space-3);
+}
+
+.incident-log-component__header strong {
+    font-size: var(--ohana-font-size-md);
+}
+
+/* Phase 3 hardening: repair statistics and reliability ranking. */
+.incidents-statistics {
+    display: grid;
+    gap: var(--ohana-space-2);
+}
+
+.incidents-statistics h4,
+.incidents-statistics p,
+.incidents-statistics ul {
+    margin: 0;
+}
+
+.incidents-statistics ul {
+    display: grid;
+    gap: var(--ohana-space-2);
+    padding: 0;
+    list-style: none;
+}
+
+.incidents-statistics li {
+    display: grid;
+    gap: var(--ohana-space-1);
+    padding: var(--ohana-space-2) var(--ohana-space-3);
+    border: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+    border-radius: var(--ohana-radius-sm);
+    overflow-wrap: anywhere;
+}
+
+.incidents-statistics small {
+    color: var(--ohana-text-muted);
+}
+
+.incidents-statistics__periods {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--ohana-font-size-sm, inherit);
+}
+
+.incidents-statistics__periods th,
+.incidents-statistics__periods td {
+    padding: var(--ohana-space-1) var(--ohana-space-2);
+    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+    text-align: left;
+    vertical-align: top;
+}
+
+.incidents-reliability.is-reliable {
+    color: var(--ohana-health-healthy);
+}
+
+.incidents-reliability.is-unstable,
+.incidents-reliability.is-unreliable {
+    color: var(--ohana-health-critical);
+}
+
+.incidents-reliability.is-mixed {
+    color: var(--ohana-health-degraded, var(--ohana-text-muted));
 }

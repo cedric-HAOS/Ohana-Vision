@@ -2,6 +2,39 @@
 
 ## Non publié
 
+### Ajouté
+
+- Journaux lus par composant : l'onglet « Journaux » de la page Tsunade liste,
+  pour chaque source, les composants (Tapo, Kasa, Shelly...) avec leurs
+  occurrences et leur gravité, et un bouton « Accepter » (ou « Compter à
+  nouveau ») ; le dossier d'un incident de journaux groupe ses anomalies par
+  composant, toutes présentées (8 sur 36 l'étaient), avec « Accepter <composant> ».
+  Un composant accepté ignore les variantes du texte d'erreur, sauf les lignes
+  critiques.
+- Réparations : l'onglet « Bilan » détaille les statistiques (7 jours, 30
+  jours, depuis le début ; par réparation et par équipement ; causes d'échec)
+  et « Réparations connues » est classée par fiabilité (`#1`, « Fiable »,
+  « Instable »...).
+- À surveiller : dépendance déclarée en amont, équipements dépendants qui
+  dérivent aussi, incident ouvert en amont.
+
+### Corrigé
+
+- Page Tsunade : déplier « Règles appliquées » ne bloque plus la navigation. Sur
+  écran large, les règles agrandissaient le bloc « À surveiller » jusqu'à
+  écraser la liste des incidents, dans une page qui coupe ce qui dépasse.
+
+### Modifié
+
+- Page Tsunade en deux colonnes : les incidents à gauche (filtres et bouton
+  « Contrôler les journaux » fixes en haut, compteurs dans les filtres), la
+  surveillance à droite en quatre onglets (« À surveiller », « Journaux »,
+  « Réparations connues », « Bilan »), chaque colonne défilant seule. Un
+  bandeau d'une ligne donne le nombre de dérives et l'heure du dernier
+  contrôle des journaux. Les règles préventives forment une liste (titre, état,
+  mesure) dont le critère s'ouvre au clic. Sous 1000 px, une seule colonne et un
+  seul défilement. L'onglet choisi est retenu pour la session.
+
 ## [1.32.0] — 2026-09-29 — Historique et vue Ohana détaillée
 
 - Vue Ohana (durcissement de la Phase 5) : l'Agent y montre le retard de son

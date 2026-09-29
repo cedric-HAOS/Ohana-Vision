@@ -270,6 +270,20 @@ class AgentAdministrationClient:
         """Count one accepted log anomaly again from the next review."""
         return self._request("POST", "/v1/incidents/logs/accepted/revoke", payload)
 
+    def read_repair_statistics(self) -> dict[str, Any]:
+        """Read detailed success statistics of supervised repairs."""
+        return self._request("GET", "/v1/repairs/statistics")
+
+    def accept_log_component(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Stop counting the non-critical anomalies of one log component."""
+        return self._request("POST", "/v1/incidents/logs/accepted-components", payload)
+
+    def revoke_log_component(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Count one accepted log component again from the next review."""
+        return self._request(
+            "POST", "/v1/incidents/logs/accepted-components/revoke", payload
+        )
+
     def read_job(self, job_id: str) -> dict[str, Any]:
         """Read one distributed job while Vision follows its durable state."""
         return self._request("GET", f"/v1/jobs/{quote(job_id, safe='')}")

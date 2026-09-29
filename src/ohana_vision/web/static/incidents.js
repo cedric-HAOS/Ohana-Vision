@@ -66,6 +66,12 @@ export class IncidentsController {
         this.summary = {};
         this.logHealth = null;
         this.acceptedLogSignatures = [];
+        // Log anomalies read by component (Agent >= 1.42): null on an older Agent.
+        this.acceptedLogComponents = [];
+        this.logComponents = null;
+        // Phase 3: success statistics of repairs; null on an older Agent.
+        this.repairStatistics = undefined;
+        this.openLogSources = new Set();
         // undefined until loaded; null when the Agent has no experience route.
         this.experiences = undefined;
         // Same convention for the Phase 4 preventive synthesis.
@@ -78,6 +84,10 @@ export class IncidentsController {
         this.logCheckAvailable = false;
         this.expandedLogAnomalies = new Set();
         this.filter = "active";
+        // Side column: one tab open at a time, remembered for the session.
+        this.sideTab = this.storedSideTab();
+        // Preventive rules the user unfolded: kept across the periodic refresh.
+        this.openPreventiveRules = new Set();
         this.loaded = false;
         this.focusedIncident = new URLSearchParams(window.location.search).get("incident");
         this.elements = {
@@ -97,11 +107,34 @@ export class IncidentsController {
             logCheck: document.querySelector("#tsunade-log-check"),
             commandStatus: document.querySelector("#incidents-command-status"),
             experiencePending: document.querySelector("#incidents-experience-pending"),
+            repairStatistics: document.querySelector("#tsunade-repair-statistics"),
             cycleSummary: document.querySelector("#incidents-cycle-summary"),
+            watchCount: document.querySelector("#incidents-watch-count"),
+            logState: document.querySelector("#incidents-log-state"),
+            tabs: Array.from(document.querySelectorAll("[data-tsunade-tab]")),
+            panels: Array.from(document.querySelectorAll("[data-tsunade-panel]")),
+            tabTargets: Array.from(document.querySelectorAll("[data-tsunade-tab-target]")),
         };
     }
 
     initialize() {
+        this.elements.tabs.forEach((tab, index) => {
+            tab.addEventListener("click", () => this.selectSideTab(tab.dataset.tsunadeTab));
+            tab.addEventListener("keydown", (event) => {
+                const step = {ArrowRight: 1, ArrowLeft: -1}[event.key];
+                if (!step) {
+                    return;
+                }
+                event.preventDefault();
+                const next = this.elements.tabs[(index + step + this.elements.tabs.length) % this.elements.tabs.length];
+                this.selectSideTab(next.dataset.tsunadeTab);
+                next.focus();
+            });
+        });
+        this.elements.tabTargets.forEach((chip) => {
+            chip.addEventListener("click", () => this.selectSideTab(chip.dataset.tsunadeTabTarget));
+        });
+        this.renderSideTabs();
         this.elements.filters.forEach((button) => {
             button.addEventListener("click", () => {
                 this.filter = button.dataset.incidentsFilter ?? "active";
@@ -211,6 +244,20 @@ export class IncidentsController {
                 }
             });
         });
+        // Accepting a component also works from a dossier, outside the tab.
+        [this.elements.logHealth, this.elements.list].forEach((element) => {
+            element?.addEventListener("click", (event) => {
+                const acceptButton = event.target.closest("[data-tsunade-accept-component]");
+                if (acceptButton) {
+                    void this.setLogComponent(acceptButton, true);
+                    return;
+                }
+                const revokeComponent = event.target.closest("[data-tsunade-revoke-component]");
+                if (revokeComponent) {
+                    void this.setLogComponent(revokeComponent, false);
+                }
+            });
+        });
         this.elements.logHealth?.addEventListener("click", (event) => {
             const revokeButton = event.target.closest("[data-tsunade-revoke-log]");
             if (revokeButton) {
@@ -281,16 +328,27 @@ export class IncidentsController {
                 }
             });
         }
+        void fetchJson(API.tsunadeRepairStatistics)
+            .then((payload) => (payload && typeof payload === "object" ? payload : null))
+            .catch(() => null)
+            .then((statistics) => {
+                this.repairStatistics = statistics;
+                this.renderRepairStatistics();
+            });
         const preventiveRequest = fetchJson(API.tsunadePreventive)
             .then((payload) => (payload && typeof payload === "object" ? payload : null))
             .catch(() => null);
         void preventiveRequest.then((preventive) => {
             this.preventive = preventive;
             this.renderPreventive();
+            this.renderStatusbar();
         });
         const acceptedRequest = fetchJson(API.tsunadeAcceptedLogs)
-            .then((accepted) => (Array.isArray(accepted?.signatures) ? accepted.signatures : []))
-            .catch(() => []);
+            .then((accepted) => ({
+                signatures: Array.isArray(accepted?.signatures) ? accepted.signatures : [],
+                components: Array.isArray(accepted?.components) ? accepted.components : [],
+            }))
+            .catch(() => ({signatures: [], components: []}));
         try {
             const [payload, capabilities] = await Promise.all([
                 fetchJson(`${API.tsunadeIncidents}?state=all`),
@@ -312,7 +370,10 @@ export class IncidentsController {
                 ? payload.summary
                 : {};
             this.logHealth = payload?.log_health ?? null;
-            this.acceptedLogSignatures = await acceptedRequest;
+            const accepted = await acceptedRequest;
+            this.acceptedLogSignatures = accepted.signatures;
+            this.acceptedLogComponents = accepted.components;
+            this.logComponents = Array.isArray(payload?.log_components) ? payload.log_components : null;
             // An Agent older than 1.38.0 has no route: the section says so.
             this.experiences = await experiencesRequest;
             this.logCheckAvailable = Array.isArray(capabilities?.operations)
@@ -362,20 +423,77 @@ export class IncidentsController {
             const lastFailure = experience.last_failure_at
                 ? ` · dernier échec le ${formatDate(experience.last_failure_at)}`
                 : "";
+            const reliability = experience.reliability_label
+                ? ` · <span class="incidents-reliability is-${escapeHtml(experience.reliability)}">${escapeHtml(experience.reliability_label)}</span>`
+                : "";
             const changed = !active && experience.state_changed_at
                 ? ` depuis le ${formatDate(experience.state_changed_at)}`
                 : "";
             return `<li class="${active ? "is-active" : "is-inactive"}">
                 <div class="incidents-experience__title">
-                    <strong>${escapeHtml(this.experienceAction(experience.action))}</strong>
+                    <strong>${experience.rank ? `#${escapeHtml(experience.rank)} · ` : ""}${escapeHtml(this.experienceAction(experience.action))}</strong>
                     <span class="incidents-experience__state">${escapeHtml(stateLabels[experience.state] ?? experience.state)}${escapeHtml(changed)}</span>
                 </div>
                 <span>${escapeHtml(LOG_SOURCE_LABELS[experience.equipment_id] ?? experience.equipment_id)} · ${escapeHtml(experience.capability_id)} · ${escapeHtml(experience.validated_diagnostic)}</span>
-                <small>${escapeHtml(attempts)} tentative(s) · ${escapeHtml(experience.success_count)} réussite(s) · ${escapeHtml(experience.failure_count)} échec(s) · ${escapeHtml(lastSuccess)}${escapeHtml(lastFailure)}</small>
+                <small>${escapeHtml(attempts)} tentative(s) · ${escapeHtml(experience.success_count)} réussite(s) · ${escapeHtml(experience.failure_count)} échec(s) · ${escapeHtml(lastSuccess)}${escapeHtml(lastFailure)}${reliability}</small>
                 <div class="incidents-experience__actions">${buttons}</div>
             </li>`;
         }).join("");
-        container.innerHTML = `<ul>${items}</ul><p><small>Une réparation désactivée ou obsolète n’est plus proposée ; son historique est conservé.</small></p>`;
+        container.innerHTML = `<ul>${items}</ul><p><small>Classement : réparations actives d’abord, puis par fiabilité (borne basse à 95 % du taux de réussite vérifié) ; une réparation sans issue vérifiée n’est pas classée au-dessus d’une réparation éprouvée. Une réparation désactivée ou obsolète n’est plus proposée ; son historique est conservé.</small></p>`;
+    }
+
+    /** Success statistics: by period, by repair and by equipment. */
+    renderRepairStatistics() {
+        const container = this.elements.repairStatistics;
+        if (!container) {
+            return;
+        }
+        const statistics = this.repairStatistics;
+        if (statistics === undefined) {
+            container.innerHTML = "<p>Chargement des statistiques…</p>";
+            return;
+        }
+        if (statistics === null) {
+            container.innerHTML = "<p>Statistiques indisponibles avec cette version d’Ohana-Agent.</p>";
+            return;
+        }
+        const duration = (seconds) => {
+            if (seconds == null) {
+                return "—";
+            }
+            return seconds >= 60 ? `${Math.round(seconds / 60)} min` : `${seconds} s`;
+        };
+        const percent = (value) => (value == null ? "—" : `${Number(value).toLocaleString("fr-FR")} %`);
+        const periodNames = {"7d": "7 jours", "30d": "30 jours", all: "Depuis le début"};
+        const periods = Object.entries(periodNames).map(([key, label]) => {
+            const item = statistics.periods?.[key];
+            if (!item) {
+                return "";
+            }
+            return `<tr>
+                <th scope="row">${escapeHtml(label)}</th>
+                <td>${escapeHtml(item.proposed)}</td>
+                <td>${escapeHtml(item.executed)}</td>
+                <td>${escapeHtml(item.succeeded)} / ${escapeHtml(item.failed)}${item.unverified ? ` / ${escapeHtml(item.unverified)} non vérifiée(s)` : ""}</td>
+                <td>${percent(item.success_rate)}<small> (fiable : ${percent(item.reliable_rate)})</small></td>
+            </tr>`;
+        }).join("");
+        const causes = (item) => (item.failure_causes ?? [])
+            .map((cause) => `${cause.cause} (${cause.count})`).join(" ; ");
+        const rows = (items, title) => items.map((item) => `<li>
+                <div class="incidents-experience__title"><strong>${escapeHtml(title(item))}</strong><span class="incidents-experience__state">${percent(item.success_rate)}</span></div>
+                <small>${escapeHtml(item.proposed)} proposée(s) · ${escapeHtml(item.refused)} refusée(s) · ${escapeHtml(item.executed)} exécutée(s) : ${escapeHtml(item.succeeded)} réussie(s), ${escapeHtml(item.failed)} échec(s)${item.unverified ? `, ${escapeHtml(item.unverified)} non vérifiée(s)` : ""} · retour à la normale en ${escapeHtml(duration(item.median_recovery_seconds))} · décision en ${escapeHtml(duration(item.median_decision_seconds))}</small>
+                ${item.last_failure_at ? `<small>Dernier échec le ${escapeHtml(formatDate(item.last_failure_at))}${causes(item) ? ` — ${escapeHtml(causes(item))}` : ""}</small>` : ""}
+            </li>`).join("");
+        const byRepair = rows(statistics.by_repair ?? [], (item) => this.experienceAction({operation: item.operation, target: item.target}));
+        const byEquipment = rows(statistics.by_equipment ?? [], (item) => LOG_SOURCE_LABELS[item.equipment_id] ?? String(item.equipment_id).toUpperCase());
+        container.innerHTML = `<table class="incidents-statistics__periods">
+                <thead><tr><th scope="col">Période</th><th scope="col">Proposées</th><th scope="col">Exécutées</th><th scope="col">Réussies / échecs</th><th scope="col">Taux</th></tr></thead>
+                <tbody>${periods}</tbody>
+            </table>
+            <p><small>Le taux compte les issues vérifiées par Shikamaru ; une exécution non vérifiée n’est ni une réussite ni un échec. « Fiable » est la borne basse à 95 % : peu d’essais, peu de certitude.</small></p>
+            ${byRepair ? `<h4>Par réparation</h4><ul>${byRepair}</ul>` : ""}
+            ${byEquipment ? `<h4>Par équipement</h4><ul>${byEquipment}</ul>` : ""}`;
     }
 
     renderPreventive() {
@@ -404,6 +522,15 @@ export class IncidentsController {
                 ${Array.isArray(item.correlated_with) && item.correlated_with.length
         ? `<small>Simultané avec : ${escapeHtml(item.correlated_with.join(" ; "))} (simultanéité, pas une cause).</small>`
         : ""}
+                ${Array.isArray(item.correlated_upstream) && item.correlated_upstream.length
+        ? `<small>Dépendance déclarée en amont, dérive simultanée : ${escapeHtml(item.correlated_upstream.join(" ; "))} (simultanéité, pas une cause).</small>`
+        : ""}
+                ${Array.isArray(item.correlated_downstream) && item.correlated_downstream.length
+        ? `<small>Des équipements qui en dépendent dérivent aussi : ${escapeHtml(item.correlated_downstream.join(" ; "))} (simultanéité, pas une cause).</small>`
+        : ""}
+                ${Array.isArray(item.upstream_incident) && item.upstream_incident.length
+        ? `<small>Incident ouvert en amont (dépendance déclarée) : ${escapeHtml(item.upstream_incident.join(" ; "))}.</small>`
+        : ""}
                 ${muteButton(item, true)}
             </li>`).join("")}</ul>`
             : "<p>Aucune dérive détectée.</p>";
@@ -421,25 +548,35 @@ export class IncidentsController {
                 : "",
         ].join("");
         const stateLabels = {ok: "Normal", watch: "À surveiller", insufficient_data: "Historique insuffisant"};
-        const checks = (Array.isArray(preventive.checks) ? preventive.checks : []).map((check) => `<li class="is-${escapeHtml(check.state)}">
-                <div class="incidents-experience__title">
-                    <strong>${escapeHtml(check.title)}</strong>
-                    <span class="incidents-experience__state">${escapeHtml(stateLabels[check.state] ?? check.state)}</span>
-                </div>
-                <small>${escapeHtml(check.rule)}</small>
-                <small>${escapeHtml(this.preventiveFacts(check))}</small>
-            </li>`).join("");
         // The periodic refresh must not fold the rules the user just opened.
-        const open = container.querySelector("details")?.open ? " open" : "";
+        container.querySelectorAll("details[data-check]").forEach((details) => {
+            if (details.open) {
+                this.openPreventiveRules.add(details.dataset.check);
+            } else {
+                this.openPreventiveRules.delete(details.dataset.check);
+            }
+        });
+        const rows = (Array.isArray(preventive.checks) ? preventive.checks : []).map((check) => `<tr class="is-${escapeHtml(check.state)}">
+                <td>
+                    <details data-check="${escapeHtml(check.id)}"${this.openPreventiveRules.has(check.id) ? " open" : ""}>
+                        <summary>${escapeHtml(check.title)}</summary>
+                        <small>${escapeHtml(check.rule)}</small>
+                    </details>
+                </td>
+                <td><span class="incidents-experience__state">${escapeHtml(stateLabels[check.state] ?? check.state)}</span></td>
+                <td><small>${escapeHtml(this.preventiveFacts(check))}</small></td>
+            </tr>`).join("");
         container.innerHTML = `<p><strong>${escapeHtml(preventive.headline)}</strong></p>
             ${drifts}
             ${apart}
             <p class="incidents-preventive__conclusion">${escapeHtml(preventive.conclusion)}</p>
-            <details class="incidents-preventive__rules"${open}>
-                <summary>Règles appliquées sur ${escapeHtml(preventive.window_days)} jours · évaluées le ${escapeHtml(formatDate(preventive.generated_at))}</summary>
-                <ul>${checks}</ul>
-                <p><small>La maintenance préventive signale seulement : elle n’ouvre pas d’incident et ne déclenche aucune réparation.</small></p>
-            </details>
+            <h4 class="incidents-preventive__rules-title">Règles appliquées sur ${escapeHtml(preventive.window_days)} jours</h4>
+            <p><small>Évaluées le ${escapeHtml(formatDate(preventive.generated_at))}. Un clic sur une règle en montre le critère.</small></p>
+            <table class="incidents-preventive__rules">
+                <thead><tr><th scope="col">Règle</th><th scope="col">État</th><th scope="col">Mesure</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <p><small>La maintenance préventive signale seulement : elle n’ouvre pas d’incident et ne déclenche aucune réparation.</small></p>
             ${this.preventiveBackfill(preventive.backfill)}`;
     }
 
@@ -614,8 +751,67 @@ export class IncidentsController {
         }
     }
 
+    storedSideTab() {
+        try {
+            return window.sessionStorage.getItem("ohana.tsunade.tab") || "preventive";
+        } catch {
+            return "preventive";
+        }
+    }
+
+    selectSideTab(name) {
+        this.sideTab = name;
+        try {
+            window.sessionStorage.setItem("ohana.tsunade.tab", name);
+        } catch {
+            // Storage can be blocked: the tab still works for this page.
+        }
+        this.renderSideTabs();
+    }
+
+    renderSideTabs() {
+        const known = this.elements.panels.some((panel) => panel.dataset.tsunadePanel === this.sideTab);
+        const current = known ? this.sideTab : "preventive";
+        this.elements.tabs.forEach((tab) => {
+            const active = tab.dataset.tsunadeTab === current;
+            tab.classList.toggle("is-active", active);
+            tab.setAttribute("aria-selected", String(active));
+            tab.tabIndex = active ? 0 : -1;
+        });
+        this.elements.panels.forEach((panel) => {
+            panel.hidden = panel.dataset.tsunadePanel !== current;
+        });
+    }
+
+    /** One-line state: what to watch and when the logs were last checked. */
+    renderStatusbar() {
+        if (this.elements.watchCount) {
+            const watch = this.preventive?.watch;
+            this.elements.watchCount.textContent = Array.isArray(watch) ? String(watch.length) : "—";
+        }
+        if (this.elements.logState) {
+            const job = this.logHealth;
+            let label = "—";
+            if (job && !TERMINAL_JOB_STATUSES.has(job.status)) {
+                label = "en cours";
+            } else if (job?.status === "FAILED" || job?.status === "TIMEOUT") {
+                label = "échec";
+            } else if (job?.finished_at) {
+                const finished = new Date(job.finished_at);
+                if (!Number.isNaN(finished.getTime())) {
+                    const options = {timeZone: "Europe/Paris"};
+                    const day = (date) => new Intl.DateTimeFormat("fr-FR", {...options, dateStyle: "short"}).format(date);
+                    const time = new Intl.DateTimeFormat("fr-FR", {...options, timeStyle: "short"}).format(finished);
+                    label = day(finished) === day(new Date()) ? time : `${day(finished)} ${time}`;
+                }
+            }
+            this.elements.logState.textContent = label;
+        }
+    }
+
     render() {
         this.renderSummary();
+        this.renderRepairStatistics();
         this.renderExperiences();
         this.renderPreventive();
         this.renderExperiencePending();
@@ -842,6 +1038,7 @@ export class IncidentsController {
                 : `${Number(this.summary.repair_success_rate).toLocaleString("fr-FR")} %`,
         );
         this.renderLogHealth();
+        this.renderStatusbar();
     }
 
     incidentCard(incident) {
@@ -1790,6 +1987,14 @@ export class IncidentsController {
             this.elements.logHealth.innerHTML = `<p>Dernier contrôle : ${escapeHtml(this.jobStatusLabel(this.logHealth.status))}${error ? ` · ${escapeHtml(error)}` : ""}</p>`;
             return;
         }
+        // Sections the user unfolded stay open across the periodic refresh.
+        this.elements.logHealth.querySelectorAll("details[data-log-source]").forEach((details) => {
+            if (details.open) {
+                this.openLogSources.add(details.dataset.logSource);
+            } else {
+                this.openLogSources.delete(details.dataset.logSource);
+            }
+        });
         const bySource = new Map(result.sources.map((source) => [source.source, source]));
         const rows = Object.entries(LOG_SOURCE_LABELS).map(([sourceId, label]) => {
             const source = bySource.get(sourceId);
@@ -1804,19 +2009,63 @@ export class IncidentsController {
                     : noisy
                         ? ["Bruit de fond", "✓", "is-healthy"]
                         : ["Sain", "✓", "is-healthy"];
-            return `<li class="${css}"><strong>${escapeHtml(label)}</strong><span>${mark} ${escapeHtml(state)}</span></li>`;
+            const components = this.logComponents?.find((item) => item.source === sourceId)?.components ?? [];
+            if (!components.length) {
+                return `<li class="${css}"><strong>${escapeHtml(label)}</strong><span>${mark} ${escapeHtml(state)}</span></li>`;
+            }
+            return `<li class="${css} incidents-log-source"><details data-log-source="${escapeHtml(sourceId)}"${this.openLogSources.has(sourceId) ? " open" : ""}>
+                <summary><strong>${escapeHtml(label)}</strong><span>${mark} ${escapeHtml(state)} · ${components.length} composant(s)</span></summary>
+                <ul class="incidents-log-components">${components.map((component) => this.logComponentRow(sourceId, component)).join("")}</ul>
+            </details></li>`;
         }).join("");
         this.elements.logHealth.innerHTML = `<ul>${rows}</ul><p>Contrôle global effectué le <strong>${escapeHtml(formatDate(result.analyzed_at ?? this.logHealth.finished_at))}</strong></p>
             <p><small>« Bruit de fond » : anomalies sans gravité ou acceptées, sans incident. Un incident n’est ouvert que pour une erreur ou un avertissement répété au moins 100 fois en 24 h.</small></p>
             ${this.acceptedLogsReport()}`;
     }
 
+    logComponentRow(sourceId, component) {
+        const severities = {critical: "critique", error: "erreur", warning: "avertissement"};
+        const detail = `${component.occurrences} occurrence(s) · ${component.signatures} signature(s) · ${severities[component.severity] ?? component.severity}`;
+        const button = component.accepted
+            ? `<button class="configuration-secondary-button" data-tsunade-revoke-component="${escapeHtml(component.component)}" data-source="${escapeHtml(sourceId)}" type="button">Compter à nouveau</button>`
+            : component.component === "other"
+                ? ""
+                : `<button class="configuration-secondary-button" data-tsunade-accept-component="${escapeHtml(component.component)}" data-source="${escapeHtml(sourceId)}" data-label="${escapeHtml(component.label)}" type="button" title="Ne plus compter les anomalies de ce composant, sauf les lignes critiques">Accepter</button>`;
+        return `<li class="${component.accepted ? "is-accepted" : `is-${escapeHtml(component.severity)}`}">
+            <span><strong>${escapeHtml(component.label)}</strong>${component.accepted ? " <em>(acceptée)</em>" : ""}<small>${escapeHtml(detail)}</small></span>
+            ${button}
+        </li>`;
+    }
+
+    async setLogComponent(button, accept) {
+        button.disabled = true;
+        this.showError("");
+        try {
+            await requestJson(accept ? API.tsunadeAcceptLogComponent : API.tsunadeRevokeLogComponent, {
+                method: "POST",
+                body: JSON.stringify({
+                    source: button.dataset.source,
+                    component: accept ? button.dataset.tsunadeAcceptComponent : button.dataset.tsunadeRevokeComponent,
+                    label: button.dataset.label,
+                }),
+            });
+            this.showCommandStatus(accept
+                ? "Composant accepté comme connu : ses anomalies ne comptent plus, sauf les lignes critiques."
+                : "Composant de nouveau compté à partir du prochain contrôle.");
+            await this.load();
+        } catch (error) {
+            this.showError(`Changement impossible : ${this.errorMessage(error)}`);
+            button.disabled = false;
+        }
+    }
+
     acceptedLogsReport() {
-        if (!this.acceptedLogSignatures.length) {
+        const components = this.acceptedLogComponents.map((item) => `<li><strong>${escapeHtml(LOG_SOURCE_LABELS[item.source] ?? item.source)}</strong><span>Composant ${escapeHtml(item.label ?? item.component)} (tout sauf les lignes critiques)</span><small>accepté le ${escapeHtml(formatDate(item.accepted_at))}</small><button class="configuration-secondary-button" data-tsunade-revoke-component="${escapeHtml(item.component)}" data-source="${escapeHtml(item.source)}" type="button">Compter à nouveau</button></li>`).join("");
+        if (!this.acceptedLogSignatures.length && !components) {
             return "";
         }
         const items = this.acceptedLogSignatures.map((item, index) => `<li><strong>${escapeHtml(LOG_SOURCE_LABELS[item.source] ?? item.source)}</strong><span>${escapeHtml(item.summary ?? item.signature)}</span><small>acceptée le ${escapeHtml(formatDate(item.accepted_at))}</small><button class="configuration-secondary-button" data-tsunade-revoke-log="${index}" type="button">Compter à nouveau</button></li>`).join("");
-        return `<details class="incidents-log-accepted"><summary>Anomalies acceptées comme connues (${this.acceptedLogSignatures.length})</summary><ul>${items}</ul></details>`;
+        return `<details class="incidents-log-accepted"><summary>Anomalies acceptées comme connues (${this.acceptedLogSignatures.length + this.acceptedLogComponents.length})</summary><ul>${components}${items}</ul></details>`;
     }
 
     async acceptLogSignature(incidentId, index, button) {
@@ -1867,7 +2116,9 @@ export class IncidentsController {
             return "";
         }
         const allFindings = Array.isArray(context.findings) ? context.findings : [];
-        const findings = allFindings.slice(0, 8);
+        // Every anomaly is shown, grouped by component: eight of the 36 anomalies
+        // of HA-01 left Tapo and Kasa out of sight.
+        const findings = allFindings;
         const source = LOG_SOURCE_LABELS[context.source] ?? this.readableIdentifier(context.source);
         const state = context.status === "OK" ? "sain" : "anomalie";
         const window = this.analysisWindow(context);
@@ -1875,7 +2126,15 @@ export class IncidentsController {
         const classified = Array.isArray(context.background_findings);
         const acceptable = classified && this.incidents.some((incident) => incident.incident_id === incidentId
             && incident.state === "active");
-        const items = findings.map((finding, index) => {
+        const groups = new Map();
+        findings.forEach((finding, index) => {
+            const key = finding.component ?? "other";
+            if (!groups.has(key)) {
+                groups.set(key, {key, label: finding.component_label ?? "Autre", entries: []});
+            }
+            groups.get(key).entries.push({finding, index});
+        });
+        const itemHtml = ({finding, index}) => {
             const reference = finding.reference_occurrences == null
                 ? "aucune référence antérieure"
                 : `${finding.reference_occurrences} / ${window}`;
@@ -1884,6 +2143,13 @@ export class IncidentsController {
                 ? `<button class="configuration-secondary-button" data-tsunade-accept-log="${escapeHtml(incidentId)}" data-finding-index="${index}" type="button" title="Ne plus compter cette anomalie dans les incidents de journaux">Accepter comme connue</button>`
                 : "";
             return `<li><strong>${escapeHtml(finding.signature ?? finding.summary)}</strong><span>${escapeHtml(finding.occurrences ?? 0)} occurrence(s) / ${escapeHtml(window)}</span><small>Référence : ${escapeHtml(reference)} · Évolution : ${escapeHtml(trend)}</small>${accept}</li>`;
+        };
+        const items = [...groups.values()].map((group) => {
+            const occurrences = group.entries.reduce((total, {finding}) => total + Number(finding.occurrences ?? 0), 0);
+            const acceptComponent = acceptable && classified && group.key !== "other"
+                ? `<button class="configuration-secondary-button" data-tsunade-accept-component="${escapeHtml(group.key)}" data-source="${escapeHtml(context.source)}" data-label="${escapeHtml(group.label)}" type="button" title="Ne plus compter les anomalies de ce composant, sauf les lignes critiques">Accepter ${escapeHtml(group.label)}</button>`
+                : "";
+            return `<li class="incident-log-component"><div class="incident-log-component__header"><strong>${escapeHtml(group.label)}</strong><small>${escapeHtml(occurrences)} occurrence(s) · ${escapeHtml(group.entries.length)} signature(s)</small>${acceptComponent}</div><ul>${group.entries.map(itemHtml).join("")}</ul></li>`;
         }).join("");
         const background = classified ? context.background_findings.length : 0;
         const accepted = Array.isArray(context.accepted_findings) ? context.accepted_findings.length : 0;

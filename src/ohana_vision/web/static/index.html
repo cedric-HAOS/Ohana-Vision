@@ -845,92 +845,92 @@
           <p>Les problèmes, leur diagnostic et la prochaine étape.</p>
          </div>
         </div>
-        <details class="incidents-history">
-        <summary>Contrôles, bilan et réparations connues</summary>
-        <div class="incidents-summary" aria-label="Synthèse des incidents">
-         <article class="incidents-summary-card">
-          <span>Actifs</span>
-          <strong id="incidents-active-count">0</strong>
-          <small>dégradations en cours</small>
-         </article>
-         <article class="incidents-summary-card">
-          <span>Nouveaux</span>
-          <strong id="incidents-unacknowledged-count">0</strong>
-          <small>en attente de traitement</small>
-         </article>
-         <article class="incidents-summary-card">
-          <span>Traités</span>
-          <strong id="incidents-silenced-count">0</strong>
-          <small>avec un résultat Tsunade</small>
-         </article>
-         <article class="incidents-summary-card">
-          <span>Résolus</span>
-          <strong id="incidents-resolved-count">0</strong>
-          <small>dans l’historique chargé</small>
-         </article>
-         <article class="incidents-summary-card">
-          <span>Contrôles des journaux</span>
-          <strong id="incidents-log-control-count">0</strong>
-          <small>exécutions historisées par Agent</small>
-         </article>
-         <article class="incidents-summary-card">
-          <span>Réparations connues</span>
-          <strong id="incidents-learned-repair-count">0</strong>
-          <small>actives, validées par un utilisateur</small>
-         </article>
-         <article class="incidents-summary-card">
-          <span>Taux de réussite</span>
-          <strong id="incidents-repair-success-rate">—</strong>
-          <small>réparations vérifiées</small>
-         </article>
+        <div aria-label="État de Tsunade" class="incidents-statusbar">
+         <button class="incidents-statusbar__chip" data-tsunade-tab-target="preventive" type="button">
+          <span>À surveiller</span>
+          <strong id="incidents-watch-count">—</strong>
+         </button>
+         <button class="incidents-statusbar__chip" data-tsunade-tab-target="logs" type="button">
+          <span>Journaux</span>
+          <strong id="incidents-log-state">—</strong>
+         </button>
+         <p class="incidents-cycle-summary" id="incidents-cycle-summary" aria-live="polite"></p>
         </div>
-        <section aria-labelledby="tsunade-log-health-heading" class="incidents-log-health">
-         <div>
-          <p class="panel-heading__kicker">Contrôle quotidien</p>
-          <h3 id="tsunade-log-health-heading">Santé des journaux</h3>
+        <div class="incidents-layout">
+         <div class="incidents-main">
+          <div class="incidents-toolbar">
+           <div aria-label="Filtrer les incidents" class="incidents-toolbar__filters">
+            <button aria-pressed="true" class="incidents-filter is-active" data-incidents-filter="active" type="button">Tous les actifs <b id="incidents-active-count">0</b></button>
+            <button aria-pressed="false" class="incidents-filter" data-incidents-filter="new" type="button">Nouveaux <b id="incidents-unacknowledged-count">0</b></button>
+            <button aria-pressed="false" class="incidents-filter" data-incidents-filter="in_progress" type="button">En cours</button>
+            <button aria-pressed="false" class="incidents-filter" data-incidents-filter="treated" type="button">Traités <b id="incidents-silenced-count">0</b></button>
+            <button aria-pressed="false" class="incidents-filter" data-incidents-filter="resolved" type="button">Résolus <b id="incidents-resolved-count">0</b></button>
+            <button aria-pressed="false" class="incidents-filter" data-incidents-filter="all" type="button">Tous</button>
+           </div>
+           <button class="configuration-primary-button" id="tsunade-log-check" type="button">Contrôler les journaux</button>
+          </div>
+          <div class="incidents-main__scroll">
+           <p aria-live="polite" class="incidents-command-status hidden" id="incidents-command-status"></p>
+           <section aria-live="polite" class="incidents-experience-pending hidden" id="incidents-experience-pending"></section>
+           <div class="alert alert--error hidden" id="incidents-error" role="alert"></div>
+           <div aria-live="polite" class="incidents-list" id="incidents-list">
+            <div class="incidents-empty-state">
+             <h3>Chargement des incidents…</h3>
+            </div>
+           </div>
+          </div>
          </div>
-         <div aria-live="polite" class="incidents-log-health__content" id="tsunade-log-health">
-          <p>Aucune analyse disponible.</p>
-         </div>
-        </section>
-        <section aria-labelledby="tsunade-experiences-heading" class="incidents-log-health incidents-experiences">
-         <div>
-          <p class="panel-heading__kicker">Mémoire opérationnelle</p>
-          <h3 id="tsunade-experiences-heading">Réparations connues</h3>
-         </div>
-         <div aria-live="polite" class="incidents-experiences__content" id="tsunade-experiences">
-          <p>Chargement des réparations connues…</p>
-         </div>
-        </section>
-        </details>
-        <section aria-labelledby="tsunade-preventive-heading" class="incidents-log-health incidents-preventive">
-         <div>
-          <p class="panel-heading__kicker">Maintenance préventive</p>
-          <h3 id="tsunade-preventive-heading">À surveiller</h3>
-         </div>
-         <div aria-live="polite" class="incidents-preventive__content" id="tsunade-preventive">
-          <p>Évaluation des tendances…</p>
-         </div>
-        </section>
-        <p class="incidents-cycle-summary" id="incidents-cycle-summary" aria-live="polite"></p>
-        <div class="incidents-toolbar">
-         <div aria-label="Filtrer les incidents" class="incidents-toolbar__filters">
-          <button aria-pressed="true" class="incidents-filter is-active" data-incidents-filter="active" type="button">Tous les actifs</button>
-          <button aria-pressed="false" class="incidents-filter" data-incidents-filter="new" type="button">Nouveaux</button>
-          <button aria-pressed="false" class="incidents-filter" data-incidents-filter="in_progress" type="button">En cours</button>
-          <button aria-pressed="false" class="incidents-filter" data-incidents-filter="treated" type="button">Traités</button>
-          <button aria-pressed="false" class="incidents-filter" data-incidents-filter="resolved" type="button">Résolus</button>
-          <button aria-pressed="false" class="incidents-filter" data-incidents-filter="all" type="button">Tous</button>
-         </div>
-         <button class="configuration-primary-button" id="tsunade-log-check" type="button">Contrôler les journaux</button>
-        </div>
-        <p aria-live="polite" class="incidents-command-status hidden" id="incidents-command-status"></p>
-        <section aria-live="polite" class="incidents-experience-pending hidden" id="incidents-experience-pending"></section>
-        <div class="alert alert--error hidden" id="incidents-error" role="alert"></div>
-        <div aria-live="polite" class="incidents-list" id="incidents-list">
-         <div class="incidents-empty-state">
-          <h3>Chargement des incidents…</h3>
-         </div>
+         <aside aria-label="Surveillance de Tsunade" class="incidents-side">
+          <div aria-label="Sections de surveillance" class="incidents-tabs" role="tablist">
+           <button aria-controls="tsunade-panel-preventive" aria-selected="true" class="incidents-tab is-active" data-tsunade-tab="preventive" id="tsunade-tab-preventive" role="tab" type="button">À surveiller</button>
+           <button aria-controls="tsunade-panel-logs" aria-selected="false" class="incidents-tab" data-tsunade-tab="logs" id="tsunade-tab-logs" role="tab" tabindex="-1" type="button">Journaux</button>
+           <button aria-controls="tsunade-panel-experiences" aria-selected="false" class="incidents-tab" data-tsunade-tab="experiences" id="tsunade-tab-experiences" role="tab" tabindex="-1" type="button">Réparations connues</button>
+           <button aria-controls="tsunade-panel-review" aria-selected="false" class="incidents-tab" data-tsunade-tab="review" id="tsunade-tab-review" role="tab" tabindex="-1" type="button">Bilan</button>
+          </div>
+          <div class="incidents-side__scroll">
+           <section aria-labelledby="tsunade-tab-preventive" class="incidents-tabpanel" data-tsunade-panel="preventive" id="tsunade-panel-preventive" role="tabpanel">
+            <p class="panel-heading__kicker">Maintenance préventive</p>
+            <div aria-live="polite" class="incidents-preventive__content" id="tsunade-preventive">
+             <p>Évaluation des tendances…</p>
+            </div>
+           </section>
+           <section aria-labelledby="tsunade-tab-logs" class="incidents-tabpanel" data-tsunade-panel="logs" hidden="" id="tsunade-panel-logs" role="tabpanel">
+            <p class="panel-heading__kicker">Contrôle quotidien</p>
+            <div aria-live="polite" class="incidents-log-health__content" id="tsunade-log-health">
+             <p>Aucune analyse disponible.</p>
+            </div>
+           </section>
+           <section aria-labelledby="tsunade-tab-experiences" class="incidents-tabpanel incidents-experiences" data-tsunade-panel="experiences" hidden="" id="tsunade-panel-experiences" role="tabpanel">
+            <p class="panel-heading__kicker">Mémoire opérationnelle</p>
+            <div aria-live="polite" class="incidents-experiences__content" id="tsunade-experiences">
+             <p>Chargement des réparations connues…</p>
+            </div>
+           </section>
+           <section aria-labelledby="tsunade-tab-review" class="incidents-tabpanel" data-tsunade-panel="review" hidden="" id="tsunade-panel-review" role="tabpanel">
+            <p class="panel-heading__kicker">Bilan</p>
+            <div aria-label="Synthèse des incidents" class="incidents-summary">
+             <article class="incidents-summary-card">
+              <span>Contrôles des journaux</span>
+              <strong id="incidents-log-control-count">0</strong>
+              <small>exécutions historisées par Agent</small>
+             </article>
+             <article class="incidents-summary-card">
+              <span>Réparations connues</span>
+              <strong id="incidents-learned-repair-count">0</strong>
+              <small>actives, validées par un utilisateur</small>
+             </article>
+             <article class="incidents-summary-card">
+              <span>Taux de réussite</span>
+              <strong id="incidents-repair-success-rate">—</strong>
+              <small>réparations vérifiées</small>
+             </article>
+            </div>
+            <div aria-live="polite" class="incidents-statistics" id="tsunade-repair-statistics">
+             <p>Chargement des statistiques…</p>
+            </div>
+           </section>
+          </div>
+         </aside>
         </div>
        </section>
       </div>
