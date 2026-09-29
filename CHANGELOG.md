@@ -2,6 +2,14 @@
 
 ## Non publié
 
+### Ajouté
+
+- Vue « Ohana », carte Katsuyu : une ligne « Cycle de réveil » par cycle (trois
+  derniers) dit pourquoi Ohana a réveillé le PC (travaux en attente ou test
+  manuel), en combien de secondes il s'est connecté, ce qu'il a exécuté et
+  comment le cycle s'est terminé (PC éteint, PC laissé allumé avec la raison,
+  sans réponse, réveil impossible à envoyer).
+
 ## [1.33.0] — 2026-09-29 — Page Tsunade en deux colonnes, composants de journaux et statistiques
 
 Publiée le jour même de 1.32.0, à la demande de l'utilisateur.
