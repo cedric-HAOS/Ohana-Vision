@@ -130,6 +130,13 @@ Katsuyu et résultat final. L'évolution détaillée est chargée à la demande 
 le proxy d'administration existant ; Vision ne crée aucune seconde base
 d'incidents Tsunade.
 
+Le dossier rassemble un parcours daté, les preuves et leurs limites, puis les
+étapes de réparation : proposition, autorisation ou refus, exécution et
+vérification. Les hypothèses et leurs contradictions restent distinctes des
+faits confirmés. Une origine absente n'est pas attribuée à Katsuyu ; une
+collecte tronquée ou sans anomalie ne confirme pas une résolution. Les détails
+structurés restent accessibles dans les investigations.
+
 Pour un incident actif, l'interface peut demander le cycle d'expertise à Agent.
 Elle affiche séparément les faits confirmés par investigation et les hypothèses
 Katsuyu AI, avec confiance et éléments concordants ou contradictoires. Les
