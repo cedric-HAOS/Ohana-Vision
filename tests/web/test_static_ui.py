@@ -362,7 +362,7 @@ def test_static_ui_exposes_incident_center() -> None:
     assert "Causes possibles" in script.text
     assert "Conséquences" in script.text
     assert "Réparation réussie" in script.text
-    assert "Analyse Katsuyu utilisée par Tsunade" in script.text
+    assert "Hypothèse — cause non confirmée" in script.text
     assert "Erreur technique Katsuyu" in script.text
     assert 'payload.cycle_status === "ai_failed"' in script.text
     assert "displaySeverity(incident, severity)" in script.text
@@ -385,7 +385,7 @@ def test_static_ui_exposes_incident_center() -> None:
     )
     actions_index = script.text.index('<div class="incident-card__actions">')
     log_synthesis_index = script.text.index("${logSynthesis}")
-    expertise_index = script.text.index("${this.tsunadeExpertise(details ?? incident)}")
+    expertise_index = script.text.index("${this.tsunadeExpertise(")
     assert decision_index < actions_index
     assert actions_index < log_synthesis_index
     assert log_synthesis_index < expertise_index

@@ -18,7 +18,7 @@
 .incidents-group-heading { margin: var(--ohana-space-3) 0 0; font-size: var(--ohana-font-size-md); color: var(--ohana-text-secondary); }
 .incident-compact-decision { display: grid; gap: var(--ohana-space-2); padding: var(--ohana-space-3) 0; }
 .incident-compact-decision small { color: var(--ohana-text-muted); }
-.incident-dossier { border-top: 1px solid var(--ohana-border-subtle); margin-top: var(--ohana-space-3); padding-top: var(--ohana-space-4); }
+.incident-dossier { min-width: 0; overflow-wrap: anywhere; border-top: 1px solid var(--ohana-border-subtle); margin-top: var(--ohana-space-3); padding-top: var(--ohana-space-4); }
 .incident-card__header h3, .incident-card__message { overflow-wrap: anywhere; }
 .incidents-panel .configuration-primary-button {
     padding: var(--ohana-space-2) var(--ohana-space-4);
@@ -325,6 +325,7 @@
 
 .incident-card__body {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--ohana-space-3);
     padding: var(--ohana-space-4);
 }
@@ -1354,6 +1355,75 @@
     border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
     text-align: left;
     vertical-align: top;
+}
+
+.incident-evidence,
+.incident-journey {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--ohana-space-2);
+    padding: var(--ohana-space-3);
+    border: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+    border-radius: var(--ohana-radius-sm);
+    overflow-wrap: anywhere;
+}
+
+.incident-journey h4,
+.incident-journey p {
+    margin: 0;
+}
+
+.incident-journey ol {
+    display: grid;
+    gap: var(--ohana-space-3);
+    margin: 0;
+    padding-left: var(--ohana-space-4);
+}
+
+.incident-journey li > * {
+    display: block;
+}
+
+.incident-journey time {
+    color: var(--ohana-text-muted);
+    font-size: var(--ohana-font-size-sm);
+}
+
+.incident-evidence pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 24rem;
+    overflow: auto;
+}
+
+.incident-evidence li,
+.incident-repair-journey li {
+    margin-bottom: var(--ohana-space-3);
+    overflow-wrap: anywhere;
+}
+
+.incident-evidence time,
+.incident-repair-journey li > * {
+    display: block;
+}
+
+.incident-repair-journey time {
+    color: var(--ohana-text-muted);
+}
+
+/* Grid items must shrink inside a mobile dossier, including the existing
+   analysis and full chronology below the new summary. */
+.incident-dossier .incident-katsuyu-analysis,
+.incident-dossier .incident-card__evolution,
+.incident-dossier .incident-hypotheses,
+.incident-dossier .incident-tsunade-decision {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.incident-dossier header {
+    flex-wrap: wrap;
 }
 
 .incidents-reliability.is-reliable {

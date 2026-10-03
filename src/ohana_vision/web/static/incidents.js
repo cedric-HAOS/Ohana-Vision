@@ -18,6 +18,7 @@ const EVENT_LABELS = Object.freeze({
     escalated: "Aggravation",
     investigation: "Investigation",
     diagnostic: "Diagnostic",
+    decision: "Décision",
     action: "Action",
     result: "Résultat",
     resolved: "Résolution",
@@ -1047,9 +1048,9 @@ export class IncidentsController {
         const workflow = String(incident.workflow_state ?? "new").toLowerCase();
         const expertiseState = String(incident.expertise_state ?? "idle").toLowerCase();
         const details = this.details.get(incident.incident_id);
-        const decisionRecord = this.latestTsunadeDecisionRecord(
+        const decisionRecord = this.completeDecisionRecord(this.latestTsunadeDecisionRecord(
             Object.hasOwn(incident, "latest_decision") ? incident : details ?? incident,
-        );
+        ), details);
         const guidance = this.incidentGuidance(incident, decisionRecord, expertiseState);
         const assessment = incident.assessment;
         // The periodically reloaded list carries the current repairs; a cached
@@ -1106,7 +1107,9 @@ export class IncidentsController {
                     ${experience ? `<div class="incident-experience"><strong>${escapeHtml(experience.prompt)}</strong>${experience.caution ? `<small>${escapeHtml(experience.caution)}</small>` : ""}${this.experienceButton(incident.incident_id, experience.kind)}</div>` : ""}
                     ${this.expandedDetails.has(incident.incident_id) ? `
                     <div class="incident-dossier">
+                    ${this.incidentJourney(incident, details, decisionRecord)}
                     ${this.tsunadeDecision(details ?? incident, decisionRecord)}
+                    ${this.investigationEvidence(details)}
                     <dl class="incident-card__details">
                         <div><dt>Incident ouvert le</dt><dd>${escapeHtml(formatDate(incident.started_at))}</dd></div>
                         <div><dt>Dernière évolution</dt><dd>${escapeHtml(formatDate(incident.last_observed_at))}</dd></div>
@@ -1115,7 +1118,7 @@ export class IncidentsController {
                         ${incident.ended_at ? `<div><dt>Résolution</dt><dd>${escapeHtml(formatDate(incident.ended_at))}</dd></div>` : ""}
                     </dl>
                     ${logSynthesis}
-                    ${this.tsunadeExpertise(details ?? incident)}
+                    ${this.tsunadeExpertise({...details, latest_decision: decisionRecord?.payload ?? null})}
                     ${incident.final_result ? `<p class="incident-card__result"><strong>Résultat :</strong> ${escapeHtml(incident.final_result)}</p>` : ""}
                     ${repairSummary}
                     ${incident.state === "active" && incident.capability_id === "logs.health" ? `
@@ -1162,6 +1165,15 @@ export class IncidentsController {
 
     latestTsunadeDecision(incident) {
         return this.latestTsunadeDecisionRecord(incident)?.payload ?? null;
+    }
+
+    completeDecisionRecord(record, details) {
+        if (!record?.occurredAt) return record;
+        const date = Date.parse(record.occurredAt);
+        if (!Number.isFinite(date)) return record;
+        const event = [...(details?.events ?? [])].reverse().find((item) =>
+            item.kind === "diagnostic" && Date.parse(item.occurred_at) === date);
+        return event ? {...record, payload: {...event.payload, ...record.payload}} : record;
     }
 
     latestTsunadeDecisionRecord(incident) {
@@ -1327,7 +1339,7 @@ export class IncidentsController {
         }
 
         const value = String(decision.decision ?? "watch");
-        const source = String(decision.decision_source ?? "deterministic");
+        const source = String(decision.decision_source ?? decision.origin ?? "Origine non renseignée");
         const confidence = Number(decision.confidence);
 
         const confidenceLabel = Number.isFinite(confidence)
@@ -1386,10 +1398,17 @@ export class IncidentsController {
                         <dd>${escapeHtml(reevaluation)}</dd>
                     </div>
                 </dl>
+                ${this.decisionEvidence(decision)}
             </section>`;
     }
 
     latestTsunadeExpertise(incident) {
+        // A current decision must not inherit hypotheses from an older cycle.
+        if (Object.hasOwn(incident ?? {}, "latest_decision")) {
+            const payload = incident.latest_decision;
+            return payload && (Array.isArray(payload.hypotheses) || Array.isArray(payload.proposals))
+                ? {payload, occurredAt: payload.occurred_at ?? null} : null;
+        }
         const events = Array.isArray(incident?.events)
             ? incident.events
             : [];
@@ -1439,16 +1458,17 @@ export class IncidentsController {
         // is an AI analysis with hypotheses.
         const payload = expertise.payload;
         const fromKatsuyu = payload.decision_source === "katsuyu_ai"
-            || payload.origin === "katsuyu_ai"
-            || payload.epistemic_status === "hypothesis"
-            || (Array.isArray(payload.hypotheses) && payload.hypotheses.length > 0);
+            || payload.origin === "katsuyu_ai";
+        const analysisLabel = fromKatsuyu ? "Analyse Katsuyu"
+            : payload.decision_source === "deterministic" ? "Analyse déterministe de Tsunade"
+                : "Analyse — origine non renseignée";
 
         return `
             <section class="incident-katsuyu-analysis">
                 <header>
                     <div>
-                        <span>${fromKatsuyu ? "Analyse Katsuyu" : "Analyse déterministe de Tsunade"}</span>
-                        <strong>${fromKatsuyu ? "Hypothèses exploitables" : "Propositions"}</strong>
+                        <span>${escapeHtml(analysisLabel)}</span>
+                        <strong>${payload.hypotheses?.length ? "Hypothèses à confirmer" : "Propositions"}</strong>
                     </div>
                     ${expertise.occurredAt
                         ? `<time>${escapeHtml(formatDate(expertise.occurredAt))}</time>`
@@ -1456,6 +1476,55 @@ export class IncidentsController {
                 </header>
                 ${this.expertiseDetails(expertise.payload)}
             </section>`;
+    }
+
+    incidentJourney(incident, details, decisionRecord) {
+        // Summarize recorded events only: an action event can be a proposal,
+        // and a result does not by itself prove a successful verification.
+        const labels = {
+            opened: "Observation initiale", observed: "Dernière observation",
+            escalated: "Aggravation", investigation: "Investigation",
+            diagnostic: "Diagnostic", decision: "Décision",
+            action: "Action ou proposition", result: "Résultat / vérification",
+            resolved: "Résolution", monitoring_removed: "Fin de supervision",
+        };
+        const stages = new Map();
+        for (const event of details?.events ?? []) {
+            if (!Object.hasOwn(labels, event.kind)) continue;
+            const previous = stages.get(event.kind);
+            const count = (previous?.count ?? 0) + 1;
+            if (!previous || (Date.parse(event.occurred_at) || 0) >= (Date.parse(previous.event.occurred_at) || 0)) {
+                stages.set(event.kind, {event, count});
+            } else {
+                previous.count = count;
+            }
+        }
+        const assessment = incident.assessment;
+        const nextActions = {
+            diagnose: "Actualiser l’analyse", decisions: "Examiner la demande dans Shizune",
+            details: "Consulter les détails du dossier",
+        };
+        const next = assessment?.next_action === null
+            ? "Aucune action demandée par Agent"
+            : assessment?.next_action === "details"
+                ? assessment.recommended_action || nextActions.details
+                : nextActions[assessment?.next_action] || "Non renseignée par Agent";
+        const source = decisionRecord?.payload?.decision_source ?? decisionRecord?.payload?.origin;
+        const provenance = TSUNADE_DECISION_SOURCE_LABELS[source] ?? source ?? "Origine de l’analyse non renseignée";
+        const rows = [...stages.values()].sort((a, b) =>
+            (Date.parse(a.event.occurred_at) || 0) - (Date.parse(b.event.occurred_at) || 0));
+        return `<section class="incident-journey" aria-label="Parcours de l’incident">
+            <h4>Parcours de l’incident</h4>
+            <p><strong>Prochaine action :</strong> ${escapeHtml(next)}</p>
+            <p><strong>Source :</strong> Agent · ${escapeHtml(provenance)}</p>
+            ${assessment?.decision_current === false ? '<p>La décision ne couvre pas les derniers éléments reçus.</p>' : ""}
+            ${rows.length ? `<p>Dernier événement de chaque type ; toutes les occurrences restent dans la chronologie ci-dessous.</p>
+            <ol>${rows.map(({event, count}) => `<li>
+                <strong>${escapeHtml(labels[event.kind])}${count > 1 ? ` (${count})` : ""}</strong>
+                <time>${escapeHtml(event.occurred_at ? formatDate(event.occurred_at) : "Date non renseignée")}</time>
+                <span>${escapeHtml(this.translatedSummary(event.summary ?? "Sans résumé"))}</span>
+            </li>`).join("")}</ol>` : `<p>${details ? "Aucune étape enregistrée." : "Parcours disponible après chargement du dossier."}</p>`}
+        </section>`;
     }
 
     evolution(incident) {
@@ -1488,8 +1557,8 @@ export class IncidentsController {
             ? payload.investigation_commands.slice(0, 8)
             : [];
         const status = payload.epistemic_status === "hypothesis"
-            ? '<span class="incident-evidence-status">Analyse Katsuyu utilisée par Tsunade</span>'
-            : payload.epistemic_status === "confirmed_by_probe"
+            ? '<span class="incident-evidence-status">Hypothèse — cause non confirmée</span>'
+            : ["confirmed_by_probe", "confirmed_by_supervisor"].includes(payload.epistemic_status)
                 ? '<span class="incident-evidence-status is-confirmed">Confirmé par investigation déterministe</span>'
                 : "";
         const failure = payload.cycle_status === "ai_failed" && payload.error
@@ -1521,6 +1590,52 @@ export class IncidentsController {
             </div>`
             : "";
         return `${status}${failure}${hypothesisList}${proposalList}${commandList}`;
+    }
+
+    decisionEvidence(payload) {
+        const list = (title, values) => !Array.isArray(values) || !values.length ? ""
+            : `<div><strong>${escapeHtml(title)}</strong><ul>${values.map((value) => `<li>${escapeHtml(value)}</li>`).join("")}</ul></div>`;
+        const facts = list("Faits rapportés dans cette décision", payload.facts);
+        const limits = list("Éléments manquants pour confirmer", payload.confirmation_gap)
+            + list("Contexte manquant", payload.missing_context)
+            + list("Investigations non abouties", payload.failed_investigations);
+        const collection = payload.collection_facts;
+        const collectionView = collection && typeof collection === "object"
+            ? `<div><strong>Collecte</strong><p>Source : ${escapeHtml(collection.source ?? "Non renseignée")}</p>
+                ${Number.isInteger(collection.matched_lines) ? `<p>Lignes correspondantes : ${escapeHtml(collection.matched_lines)}</p>` : ""}
+                ${Number.isInteger(collection.anomaly_count) ? `<p>Anomalies relevées : ${escapeHtml(collection.anomaly_count)}</p>` : ""}
+                <p>${collection.truncated === true ? "Collecte tronquée : couverture partielle." : collection.truncated === false ? "Collecte non tronquée dans le périmètre demandé." : "Complétude non renseignée."}</p>
+                ${collection.anomaly_count === 0 ? "<p>Aucune anomalie relevée dans cette collecte ne prouve la résolution de l’incident.</p>" : ""}</div>` : "";
+        const inconclusive = payload.verdict === "INSUFFICIENT_CONTEXT"
+            ? "<p><strong>Analyse non concluante : contexte insuffisant.</strong></p>" : "";
+        const origin = payload.origin ?? payload.decision_source;
+        return `<section class="incident-evidence"><h4>Faits et limites de la décision</h4>
+            <p>Source : Agent / Tsunade · ${escapeHtml(TSUNADE_DECISION_SOURCE_LABELS[origin] ?? origin ?? "Origine non renseignée")}</p>
+            ${facts || "<p>Aucun fait détaillé fourni dans cette décision.</p>"}
+            ${inconclusive}${collectionView}${limits}
+            ${!limits && !inconclusive && !collectionView ? "<p>Aucune limite renseignée ; cela ne garantit pas une analyse exhaustive.</p>" : ""}
+        </section>`;
+    }
+
+    investigationEvidence(details) {
+        const events = (details?.events ?? []).filter((event) => event.kind === "investigation");
+        if (!events.length) return "";
+        return `<details class="incident-evidence"><summary>Preuves des investigations (${events.length})</summary>
+            <ol>${events.map((event) => {
+                const payload = event.payload ?? {};
+                // Supervisor evidence carries configuration_inspection at the
+                // payload root; probe evidence uses a nested result document.
+                const result = payload.result ?? payload;
+                return `<li><strong>${escapeHtml(payload.operation ?? payload.source ?? "Investigation Agent")}</strong>
+                    <time>${escapeHtml(formatDate(payload.finished_at ?? event.occurred_at))}</time>
+                    <p>${escapeHtml(event.summary)}</p>
+                    ${payload.status ? `<p>État de la collecte : ${escapeHtml(payload.status)} (ne qualifie pas la santé de la capacité)</p>` : ""}
+                    ${payload.error ? `<p>Limite : ${escapeHtml(payload.error)}</p>` : ""}
+                    ${result.reason ? `<p>Précision : ${escapeHtml(result.reason)}</p>` : ""}
+                    ${result.truncated === true ? "<p>Collecte tronquée : couverture partielle.</p>" : ""}
+                    <details><summary>Résultat structuré fourni par Agent</summary><pre>${escapeHtml(JSON.stringify(result, null, 2))}</pre></details>
+                </li>`;
+            }).join("")}</ol></details>`;
     }
 
     commandProposal(command) {
@@ -1958,9 +2073,34 @@ export class IncidentsController {
                     <div><dt>Niveau de risque</dt><dd>${escapeHtml(riskLabels[repair.risk] ?? repair.risk)}</dd></div>
                     <div><dt>État</dt><dd>${escapeHtml(this.repairStatus(repair))}</dd></div>
                 </dl>
+                ${this.repairJourney(repair)}
                 ${Array.isArray(repair.consequences) && repair.consequences.length ? `<div><strong>Conséquences</strong><ul>${repair.consequences.map((consequence) => `<li>${escapeHtml(consequence)}</li>`).join("")}</ul></div>` : ""}
                 ${repair.result ? `<p class="incident-repair__result"><strong>${repair.status === "succeeded" ? "Réparation réussie" : "Résultat"}</strong> · ${escapeHtml(repair.result)}</p>` : ""}
             </article>`).join("")}</div>`;
+    }
+
+    repairJourney(repair) {
+        const rows = [];
+        const add = (label, date, detail = "") => rows.push(`<li><strong>${escapeHtml(label)}</strong>
+            <time>${escapeHtml(date ? formatDate(date) : "Date non renseignée")}</time>
+            ${detail ? `<span>${escapeHtml(detail)}</span>` : ""}</li>`);
+        add("Proposition", repair.proposed_at, repair.action ?? repair.operation);
+        if (repair.authorized_at || repair.status === "refused") {
+            add(repair.status === "refused" ? "Refus" : "Autorisation", repair.authorized_at,
+                [repair.authorization_source, repair.authorized_by].filter(Boolean).join(" · "));
+        }
+        if (repair.deferred_until) add("Report — échéance", repair.deferred_until);
+        if (repair.executed_at) add("Exécution / tentative", repair.executed_at);
+        if (repair.verified_at) {
+            const label = {succeeded: "Vérification Shikamaru réussie", failed: "Échec enregistré",
+                unverified: "Résultat non confirmé", expired: "Expiration de la proposition"}[repair.status]
+                ?? "Résultat enregistré";
+            add(label, repair.verified_at, repair.result);
+        } else if (repair.status === "verifying") {
+            add("Vérification Shikamaru attendue avant", repair.verification_deadline);
+        }
+        return `<ol class="incident-repair-journey">${rows.join("")}</ol>
+            ${!repair.executed_at ? "<p>Aucune exécution enregistrée.</p>" : ""}`;
     }
 
     updateLogCheckButton() {
