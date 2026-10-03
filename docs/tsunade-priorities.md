@@ -10,6 +10,21 @@ est distingué des huit exemples présentés.
 événements. Une demande explicite de diagnostic conserve l’intention de
 l’opérateur jusqu’à Agent.
 
+## Parcours, preuves et réparation
+
+Depuis Vision 1.36.0, le dossier présente les étapes datées et leur provenance
+déclarée par Agent. Il rassemble les faits, les hypothèses et leurs contradictions,
+les lacunes de confirmation et les investigations non abouties. Une origine
+absente reste inconnue. Le nombre de lignes de journaux correspondantes est
+distinct du nombre d'anomalies ; une collecte tronquée ou vide ne suffit pas à
+conclure une résolution.
+
+Les investigations donnent accès aux preuves structurées. Chaque réparation
+sépare proposition, autorisation ou refus, report, exécution et vérification.
+Une proposition ne prouve pas une exécution ; seule une réparation `succeeded`
+est présentée comme vérifiée avec succès. L'état courant reste fourni par Agent,
+y compris lorsque le dossier en cache contient une ancienne décision.
+
 ## Disposition de la page
 
 Sur écran large, la page Tsunade a deux colonnes qui défilent chacune de leur
