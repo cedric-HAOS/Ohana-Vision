@@ -2,6 +2,27 @@
 
 ## Non publié
 
+## [1.36.0] — 2026-10-03 — Dossier d'incident explicable
+
+### Ajouté
+
+- Parcours chronologique daté, preuves et provenance, hypothèses et contradictions,
+  contexte manquant et limites de collecte dans le dossier d'incident.
+- Étapes de réparation : proposition, autorisation ou refus, report, exécution
+  et vérification avec résultat daté.
+
+### Corrigé
+
+- Une origine absente n'est plus attribuée à Katsuyu ; la décision courante
+  ne reprend pas les hypothèses d'un ancien diagnostic.
+- Les preuves Supervisor et les dossiers mobiles restent lisibles.
+
+### Validation
+
+- 932 tests Vision et scénario Sandbox `incident-dossier` (neuf contrôles).
+- API locale p95 < 55 ms ; génération HTML p95 < 4 ms sur 1 000 événements.
+  Ces mesures excluent le DOM, la production et l'inférence IA.
+
 ## [1.35.0] — 2026-09-29 — Suivi des décisions dans la passerelle Shizune
 
 Publiée le jour même de 1.34.1, à la demande de l'utilisateur.
