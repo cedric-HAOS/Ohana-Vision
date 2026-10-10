@@ -2,6 +2,12 @@
 
 ## Non publié
 
+## [1.37.0] — 2026-10-10 — Supervision de la synchronisation AdGuard
+
+- Administration du plugin Synchronisation AdGuard : activation, intervalle,
+  délais, âge maximal et nom DNS de contrôle, sans champ de nouvelle tentative
+  incompatible. Les accès de synchronisation existants sont conservés.
+
 ## [1.36.0] — 2026-10-03 — Dossier d'incident explicable
 
 ### Ajouté
