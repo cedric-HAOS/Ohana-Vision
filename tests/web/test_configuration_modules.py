@@ -70,18 +70,17 @@ const plugin = {id: 'adguard_sync', enabled: false, configuration: {
     sync_config_path: '/etc/ohana-agent/adguardhome-sync.yaml'}};
 const editor = Object.assign({}, PluginsMethods, {
     value: id => ({'plugin-interval-seconds': '120', 'plugin-timeout': '3',
-        'plugin-adguard-maximum-age': '600',
-        'plugin-adguard-probe-name': 'ha-01.ohana.lan'})[id],
+        'plugin-adguard-maximum-age': '600'})[id],
     checked: id => id === 'plugin-enabled',
 });
 const html = editor.pluginConfigurationFields(plugin);
 assert.ok(html.includes('plugin-adguard-maximum-age'));
-assert.ok(html.includes('plugin-adguard-probe-name'));
+assert.ok(!html.includes('plugin-adguard-probe-name'));
+assert.ok(html.includes('Délai API (secondes)'));
 assert.ok(!html.includes('plugin-retries'));
 const payload = editor.pluginConfigurationPayload(plugin);
 assert.deepEqual(payload, {enabled: true, configuration: {
     interval_seconds: 120, timeout: 3, maximum_age_seconds: 600,
-    dns_probe_name: 'ha-01.ohana.lan',
     sync_config_path: '/etc/ohana-agent/adguardhome-sync.yaml'}});
 assert.equal(plugin.configuration.interval_seconds, 60);
 assert.ok(editor.pluginConfigurationHint(plugin).includes('Shizune'));

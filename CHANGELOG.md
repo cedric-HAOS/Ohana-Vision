@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Formulaire de surveillance AdGuard : suppression du nom DNS de contrôle,
+  délai réservé aux API et retrait du champ historique dans les enregistrements.
+
 - Contrôle documentaire D06/D14 : cycle de livraison indépendant de
   l'observation Agent et charte alignée sur les tokens CSS effectivement chargés.
   Cette correction documentaire conserve les styles de l'interface.

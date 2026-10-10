@@ -462,8 +462,8 @@ le dossier, Shizune et la séparation entre état courant et historique.
 ## Synchronisation AdGuard
 
 Vision 1.37.0 administre le plugin d’Agent 1.46.0 depuis **Configuration →
-Plugins → Synchronisation AdGuard** : activation, intervalle, délai API/DNS,
-âge maximal et nom DNS. La tuile **Synchro AdGuard** apparaît dans les services
+Plugins → Synchronisation AdGuard** : activation, intervalle, délai API
+et âge maximal du cycle. La tuile **Synchro AdGuard** apparaît dans les services
 essentiels de Shizune 0.5.0. Voir [Administration](docs/Administration.md).
 
 Depuis Vision 1.38.0, la fiche gère aussi les accès et l’activation du moteur

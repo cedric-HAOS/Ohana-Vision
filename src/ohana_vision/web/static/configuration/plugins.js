@@ -558,11 +558,8 @@ export const PluginsMethods = {
         if (plugin.id === "adguard_sync") {
             return `
                 ${numberField("plugin-interval-seconds", "Intervalle (secondes)", configuration.interval_seconds ?? 60, 'min="1" required')}
-                ${numberField("plugin-timeout", "Délai API et DNS (secondes)", configuration.timeout ?? 2, 'min="0.1" max="10" step="0.1" required')}
+                ${numberField("plugin-timeout", "Délai API (secondes)", configuration.timeout ?? 2, 'min="0.1" max="10" step="0.1" required')}
                 ${numberField("plugin-adguard-maximum-age", "Âge maximal du cycle (secondes)", configuration.maximum_age_seconds ?? 900, 'min="1" required')}
-                <label>Nom DNS à vérifier
-                    <input id="plugin-adguard-probe-name" type="text" value="${escapeHtml(configuration.dns_probe_name ?? "infra-01.ohana.lan")}" required>
-                </label>
             `;
         }
 
@@ -1079,7 +1076,7 @@ export const PluginsMethods = {
         if (plugin.id === "adguard_sync") {
             delete configuration.retries;
             configuration.maximum_age_seconds = Number(this.value("plugin-adguard-maximum-age"));
-            configuration.dns_probe_name = this.value("plugin-adguard-probe-name");
+            delete configuration.dns_probe_name;
             return {enabled: this.checked("plugin-enabled"), configuration};
         }
 

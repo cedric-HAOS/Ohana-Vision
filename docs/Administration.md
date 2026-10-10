@@ -157,18 +157,26 @@ retourné par Agent.
 ## Superviser la synchronisation AdGuard (1.37.0)
 
 Avec Agent 1.46.0, ouvrir **Configuration → Plugins → Synchronisation AdGuard**.
-Activer le plugin, régler l’intervalle, le délai API/DNS, l’âge maximal du dernier
-cycle et le nom DNS de contrôle, enregistrer puis lancer **Tester**. Le service
+Activer le plugin, régler l’intervalle, le délai API et l’âge maximal du dernier
+cycle, enregistrer puis lancer **Tester**. Le service
 local est préparé automatiquement au démarrage en production de l’Agent avec
 son administration activée ; aucun ajout manuel ni fichier YAML à créer.
 Les identifiants restent dans le fichier de synchronisation existant.
 
 Le contrôle est en lecture seule : timer/service, dernier cycle, comparaison
-des sections répliquées et DNS sur les deux instances. La synthèse compagnon
+des sections répliquées entre les deux instances. La disponibilité DNS relève
+du plugin DNS. La synthèse compagnon
 transmet **Synchro AdGuard** à Shizune dans **Services essentiels**. Une mesure
 absente, ancienne ou un plugin désactivé reste non vérifié. Le moteur
 `adguardhome-sync` et ses accès doivent déjà être installés sur le serveur.
 Voir le [guide Agent](https://github.com/cedric-HAOS/Ohana-Agent/blob/main/docs/adguard-sync-supervision.md).
+
+## Surveillance AdGuard (1.38.1)
+
+Avec Agent 1.48.0, le formulaire ne propose plus de nom DNS à tester. Le délai
+concerne uniquement les API AdGuard ; le contrôle porte sur le cycle réussi,
+sa fraîcheur et les sections répliquées. La disponibilité DNS relève du plugin
+DNS. Shizune 0.5.0 affiche l’âge du dernier cycle réussi fourni par Agent.
 
 ## Moteur AdGuard (1.38.0)
 
