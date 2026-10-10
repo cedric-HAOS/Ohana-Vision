@@ -169,3 +169,20 @@ transmet **Synchro AdGuard** à Shizune dans **Services essentiels**. Une mesure
 absente, ancienne ou un plugin désactivé reste non vérifié. Le moteur
 `adguardhome-sync` et ses accès doivent déjà être installés sur le serveur.
 Voir le [guide Agent](https://github.com/cedric-HAOS/Ohana-Agent/blob/main/docs/adguard-sync-supervision.md).
+
+## Moteur AdGuard (1.38.0)
+
+Avec Agent 1.47.0 et Installer 1.16.0, la fiche **Synchronisation AdGuard**
+distingue **Moteur de synchronisation** et **Surveillance activée**.
+Renseigner les deux URL, les utilisateurs et les mots de passe, puis choisir
+**Enregistrer et vérifier les accès**. Les secrets déjà enregistrés sont masqués ;
+un champ vide les conserve. Les accès doivent être modifiés moteur arrêté.
+**Activer la synchronisation** valide les deux API avant d’activer le timer ;
+**Désactiver la synchronisation** arrête le timer et le cycle. La validation
+initiale ne lance aucune synchronisation et n’exige pas encore les réécritures DNS.
+
+Le choix durable du moteur est sauvegardé pour sa restauration par Installer.
+Vision ne conserve pas les mots de passe. Les routes `GET/PUT
+/api/administration/adguard-sync` et `PUT
+/api/administration/adguard-sync/activation` relaient les opérations authentifiées
+d’Agent. Voir [le guide Installer](https://github.com/cedric-HAOS/Ohana-Installer/blob/main/docs/AdGuard-Sync.md).

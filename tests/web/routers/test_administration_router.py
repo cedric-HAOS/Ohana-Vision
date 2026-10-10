@@ -738,3 +738,36 @@ def test_administration_routes_proxy_a_manual_resolution() -> None:
         "status": "verifying",
         "description": "Câble rebranché",
     }
+
+
+def test_adguard_capability_is_relayed_without_returning_credentials():
+    class AdGuardClient(FakeAdministrationClient):
+        def read_adguard_sync(self):
+            return {"installed": True, "origin": {"password_configured": True}}
+
+        def write_adguard_sync(self, payload):
+            self.saved = payload
+            return self.read_adguard_sync()
+
+        def activate_adguard_sync(self, enabled):
+            self.enabled = enabled
+            return {"enabled": enabled}
+
+    fake = AdGuardClient()
+    client = make_client(fake)
+    assert client.get("/api/administration/adguard-sync").json()["installed"]
+    response = client.put(
+        "/api/administration/adguard-sync",
+        json={
+            "origin": {"password": "private"},
+            "replica": {"password": "other-private"},
+        },
+    )
+    assert response.status_code == 200
+    assert "private" not in response.text
+    assert fake.saved["origin"]["password"] == "private"
+    response = client.put(
+        "/api/administration/adguard-sync/activation", json={"enabled": True}
+    )
+    assert response.json() == {"enabled": True}
+    assert fake.enabled is True

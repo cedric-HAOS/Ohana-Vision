@@ -37,6 +37,9 @@ export const PluginsMethods = {
             this.plugins = (pluginsPayload.plugins ?? [])
                 .map(normalizePluginPresentation);
             this.pluginsLoadError = null;
+            if (this.plugins.some((plugin) => plugin.id === "adguard_sync")) {
+                await this.refreshAdGuardSync();
+            }
 
             if (
                 this.selectedPluginId
@@ -260,6 +263,7 @@ export const PluginsMethods = {
                     <strong>${escapeHtml(this.formatPluginDate(plugin.next_run_at, "Non planifiée"))}</strong>
                 </span>
             </div>
+            ${plugin.id === "adguard_sync" ? this.adGuardCapabilityFields() : ""}
             <div class="configuration-form-grid plugin-configuration-fields">
                 ${this.pluginActivationField(plugin)}
                 ${this.pluginConfigurationFields(plugin)}
@@ -285,6 +289,7 @@ export const PluginsMethods = {
                 },
             );
         this.updatePluginConfigurationAvailability();
+        if (plugin.id === "adguard_sync") this.bindAdGuardCapability();
     },
 
     pluginActivationField(plugin) {
@@ -504,7 +509,7 @@ export const PluginsMethods = {
 
         this.elements.pluginInspectorContent
             ?.querySelectorAll(
-                "input:not(#plugin-enabled), select, textarea",
+                ".plugin-configuration-fields input:not(#plugin-enabled), .plugin-configuration-fields select, .plugin-configuration-fields textarea",
             )
             .forEach((control) => {
                 control.disabled = !enabled;
@@ -1253,6 +1258,10 @@ export const PluginsMethods = {
     },
 
     async savePluginConfiguration() {
+        if (this.adguardAccessDirty) {
+            showError(this.elements.error, "Enregistrer les accès AdGuard avant les paramètres de surveillance.");
+            return;
+        }
         const plugin = this.selectedPlugin();
 
         if (

@@ -127,3 +127,28 @@ def test_backup_operations_allow_slow_cold_icloud_startup(
         ),
         ("http://127.0.0.1:8765/v1/companions/iphone%20id/revoke", 10.0),
     ]
+
+
+def test_adguard_management_uses_bounded_timeouts_and_fixed_paths(
+    tmp_path, monkeypatch
+):
+    token_path = tmp_path / "token"
+    token_path.write_text("secret")
+    calls = []
+
+    def respond(request, *, timeout):
+        calls.append((request.method, request.full_url, timeout))
+        return BytesIO(b"{}")
+
+    monkeypatch.setattr("ohana_vision.administration.client.urlopen", respond)
+    client = AgentAdministrationClient(
+        base_url="http://127.0.0.1:8765", token_file=token_path, timeout_seconds=10
+    )
+    client.read_adguard_sync()
+    client.write_adguard_sync({"origin": {}, "replica": {}})
+    client.activate_adguard_sync(True)
+    assert calls == [
+        ("GET", "http://127.0.0.1:8765/v1/system/adguard-sync", 10),
+        ("PUT", "http://127.0.0.1:8765/v1/system/adguard-sync", 40),
+        ("PUT", "http://127.0.0.1:8765/v1/system/adguard-sync/activation", 130),
+    ]

@@ -87,6 +87,21 @@ def write_wake_on_lan(
     )
 
 
+@router.get("/adguard-sync")
+def read_adguard_sync(request: Request) -> dict[str, Any]:
+    return _call(_client(request).read_adguard_sync)
+
+
+@router.put("/adguard-sync")
+def write_adguard_sync(request: Request, payload: dict[str, Any]) -> dict[str, Any]:
+    return _call(lambda: _client(request).write_adguard_sync(payload))
+
+
+@router.put("/adguard-sync/activation")
+def activate_adguard_sync(request: Request, payload: dict[str, Any]) -> dict[str, Any]:
+    return _call(lambda: _client(request).activate_adguard_sync(payload.get("enabled")))
+
+
 @router.get("/network")
 def read_network(request: Request) -> dict[str, Any]:
     """Read the Agent host NetworkManager state."""

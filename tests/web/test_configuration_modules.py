@@ -114,3 +114,31 @@ assert.equal(
     shared.normalizePluginPresentation({id: 'shelly_telemetry', name: 'x'}).name,
     'Télémétrie Home Assistant');
 """)
+
+
+def test_adguard_capability_editor_masks_passwords_and_separates_activation():
+    run_module_script(r"""
+import assert from 'node:assert/strict';
+const {AdGuardSyncMethods} = await import(
+    `${process.argv[1]}/configuration/adguard.js`);
+globalThis.document = {createElement: () => ({textContent: '',
+    get innerHTML() {return this.textContent;}})};
+const editor = Object.assign({adguardSync: {
+    installed: true, active: false, enabled: false,
+    origin: {url: 'http://192.168.1.11', username: 'admin', password_configured: true},
+    replica: {url: 'http://192.168.1.12', username: 'admin',
+        password_configured: true}},
+    value: (id) => id.endsWith('password') ? '' : id.endsWith('url') ?
+        'http://192.168.1.11' : 'admin'}, AdGuardSyncMethods);
+const html = editor.adGuardCapabilityFields();
+assert(html.includes('Activer la synchronisation'));
+assert(html.includes('value="" placeholder="Déjà enregistré'));
+assert(html.includes('La surveillance ci-dessous reste indépendante'));
+assert.deepEqual(editor.adGuardAccessPayload().origin, {
+    url: 'http://192.168.1.11', username: 'admin', password: ''});
+editor.adguardSync.origin.username = 'admin" autofocus="';
+assert(editor.adGuardCapabilityFields().includes('admin&quot; autofocus=&quot;'));
+editor.adguardSync.active = true;
+assert(editor.adGuardCapabilityFields().includes('Désactiver la synchronisation'));
+assert(editor.adGuardCapabilityFields().includes('id="adguard-save-access" disabled'));
+""")

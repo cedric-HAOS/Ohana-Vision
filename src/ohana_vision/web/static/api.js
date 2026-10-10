@@ -65,6 +65,7 @@ export const API = Object.freeze({
         "/api/administration/capabilities",
     administrationDHCP:
         "/api/administration/dhcp",
+    administrationAdGuardSync: "/api/administration/adguard-sync",
     administrationNetwork:
         "/api/administration/network",
     administrationNetworkConfirm(transactionId) {

@@ -1449,3 +1449,18 @@ p:not(.panel-heading__kicker) {
         grid-row: auto;
     }
 }
+
+
+.adguard-instance {
+    min-width: 0;
+    display: grid;
+    gap: var(--ohana-space-3);
+    border: 1px solid var(--ohana-border-default);
+    border-radius: var(--ohana-radius-md);
+    padding: var(--ohana-space-3);
+}
+
+.adguard-instance label {
+    display: grid;
+    gap: var(--ohana-space-1);
+}

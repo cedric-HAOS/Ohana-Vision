@@ -58,6 +58,22 @@ class AgentAdministrationClient:
             payload,
         )
 
+    def read_adguard_sync(self) -> dict[str, Any]:
+        return self._request("GET", "/v1/system/adguard-sync")
+
+    def write_adguard_sync(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._request(
+            "PUT", "/v1/system/adguard-sync", payload, timeout_seconds=40
+        )
+
+    def activate_adguard_sync(self, enabled: bool) -> dict[str, Any]:
+        return self._request(
+            "PUT",
+            "/v1/system/adguard-sync/activation",
+            {"enabled": enabled},
+            timeout_seconds=max(self.timeout_seconds, 130),
+        )
+
     def read_network(self) -> dict[str, Any]:
         """Read the Agent host NetworkManager state."""
         return self._request("GET", "/v1/system/network")

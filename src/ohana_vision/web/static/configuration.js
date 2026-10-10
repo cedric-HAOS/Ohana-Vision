@@ -21,6 +21,7 @@ import { NetworkMethods } from "./configuration/network.js";
 import { DhcpMethods } from "./configuration/dhcp.js";
 import { ArchitectureViewMethods } from "./configuration/architecture_view.js";
 import { ArchitectureEditorMethods } from "./configuration/architecture_editor.js";
+import { AdGuardSyncMethods } from "./configuration/adguard.js";
 import { PluginsMethods } from "./configuration/plugins.js";
 
 /**
@@ -632,6 +633,7 @@ export class ConfigurationController {
                             event.target?.id?.startsWith(
                                 "plugin-backup-icloud-",
                             )
+                            || event.target?.closest?.("[data-adguard-capability]")
                         ) {
                             return;
                         }
@@ -1052,4 +1054,5 @@ Object.assign(
     ArchitectureViewMethods,
     ArchitectureEditorMethods,
     PluginsMethods,
+    AdGuardSyncMethods,
 );
