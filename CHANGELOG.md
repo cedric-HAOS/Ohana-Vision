@@ -2,6 +2,10 @@
 
 ## Non publié
 
+- Contrôle documentaire D06/D14 : cycle de livraison indépendant de
+  l'observation Agent et charte alignée sur les tokens CSS effectivement chargés.
+  Cette correction documentaire conserve les styles de l'interface.
+
 ## [1.37.0] — 2026-10-10 — Supervision de la synchronisation AdGuard
 
 - Administration du plugin Synchronisation AdGuard : activation, intervalle,

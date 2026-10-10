@@ -25,20 +25,31 @@ Le mot-symbole « Ohana » utilise une typographie sans serif moderne et sobre.
 Conserver autour du logo un espace libre au moins égal à 25 % de la hauteur du symbole.
 Ne pas étirer, incliner, recolorer ou ajouter d’effets au logo.
 
-## 3. Palette
+## 3. Palette et source de référence
 
-| Usage | Nom | Hex |
+Les couleurs effectivement chargées sont les tokens de
+[`design-system.css`](src/ohana_vision/web/static/design-system.css). Le
+[référentiel Platform](https://github.com/cedric-HAOS/Ohana-Platform/blob/main/docs/Design/Colors.md)
+documente la même palette. La précédente palette cyan de cette charte est
+historique ; elle ne prescrit plus les valeurs de l'interface.
+
+| Usage | Token | Valeur |
 |---|---|---|
-| Primaire | Cyan Ohana | `#18C5E8` |
-| Secondaire | Bleu Ohana | `#1479D1` |
-| Accent | Turquoise | `#4DE6C8` |
-| Fond principal | Nuit | `#0F172A` |
-| Surface | Ardoise | `#1E293B` |
-| Texte clair | Neige | `#F8FAFC` |
-| Texte secondaire | Brume | `#94A3B8` |
-| Succès | Vert | `#22C55E` |
-| Avertissement | Ambre | `#F59E0B` |
-| Critique | Rouge | `#EF4444` |
+| Fond général | `--ohana-background-canvas` | `#071014` |
+| Sidebar | `--ohana-background-sidebar` | `#091419` |
+| Surface | `--ohana-background-surface` | `#0d1a20` |
+| Surface élevée | `--ohana-background-surface-raised` | `#112229` |
+| Accent principal | `--ohana-brand-primary` | `#28d7c0` |
+| Accent survolé | `--ohana-brand-primary-hover` | `#4de0cd` |
+| Accent actif | `--ohana-brand-primary-active` | `#20bda9` |
+| Texte principal | `--ohana-text-primary` | `#f1f7f7` |
+| Texte secondaire | `--ohana-text-secondary` | `#a9b9bc` |
+| Texte atténué | `--ohana-text-muted` | `#718489` |
+| Bordure | `--ohana-border-default` | `#294149` |
+| Sain | `--ohana-health-healthy` | `#28d7c0` |
+| Dégradé | `--ohana-health-degraded` | `#f2b84b` |
+| Critique | `--ohana-health-critical` | `#ef6464` |
+| Inconnu | `--ohana-health-unknown` | `#718489` |
 
 ## 4. Typographie
 
@@ -52,12 +63,12 @@ Alternative système : `Segoe UI`, `Arial`, sans-serif.
 
 ## 5. Interface
 
-- Fond principal sombre : `#0F172A`.
-- Surfaces : `#1E293B`.
-- Accent principal : `#18C5E8`.
-- États de santé : vert, ambre, rouge.
-- Rayon recommandé : 12 à 16 px.
-- Ombres discrètes et contrastes accessibles.
+Réutiliser les tokens `--ohana-background-*`, `--ohana-text-*`,
+`--ohana-brand-*` et `--ohana-health-*`. Les alias de
+[`foundations.css`](src/ohana_vision/web/static/styles/foundations.css)
+conservent les composants historiques compatibles avec ces mêmes valeurs.
+Associer couleur, icône et libellé ; vérifier le contraste pour chaque état.
+Le rayon et les espacements sont définis par les tokens du Design System.
 
 ## 6. Intégration HTML
 
@@ -66,7 +77,7 @@ Alternative système : `Segoe UI`, `Arial`, sans-serif.
 <link rel="icon" href="/ui/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/ui/apple-touch-icon.png">
 <link rel="manifest" href="/ui/site.webmanifest">
-<meta name="theme-color" content="#18C5E8">
+<meta name="theme-color" content="#071014">
 ```
 
 ## 7. Packaging Python

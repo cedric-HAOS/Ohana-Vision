@@ -155,13 +155,20 @@ vision:
 
 Cycle de vie :
 
-1. l'Agent démarre et tente d'envoyer le snapshot ;
-2. tant que Vision ne répond pas `200`, le scheduler d'observation reste arrêté ;
-3. après acceptation, les observations démarrent ;
-4. le snapshot est renvoyé toutes les cinq minutes ;
-5. si un refresh échoue, les observations sont suspendues ;
-6. les tentatives reprennent toutes les dix secondes ;
-7. le scheduler redémarre après resynchronisation.
+1. l'Agent prépare l'export et tente d'envoyer le snapshot ;
+2. le scheduler et la santé hôte démarrent même si Vision ne répond pas ;
+3. les observations locales continuent ; la file SQLite durable conserve les
+   observations dont la livraison a échoué, selon ses limites configurées ;
+4. après acceptation, le snapshot est rafraîchi toutes les cinq minutes ;
+5. un échec de synchronisation ou de refresh déclenche une nouvelle tentative
+   après dix secondes, sans suspendre le scheduler ;
+6. le client durable reprend la livraison des observations dans l'ordre lorsque
+   Vision est disponible. Le rattrapage et la fraîcheur doivent être contrôlés.
+
+Observation locale, définition de topologie et livraison sont trois états
+distincts. Une indisponibilité Vision ne prouve pas un arrêt des sondes Agent.
+Vision peut ingérer des observations avant de recevoir le snapshot ; la topologie
+reste en attente jusqu'à sa synchronisation.
 
 Vision conserve actuellement le snapshot courant en mémoire. Le refresh périodique permet donc de récupérer automatiquement après son redémarrage.
 
@@ -235,7 +242,10 @@ Layouts  : 1
 - Vision s'arrête puis redémarre ;
 - Agent reçoit un arrêt pendant sa boucle de retry.
 
-Dans les quatre cas, la synchronisation, la suspension et la reprise se comportent comme prévu.
+Les tests de `test_production_agent.py` couvrent l'observation pendant une
+indisponibilité initiale de Vision, la reprise du snapshot et la poursuite des
+sondes lors d'un échec de refresh. Les scénarios de livraison durable couvrent
+la file et son rattrapage. Une recette de production reste distincte de ces tests.
 
 ---
 
