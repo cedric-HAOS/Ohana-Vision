@@ -6,6 +6,15 @@
   l'observation Agent et charte alignée sur les tokens CSS effectivement chargés.
   Cette correction documentaire conserve les styles de l'interface.
 
+## [1.38.0] — 2026-10-10 — Capacité de synchronisation AdGuard
+
+- Fiche Synchronisation AdGuard : configuration des URL et utilisateurs,
+  mots de passe masqués et conservés lorsqu’un champ reste vide, vérification
+  des accès, activation et désactivation du moteur installé par Installer.
+- Le moteur et la surveillance sont administrés séparément. Les changements
+  d’accès sont refusés pendant un cycle actif ; les opérations restent portées
+  par l’API authentifiée d’Agent, sans conservation des secrets dans Vision.
+
 ## [1.37.0] — 2026-10-10 — Supervision de la synchronisation AdGuard
 
 - Administration du plugin Synchronisation AdGuard : activation, intervalle,
