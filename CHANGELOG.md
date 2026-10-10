@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.38.1] — 2026-10-10 — Formulaire AdGuard sans contrôle DNS
+
 - Formulaire de surveillance AdGuard : suppression du nom DNS de contrôle,
   délai réservé aux API et retrait du champ historique dans les enregistrements.
 
