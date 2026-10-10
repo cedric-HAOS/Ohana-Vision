@@ -458,3 +458,10 @@ visible dans la timeline sans être compté comme incident ou dégradation.
 
 Le [parcours des priorités Tsunade](docs/tsunade-priorities.md) décrit les cartes,
 le dossier, Shizune et la séparation entre état courant et historique.
+
+## Synchronisation AdGuard
+
+Vision 1.37.0 administre le plugin d’Agent 1.46.0 depuis **Configuration →
+Plugins → Synchronisation AdGuard** : activation, intervalle, délai API/DNS,
+âge maximal et nom DNS. La tuile **Synchro AdGuard** apparaît dans les services
+essentiels de Shizune 0.5.0. Voir [Administration](docs/Administration.md).

@@ -46,6 +46,7 @@ export function agentSupportsDistributedJobs(value) {
 
 
 export const SERVICE_PORT_POLICIES = Object.freeze({
+    adguard_sync: { mode: "hidden", defaultPort: null },
     dhcp: { mode: "hidden", defaultPort: null },
     dns: { mode: "hidden", defaultPort: null },
     mqtt: { mode: "optional", defaultPort: 1883 },
@@ -115,6 +116,7 @@ export const PLUGIN_STATUS_LABELS = Object.freeze({
 });
 
 export const PLUGIN_ICONS = Object.freeze({
+    adguard_sync: "/ui/assets/icons/plugins/puzzle.svg",
     backup: "/ui/assets/icons/administration/archive.svg",
     dhcp: "/ui/assets/icons/network/router.svg",
     dns: "/ui/assets/icons/network/globe-2.svg",

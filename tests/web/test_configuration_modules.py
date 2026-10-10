@@ -56,6 +56,38 @@ for (const name of ['load', 'renderDHCP', 'renderArchitecture', 'editDevice',
 """)
 
 
+def test_adguard_sync_editor_submits_only_supported_configuration() -> None:
+    run_module_script(r"""
+import assert from 'node:assert/strict';
+const {PluginsMethods} = await import(`${process.argv[1]}/configuration/plugins.js`);
+globalThis.document = {createElement: () => ({textContent: '',
+    get innerHTML() { return this.textContent
+        .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+        .replaceAll('"', '&quot;'); }})};
+const plugin = {id: 'adguard_sync', enabled: false, configuration: {
+    interval_seconds: 60, timeout: 2, maximum_age_seconds: 900,
+    dns_probe_name: 'infra-01.ohana.lan',
+    sync_config_path: '/etc/ohana-agent/adguardhome-sync.yaml'}};
+const editor = Object.assign({}, PluginsMethods, {
+    value: id => ({'plugin-interval-seconds': '120', 'plugin-timeout': '3',
+        'plugin-adguard-maximum-age': '600',
+        'plugin-adguard-probe-name': 'ha-01.ohana.lan'})[id],
+    checked: id => id === 'plugin-enabled',
+});
+const html = editor.pluginConfigurationFields(plugin);
+assert.ok(html.includes('plugin-adguard-maximum-age'));
+assert.ok(html.includes('plugin-adguard-probe-name'));
+assert.ok(!html.includes('plugin-retries'));
+const payload = editor.pluginConfigurationPayload(plugin);
+assert.deepEqual(payload, {enabled: true, configuration: {
+    interval_seconds: 120, timeout: 3, maximum_age_seconds: 600,
+    dns_probe_name: 'ha-01.ohana.lan',
+    sync_config_path: '/etc/ohana-agent/adguardhome-sync.yaml'}});
+assert.equal(plugin.configuration.interval_seconds, 60);
+assert.ok(editor.pluginConfigurationHint(plugin).includes('Shizune'));
+""")
+
+
 def test_configuration_shared_validators() -> None:
     """Pure helpers keep their network and fingerprint rules."""
     run_module_script(r"""

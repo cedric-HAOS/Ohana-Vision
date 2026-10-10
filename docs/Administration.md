@@ -153,3 +153,19 @@ retourné par Agent.
 - les écritures sont atomiques et la configuration précédente est restaurée en
   cas d'échec d'application ;
 - les secrets MQTT ne transitent jamais vers le navigateur.
+
+## Superviser la synchronisation AdGuard (1.37.0)
+
+Avec Agent 1.46.0, ouvrir **Configuration → Plugins → Synchronisation AdGuard**.
+Activer le plugin, régler l’intervalle, le délai API/DNS, l’âge maximal du dernier
+cycle et le nom DNS de contrôle, enregistrer puis lancer **Tester**. Le service
+local est préparé automatiquement au démarrage en production de l’Agent avec
+son administration activée ; aucun ajout manuel ni fichier YAML à créer.
+Les identifiants restent dans le fichier de synchronisation existant.
+
+Le contrôle est en lecture seule : timer/service, dernier cycle, comparaison
+des sections répliquées et DNS sur les deux instances. La synthèse compagnon
+transmet **Synchro AdGuard** à Shizune dans **Services essentiels**. Une mesure
+absente, ancienne ou un plugin désactivé reste non vérifié. Le moteur
+`adguardhome-sync` et ses accès doivent déjà être installés sur le serveur.
+Voir le [guide Agent](https://github.com/cedric-HAOS/Ohana-Agent/blob/main/docs/adguard-sync-supervision.md).

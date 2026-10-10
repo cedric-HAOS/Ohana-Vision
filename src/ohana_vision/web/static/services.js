@@ -34,6 +34,7 @@ const SERVICE_TYPE_LABELS = Object.freeze({
     home_assistant_telemetry: "Télémétrie Home Assistant",
     shelly_telemetry: "Télémétrie Home Assistant",
     teleinformation: "Téléinformation",
+    adguard_sync: "Synchronisation AdGuard",
     wireguard: "WireGuard",
     zwave: "Z-Wave",
 });

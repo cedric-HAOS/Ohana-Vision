@@ -331,6 +331,9 @@ export const PluginsMethods = {
     },
 
     pluginConfigurationHint(plugin) {
+        if (plugin.id === "adguard_sync") {
+            return "Surveille la synchronisation entre les deux AdGuard depuis INFRA-01. Les accès existants sont réutilisés. Le résultat apparaît dans les Services essentiels de Shizune.";
+        }
         if (plugin.id === "backup") {
             return "Agent protège les systèmes HAOS et INFRA-01 dans iCloud, sans écrire d’archive persistante sur la carte microSD.";
         }
@@ -546,6 +549,17 @@ export const PluginsMethods = {
                 'min="0" step="1" required',
             )}
         `;
+
+        if (plugin.id === "adguard_sync") {
+            return `
+                ${numberField("plugin-interval-seconds", "Intervalle (secondes)", configuration.interval_seconds ?? 60, 'min="1" required')}
+                ${numberField("plugin-timeout", "Délai API et DNS (secondes)", configuration.timeout ?? 2, 'min="0.1" max="10" step="0.1" required')}
+                ${numberField("plugin-adguard-maximum-age", "Âge maximal du cycle (secondes)", configuration.maximum_age_seconds ?? 900, 'min="1" required')}
+                <label>Nom DNS à vérifier
+                    <input id="plugin-adguard-probe-name" type="text" value="${escapeHtml(configuration.dns_probe_name ?? "infra-01.ohana.lan")}" required>
+                </label>
+            `;
+        }
 
         if (plugin.id === "backup") {
             const defaults = [
@@ -1056,6 +1070,13 @@ export const PluginsMethods = {
         configuration.timeout = Number(
             this.value("plugin-timeout"),
         );
+
+        if (plugin.id === "adguard_sync") {
+            delete configuration.retries;
+            configuration.maximum_age_seconds = Number(this.value("plugin-adguard-maximum-age"));
+            configuration.dns_probe_name = this.value("plugin-adguard-probe-name");
+            return {enabled: this.checked("plugin-enabled"), configuration};
+        }
 
         if (plugin.id === "dhcp") {
             delete configuration.retries;
