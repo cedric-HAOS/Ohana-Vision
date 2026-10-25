@@ -2,9 +2,12 @@
 
 ## Non publié
 
+## [1.41.0] — 2026-10-25 — Les relevés de santé (`/api/runtime/vitals`) publient la mémoire résid
+
 - Les relevés de santé (`/api/runtime/vitals`) publient la mémoire résidente de
   Vision (`process.rss_bytes`). L'Agent 1.51.0 l'enregistre pour désigner le
   processus qui grossit quand la mémoire d'INFRA-01 monte.
+
 ## [1.40.0] — 2026-10-25 — Phase 10
 
 - Phase 10 : un test de restauration issu d'un rapport d'Ohana-Installer est
