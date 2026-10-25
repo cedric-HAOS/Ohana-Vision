@@ -14,6 +14,7 @@ from ohana_vision.runtime.agent_presence import AgentPresence
 from ohana_vision.runtime.backend_runtime_state import (
     BackendRuntimeState,
 )
+from ohana_vision.runtime.process_memory import process_rss_bytes
 from ohana_vision.runtime.runtime_snapshot import RuntimeSnapshot
 from ohana_vision.runtime.runtime_statistics import RuntimeStatistics
 from ohana_vision.runtime.shizune_gateway import ShizuneGateway
@@ -206,6 +207,8 @@ class BackendRuntime:
             "agent": self.agent_presence.snapshot(now=now, running=self.running),
             "shizune_gateway": self.shizune_gateway.snapshot(),
             "version": self.version,
+            # Lets the Agent name the process that grows when the host memory rises.
+            "process": {"rss_bytes": process_rss_bytes()},
             "ingestion_lag": self._lag_summary(now),
             **{
                 name: self._detail(source)
