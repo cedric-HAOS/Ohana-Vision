@@ -234,6 +234,10 @@ class AgentAdministrationClient:
         """Phase 10: backup targets and the restoration tests declared for them."""
         return self._request("GET", "/v1/backups/restore-tests")
 
+    def request_archive_check(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Read the latest published archives again now, in the background."""
+        return self._request("POST", "/v1/backups/archives/verify", payload)
+
     def declare_restore_test(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Keep the outcome of a restoration the owner performed."""
         return self._request("POST", "/v1/backups/restore-tests/declare", payload)

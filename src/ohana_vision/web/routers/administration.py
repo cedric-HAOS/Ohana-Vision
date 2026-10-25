@@ -355,6 +355,13 @@ def read_restore_tests(request: Request) -> dict[str, Any]:
     return _call(client.read_restore_tests)
 
 
+@router.post("/tsunade/backups/archives/verify")
+def request_archive_check(request: Request, payload: dict[str, Any]) -> dict[str, Any]:
+    """Verify the latest published archive of one target, or of all of them."""
+    client = _client(request)
+    return _call(lambda: client.request_archive_check(payload))
+
+
 @router.post("/tsunade/backups/restore-tests")
 def declare_restore_test(request: Request, payload: dict[str, Any]) -> dict[str, Any]:
     """Record the outcome of a restoration performed by the owner."""

@@ -2,6 +2,11 @@
 
 ## Non publié
 
+- Phase 10 : le bloc « Sauvegardes restaurées » affiche, pour chaque cible,
+  l'intégrité de la dernière archive relue par l'Agent (conforme, altérée,
+  absente, non chiffrée ou remote illisible) et un bouton « Vérifier maintenant ».
+  Passerelle `/api/administration/tsunade/backups/archives/verify`.
+
 ## [1.39.0] — 2026-10-25 — Restaurations de sauvegarde
 
 - Phase 10 : bloc « Sauvegardes restaurées » dans l'onglet « À surveiller » de

@@ -278,6 +278,11 @@ export class IncidentsController {
             }
         });
         this.elements.preventive?.addEventListener("click", (event) => {
+            const verifyButton = event.target.closest("[data-tsunade-archive-verify]");
+            if (verifyButton) {
+                void this.requestArchiveCheck(verifyButton);
+                return;
+            }
             const button = event.target.closest("[data-tsunade-preventive-backfill]");
             if (button) {
                 void this.requestPreventiveBackfill(button);
@@ -608,6 +613,7 @@ export class IncidentsController {
         const rows = targets.map((entry) => {
             const last = entry.last_test;
             return `<li class="is-${escapeHtml(entry.state)}"><strong>${escapeHtml(String(entry.target).toUpperCase())}</strong> : ${escapeHtml(entry.text)}
+                <small>${escapeHtml(this.integrityLine(entry.integrity))} <button class="configuration-secondary-button" data-tsunade-archive-verify="${escapeHtml(entry.target)}" type="button">Vérifier maintenant</button></small>
                 <small>${entry.last_backup_success_at ? `Dernière sauvegarde réussie le ${escapeHtml(formatDate(entry.last_backup_success_at))}. ` : ""}${last ? `Dernier test : ${escapeHtml(labels[last.outcome] ?? last.outcome)} le ${escapeHtml(formatDate(last.tested_at))}${last.reference ? ` (${escapeHtml(last.reference)})` : ""}.` : "Aucun test déclaré."}</small></li>`;
         }).join("");
         const options = targets.map((entry) => `<option value="${escapeHtml(entry.target)}">${escapeHtml(String(entry.target).toUpperCase())}</option>`).join("");
@@ -628,6 +634,40 @@ export class IncidentsController {
                 <button class="configuration-secondary-button" type="submit">Déclarer ce test</button>
             </form>` : ""}
         </div>`;
+    }
+
+    integrityLine(integrity) {
+        if (!integrity) {
+            return "Intégrité de l’archive pas encore contrôlée.";
+        }
+        const labels = {
+            ok: "archive relue, taille et empreinte conformes",
+            missing: "archive absente",
+            size_mismatch: "taille différente de celle enregistrée",
+            hash_mismatch: "empreinte différente de celle enregistrée",
+            not_encrypted: "archive non chiffrée",
+            unreadable: "remote illisible, rien de prouvé",
+        };
+        const encrypted = integrity.encrypted === true ? ", chiffrement age confirmé" : "";
+        return `Intégrité : ${labels[integrity.outcome] ?? integrity.outcome}${integrity.outcome === "ok" ? encrypted : ""} (${integrity.backup_ref || "aucune archive"}, ${formatDate(integrity.checked_at)}).`;
+    }
+
+    async requestArchiveCheck(button) {
+        button.disabled = true;
+        this.showError("");
+        try {
+            const target = button.dataset.tsunadeArchiveVerify;
+            const result = await requestJson(API.tsunadeArchiveVerify, {
+                method: "POST",
+                body: JSON.stringify(target ? {target} : {}),
+            });
+            this.showCommandStatus(result?.busy
+                ? "Un contrôle d’archives est déjà en cours."
+                : "Contrôle lancé : le résultat s’affichera à la prochaine actualisation.");
+        } catch (error) {
+            this.showError(`Contrôle impossible : ${this.errorMessage(error)}`);
+        }
+        button.disabled = false;
     }
 
     async declareRestoreTest(form) {

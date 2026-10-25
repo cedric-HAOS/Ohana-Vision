@@ -268,6 +268,10 @@ class FakeAdministrationClient:
     def declare_restore_test(self, payload: dict[str, Any]) -> dict[str, Any]:
         return {**payload, "id": 1}
 
+    def request_archive_check(self, payload: dict[str, Any]) -> dict[str, Any]:
+        target = payload.get("target")
+        return {"started": [target] if target else ["ha-01", "infra-01"], "busy": False}
+
     def mute_preventive(self, payload: dict[str, Any]) -> dict[str, Any]:
         return {**payload, "muted_until": "2026-10-29T12:00:00+01:00"}
 
@@ -723,6 +727,11 @@ def test_administration_routes_proxy_the_restore_tests() -> None:
 
     assert listed.json() == {"schema_version": 1, "max_age_days": 180, "targets": []}
     assert declared.json() == {"target": "ha-01", "outcome": "ok", "id": 1}
+    verified = client.post(
+        "/api/administration/tsunade/backups/archives/verify",
+        json={"target": "infra-01"},
+    )
+    assert verified.json() == {"started": ["infra-01"], "busy": False}
 
 
 def test_administration_routes_proxy_preventive_mutes() -> None:
