@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.40.0] — 2026-10-25 — Phase 10
+
 - Phase 10 : un test de restauration issu d'un rapport d'Ohana-Installer est
   signalé comme tel dans le bloc « Sauvegardes restaurées ».
 - Un travail Katsuyu en attente de worker est présenté comme « en attente du
