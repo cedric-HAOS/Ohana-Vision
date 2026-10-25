@@ -2,6 +2,12 @@
 
 ## Non publié
 
+- Phase 10 : bloc « Sauvegardes restaurées » dans l'onglet « À surveiller » de
+  la page Tsunade. Il liste chaque cible sauvegardée (jamais testée, vérifiée,
+  échouée, ancienne) et permet de déclarer le résultat d'une restauration
+  réellement faite (réussie, partielle, échouée). Passerelle
+  `/api/administration/tsunade/backups/restore-tests` vers l'Agent.
+
 ## [1.38.1] — 2026-10-10 — Formulaire AdGuard sans contrôle DNS
 
 - Formulaire de surveillance AdGuard : suppression du nom DNS de contrôle,

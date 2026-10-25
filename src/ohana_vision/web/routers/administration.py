@@ -348,6 +348,20 @@ def read_preventive(request: Request) -> dict[str, Any]:
     return _call(client.read_preventive)
 
 
+@router.get("/tsunade/backups/restore-tests")
+def read_restore_tests(request: Request) -> dict[str, Any]:
+    """Which backups were really restored, and when."""
+    client = _client(request)
+    return _call(client.read_restore_tests)
+
+
+@router.post("/tsunade/backups/restore-tests")
+def declare_restore_test(request: Request, payload: dict[str, Any]) -> dict[str, Any]:
+    """Record the outcome of a restoration performed by the owner."""
+    client = _client(request)
+    return _call(lambda: client.declare_restore_test(payload))
+
+
 @router.post("/tsunade/preventive/mute")
 def mute_preventive(request: Request, payload: dict[str, Any]) -> dict[str, Any]:
     """Fewer useless alerts: one drift set aside, still shown."""

@@ -77,6 +77,8 @@ export class IncidentsController {
         this.experiences = undefined;
         // Same convention for the Phase 4 preventive synthesis.
         this.preventive = undefined;
+        // Phase 10: backup targets and their declared restoration tests.
+        this.restoreTests = null;
         // Manual forms survive the periodic re-render, with their draft.
         this.manualForms = new Set();
         this.manualDrafts = new Map();
@@ -268,6 +270,13 @@ export class IncidentsController {
                 );
             }
         });
+        this.elements.preventive?.addEventListener("submit", (event) => {
+            const form = event.target.closest("[data-tsunade-restore-form]");
+            if (form) {
+                event.preventDefault();
+                void this.declareRestoreTest(form);
+            }
+        });
         this.elements.preventive?.addEventListener("click", (event) => {
             const button = event.target.closest("[data-tsunade-preventive-backfill]");
             if (button) {
@@ -344,6 +353,13 @@ export class IncidentsController {
             this.renderPreventive();
             this.renderStatusbar();
         });
+        void fetchJson(API.tsunadeRestoreTests)
+            .then((payload) => (payload && Array.isArray(payload.targets) ? payload : null))
+            .catch(() => null)
+            .then((restoreTests) => {
+                this.restoreTests = restoreTests;
+                this.renderPreventive();
+            });
         const acceptedRequest = fetchJson(API.tsunadeAcceptedLogs)
             .then((accepted) => ({
                 signatures: Array.isArray(accepted?.signatures) ? accepted.signatures : [],
@@ -578,7 +594,70 @@ export class IncidentsController {
                 <tbody>${rows}</tbody>
             </table>
             <p><small>La maintenance préventive signale seulement : elle n’ouvre pas d’incident et ne déclenche aucune réparation.</small></p>
+            ${this.restoreTestsBlock()}
             ${this.preventiveBackfill(preventive.backfill)}`;
+    }
+
+    restoreTestsBlock() {
+        const evidence = this.restoreTests;
+        if (!evidence) {
+            return "";
+        }
+        const labels = {ok: "réussie", partial: "partielle", failed: "échouée"};
+        const targets = evidence.targets;
+        const rows = targets.map((entry) => {
+            const last = entry.last_test;
+            return `<li class="is-${escapeHtml(entry.state)}"><strong>${escapeHtml(String(entry.target).toUpperCase())}</strong> : ${escapeHtml(entry.text)}
+                <small>${entry.last_backup_success_at ? `Dernière sauvegarde réussie le ${escapeHtml(formatDate(entry.last_backup_success_at))}. ` : ""}${last ? `Dernier test : ${escapeHtml(labels[last.outcome] ?? last.outcome)} le ${escapeHtml(formatDate(last.tested_at))}${last.reference ? ` (${escapeHtml(last.reference)})` : ""}.` : "Aucun test déclaré."}</small></li>`;
+        }).join("");
+        const options = targets.map((entry) => `<option value="${escapeHtml(entry.target)}">${escapeHtml(String(entry.target).toUpperCase())}</option>`).join("");
+        return `<div class="incidents-preventive__restore">
+            <h4 class="incidents-preventive__rules-title">Sauvegardes restaurées</h4>
+            <p><small>Une sauvegarde n’est fiable que si elle a été restaurée. Ohana ne le déduit jamais : vous déclarez ici le résultat d’une restauration réellement faite (au plus ${escapeHtml(evidence.max_age_days)} jours d’ancienneté).</small></p>
+            ${rows ? `<ul>${rows}</ul>` : "<p><small>Aucune sauvegarde réussie observée pour l’instant.</small></p>"}
+            ${rows ? `<form data-tsunade-restore-form class="incidents-preventive__restore-form">
+                <label>Cible <select name="target" required>${options}</select></label>
+                <label>Résultat <select name="outcome" required>
+                    <option value="ok">Restauration réussie</option>
+                    <option value="partial">Restauration partielle</option>
+                    <option value="failed">Restauration échouée</option>
+                </select></label>
+                <label>Date du test <input name="tested_at" type="date"></label>
+                <label>Archive utilisée <input name="reference" maxlength="200" placeholder="nom ou dossier horodaté" type="text"></label>
+                <label>Note <input name="note" maxlength="1000" placeholder="obligatoire si partielle ou échouée" type="text"></label>
+                <button class="configuration-secondary-button" type="submit">Déclarer ce test</button>
+            </form>` : ""}
+        </div>`;
+    }
+
+    async declareRestoreTest(form) {
+        const data = new FormData(form);
+        const payload = {
+            target: String(data.get("target")),
+            outcome: String(data.get("outcome")),
+            reference: String(data.get("reference") ?? ""),
+            note: String(data.get("note") ?? ""),
+        };
+        const day = String(data.get("tested_at") ?? "");
+        const today = new Date().toLocaleDateString("sv-SE");
+        if (day && day !== today) {
+            // Today's test keeps the real time; an earlier day is dated at noon.
+            payload.tested_at = `${day}T12:00:00`;
+        }
+        const submit = form.querySelector("button[type=submit]");
+        submit.disabled = true;
+        this.showError("");
+        try {
+            await requestJson(API.tsunadeRestoreTests, {
+                method: "POST",
+                body: JSON.stringify(payload),
+            });
+            this.showCommandStatus("Test de restauration enregistré.");
+            await this.load();
+        } catch (error) {
+            this.showError(`Déclaration impossible : ${this.errorMessage(error)}`);
+            submit.disabled = false;
+        }
     }
 
     preventiveBackfill(backfill) {

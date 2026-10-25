@@ -262,6 +262,12 @@ class FakeAdministrationClient:
     def read_similar_incidents(self, incident_id: str) -> dict[str, Any]:
         return {"incident_id": incident_id, "similar": []}
 
+    def read_restore_tests(self) -> dict[str, Any]:
+        return {"schema_version": 1, "max_age_days": 180, "targets": []}
+
+    def declare_restore_test(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return {**payload, "id": 1}
+
     def mute_preventive(self, payload: dict[str, Any]) -> dict[str, Any]:
         return {**payload, "muted_until": "2026-10-29T12:00:00+01:00"}
 
@@ -704,6 +710,19 @@ def test_administration_routes_proxy_the_incident_history() -> None:
     assert timeline.json() == {"incidents": [], "repairs": []}
     assert sheet.json() == {"equipment_id": "infra-01"}
     assert similar.json() == {"incident_id": "i-1", "similar": []}
+
+
+def test_administration_routes_proxy_the_restore_tests() -> None:
+    client = make_client(FakeAdministrationClient())
+
+    listed = client.get("/api/administration/tsunade/backups/restore-tests")
+    declared = client.post(
+        "/api/administration/tsunade/backups/restore-tests",
+        json={"target": "ha-01", "outcome": "ok"},
+    )
+
+    assert listed.json() == {"schema_version": 1, "max_age_days": 180, "targets": []}
+    assert declared.json() == {"target": "ha-01", "outcome": "ok", "id": 1}
 
 
 def test_administration_routes_proxy_preventive_mutes() -> None:

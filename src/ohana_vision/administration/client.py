@@ -230,6 +230,14 @@ class AgentAdministrationClient:
         """List Tsunade's known repairs with their history and state."""
         return self._request("GET", "/v1/experiences")
 
+    def read_restore_tests(self) -> dict[str, Any]:
+        """Phase 10: backup targets and the restoration tests declared for them."""
+        return self._request("GET", "/v1/backups/restore-tests")
+
+    def declare_restore_test(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Keep the outcome of a restoration the owner performed."""
+        return self._request("POST", "/v1/backups/restore-tests/declare", payload)
+
     def mute_preventive(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Set one preventive drift aside for a number of days."""
         return self._request("POST", "/v1/preventive/mute", payload)
