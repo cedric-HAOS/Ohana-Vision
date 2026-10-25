@@ -614,7 +614,7 @@ export class IncidentsController {
             const last = entry.last_test;
             return `<li class="is-${escapeHtml(entry.state)}"><strong>${escapeHtml(String(entry.target).toUpperCase())}</strong> : ${escapeHtml(entry.text)}
                 <small>${escapeHtml(this.integrityLine(entry.integrity))} <button class="configuration-secondary-button" data-tsunade-archive-verify="${escapeHtml(entry.target)}" type="button">Vérifier maintenant</button></small>
-                <small>${entry.last_backup_success_at ? `Dernière sauvegarde réussie le ${escapeHtml(formatDate(entry.last_backup_success_at))}. ` : ""}${last ? `Dernier test : ${escapeHtml(labels[last.outcome] ?? last.outcome)} le ${escapeHtml(formatDate(last.tested_at))}${last.reference ? ` (${escapeHtml(last.reference)})` : ""}.` : "Aucun test déclaré."}</small></li>`;
+                <small>${entry.last_backup_success_at ? `Dernière sauvegarde réussie le ${escapeHtml(formatDate(entry.last_backup_success_at))}. ` : ""}${last ? `Dernier test : ${escapeHtml(labels[last.outcome] ?? last.outcome)} le ${escapeHtml(formatDate(last.tested_at))}${last.reference ? ` (${escapeHtml(last.reference)})` : ""}${last.source === "installer" ? ", rapport d’Ohana-Installer" : ""}.` : "Aucun test déclaré."}</small></li>`;
         }).join("");
         const options = targets.map((entry) => `<option value="${escapeHtml(entry.target)}">${escapeHtml(String(entry.target).toUpperCase())}</option>`).join("");
         return `<div class="incidents-preventive__restore">

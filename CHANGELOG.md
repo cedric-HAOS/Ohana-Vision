@@ -2,6 +2,8 @@
 
 ## Non publié
 
+- Phase 10 : un test de restauration issu d'un rapport d'Ohana-Installer est
+  signalé comme tel dans le bloc « Sauvegardes restaurées ».
 - Un travail Katsuyu en attente de worker est présenté comme « en attente du
   prochain lot de 05:00 (Bubule éteint) » au lieu de « Katsuyu indisponible » : les
   analyses d'incident de journée sont reportées à ce lot (Agent 1.50.0).
