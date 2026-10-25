@@ -3199,3 +3199,12 @@ def test_backup_ui_exposes_the_remote_retention_of_each_haos_target() -> None:
     assert "plugin-backup-target-${index}-retention" in response.text
     assert "Archives conservées dans iCloud" in response.text
     assert "remote_retention_count: Number(" in response.text
+
+
+def test_backup_block_shows_the_icloud_session_state() -> None:
+    client = make_client()
+    response = client.get("/static/incidents.js")
+
+    assert response.status_code == 200
+    assert "icloudLine(evidence.icloud)" in response.text
+    assert "session expirée : reconnectez iCloud" in response.text

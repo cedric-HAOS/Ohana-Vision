@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Phase 10 : le bloc « Sauvegardes restaurées » affiche l'état de la session iCloud
+  (ouverte, expirée, injoignable…) avec la date de son dernier contrôle, depuis
+  quand elle est dans cet état et sa dernière session valide.
 - Plugin Sauvegardes : champ « Archives conservées dans iCloud » pour chaque cible
   HAOS (HA-01, LINKY-01, ZWAVE-01), comme pour INFRA-01 (0 conserve tout). Il
   demande Agent 1.50.0 ou plus pour que la rotation s'applique.

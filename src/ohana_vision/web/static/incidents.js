@@ -620,6 +620,7 @@ export class IncidentsController {
         return `<div class="incidents-preventive__restore">
             <h4 class="incidents-preventive__rules-title">Sauvegardes restaurées</h4>
             <p><small>Une sauvegarde n’est fiable que si elle a été restaurée. Ohana ne le déduit jamais : vous déclarez ici le résultat d’une restauration réellement faite (au plus ${escapeHtml(evidence.max_age_days)} jours d’ancienneté).</small></p>
+            ${this.icloudLine(evidence.icloud)}
             ${rows ? `<ul>${rows}</ul>` : "<p><small>Aucune sauvegarde réussie observée pour l’instant.</small></p>"}
             ${rows ? `<form data-tsunade-restore-form class="incidents-preventive__restore-form">
                 <label>Cible <select name="target" required>${options}</select></label>
@@ -634,6 +635,26 @@ export class IncidentsController {
                 <button class="configuration-secondary-button" type="submit">Déclarer ce test</button>
             </form>` : ""}
         </div>`;
+    }
+
+    icloudLine(icloud) {
+        if (!icloud) {
+            return `<p class="incidents-preventive__icloud"><small>Session iCloud : pas encore contrôlée (contrôle toutes les heures).</small></p>`;
+        }
+        const labels = {
+            connected: "session ouverte",
+            session_expired: "session expirée : reconnectez iCloud dans Configuration, Plugins, Sauvegardes",
+            unreachable: "iCloud injoignable",
+            not_configured: "non configuré",
+            error: "erreur de rclone",
+        };
+        const since = icloud.connected
+            ? ""
+            : ` depuis le ${escapeHtml(formatDate(icloud.since))}`;
+        const last = !icloud.connected && icloud.last_success_at
+            ? ` Dernière session valide : ${escapeHtml(formatDate(icloud.last_success_at))}.`
+            : "";
+        return `<p class="incidents-preventive__icloud ${icloud.connected ? "is-connected" : "is-broken"}"><strong>Session iCloud</strong> : ${escapeHtml(labels[icloud.state] ?? icloud.state)}${since}. <small>Contrôlée le ${escapeHtml(formatDate(icloud.checked_at))}.${last}</small></p>`;
     }
 
     integrityLine(integrity) {

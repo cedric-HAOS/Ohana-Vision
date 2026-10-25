@@ -1255,6 +1255,10 @@
     color: var(--ohana-danger, inherit);
 }
 
+.incidents-preventive__icloud.is-broken {
+    color: var(--ohana-danger, inherit);
+}
+
 .incidents-preventive__restore-form {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
