@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.39.0] — 2026-10-25 — Restaurations de sauvegarde
+
 - Phase 10 : bloc « Sauvegardes restaurées » dans l'onglet « À surveiller » de
   la page Tsunade. Il liste chaque cible sauvegardée (jamais testée, vérifiée,
   échouée, ancienne) et permet de déclarer le résultat d'une restauration
