@@ -3203,7 +3203,7 @@ def test_backup_ui_exposes_the_remote_retention_of_each_haos_target() -> None:
 
 def test_backup_block_shows_the_icloud_session_state() -> None:
     client = make_client()
-    response = client.get("/static/incidents.js")
+    response = client.get("/ui/incidents.js")
 
     assert response.status_code == 200
     assert "icloudLine(evidence.icloud)" in response.text
