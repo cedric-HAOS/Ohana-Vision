@@ -1151,7 +1151,7 @@ export class IncidentsController {
         if (this.elements.cycleSummary) {
             this.elements.cycleSummary.textContent = this.logHealth && !TERMINAL_JOB_STATUSES.has(this.logHealth.status)
                 ? "Contrôle des journaux en cours ou en attente de Katsuyu."
-                : analyzing ? `${analyzing} analyse(s) Katsuyu en cours ou en attente.`
+                : analyzing ? `${analyzing} analyse(s) Katsuyu en cours ou en attente du lot de 05:00.`
                     : stale ? `${stale} analyse(s) à actualiser avec les derniers éléments.`
                         : this.logHealth?.finished_at
                             ? `Dernier contrôle des journaux : ${formatDate(this.logHealth.finished_at)}`
@@ -2481,7 +2481,7 @@ export class IncidentsController {
         const labels = {
             CREATED: "créé",
             QUEUED: "en attente",
-            WAITING_WORKER: "Katsuyu indisponible",
+            WAITING_WORKER: "en attente du prochain lot de 05:00 (Bubule éteint)",
             RUNNING: "en cours",
             SUCCEEDED: "terminé",
             FAILED: "en échec",

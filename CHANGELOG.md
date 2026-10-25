@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Un travail Katsuyu en attente de worker est présenté comme « en attente du
+  prochain lot de 05:00 (Bubule éteint) » au lieu de « Katsuyu indisponible » : les
+  analyses d'incident de journée sont reportées à ce lot (Agent 1.50.0).
 - Phase 10 : le bloc « Sauvegardes restaurées » affiche l'état de la session iCloud
   (ouverte, expirée, injoignable…) avec la date de son dernier contrôle, depuis
   quand elle est dans cet état et sa dernière session valide.

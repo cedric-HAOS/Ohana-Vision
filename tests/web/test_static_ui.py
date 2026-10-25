@@ -3208,3 +3208,13 @@ def test_backup_block_shows_the_icloud_session_state() -> None:
     assert response.status_code == 200
     assert "icloudLine(evidence.icloud)" in response.text
     assert "session expirée : reconnectez iCloud" in response.text
+
+
+def test_waiting_katsuyu_work_says_it_waits_for_the_05_batch() -> None:
+    client = make_client()
+    response = client.get("/ui/incidents.js")
+
+    assert response.status_code == 200
+    assert "en attente du prochain lot de 05:00 (Bubule éteint)" in response.text
+    assert "en cours ou en attente du lot de 05:00" in response.text
+    assert "Katsuyu indisponible" not in response.text
