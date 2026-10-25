@@ -3189,3 +3189,13 @@ def test_host_labels_phase_5_reasons() -> None:
         "systemd_units_inactive",
     ):
         assert f"{reason}:" in script
+
+
+def test_backup_ui_exposes_the_remote_retention_of_each_haos_target() -> None:
+    client = make_client()
+    response = get_configuration_script(client)
+
+    assert response.status_code == 200
+    assert "plugin-backup-target-${index}-retention" in response.text
+    assert "Archives conservées dans iCloud" in response.text
+    assert "remote_retention_count: Number(" in response.text

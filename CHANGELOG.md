@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Plugin Sauvegardes : champ « Archives conservées dans iCloud » pour chaque cible
+  HAOS (HA-01, LINKY-01, ZWAVE-01), comme pour INFRA-01 (0 conserve tout). Il
+  demande Agent 1.50.0 ou plus pour que la rotation s'applique.
 - Phase 10 : le bloc « Sauvegardes restaurées » affiche, pour chaque cible,
   l'intégrité de la dernière archive relue par l'Agent (conforme, altérée,
   absente, non chiffrée ou remote illisible) et un bouton « Vérifier maintenant ».

@@ -681,6 +681,11 @@ export const PluginsMethods = {
                             Délai maximal (secondes)
                             <input id="plugin-backup-target-${index}-timeout" type="number" min="1" step="1" value="${escapeHtml(target.timeout ?? 600)}" required>
                         </label>
+                        <label>
+                            Archives conservées dans iCloud
+                            <input id="plugin-backup-target-${index}-retention" type="number" min="0" max="365" step="1" value="${escapeHtml(target.remote_retention_count ?? 0)}" required>
+                            <small>0 conserve toutes les archives. La rotation ne supprime que des archives complètes, après validation de la nouvelle.</small>
+                        </label>
                         <label class="configuration-check">
                             <input id="plugin-backup-target-${index}-verify-tls" type="checkbox" ${target.verify_tls !== false ? "checked" : ""}>
                             Vérifier le certificat TLS
@@ -1047,6 +1052,9 @@ export const PluginsMethods = {
                     ),
                     verify_tls: this.checked(`plugin-backup-target-${index}-verify-tls`),
                     timeout: Number(this.value(`plugin-backup-target-${index}-timeout`)),
+                    remote_retention_count: Number(
+                        this.value(`plugin-backup-target-${index}-retention`),
+                    ),
                 };
                 delete target.token_configured;
                 delete target.password_configured;
