@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.42.0] — 2026-10-27 — Incident de journaux dont l'investigation est terminée sans conclusion
+
 - Incident de journaux dont l'investigation est terminée sans conclusion : le
   bouton « Autoriser : étendre aux 24 h précédentes » apparaît à côté de la suite
   recommandée. Le clic vaut autorisation explicite ; Vision transmet à l'Agent,
