@@ -470,6 +470,15 @@ def request_tsunade_log_investigation(
     return _call(lambda: client.request_tsunade_log_investigation(incident_id, payload))
 
 
+@router.post("/tsunade/incidents/{incident_id}/logs/investigate/extend")
+def extend_tsunade_log_investigation(
+    incident_id: str, payload: dict[str, Any], request: Request
+) -> dict[str, Any]:
+    """Forward the explicit 24-hour authorization; Vision executes nothing."""
+    client = _client(request)
+    return _call(lambda: client.extend_tsunade_log_investigation(incident_id, payload))
+
+
 @router.post("/tsunade/incidents/{incident_id}/repairs")
 def propose_tsunade_repair(
     incident_id: str, payload: dict[str, Any], request: Request

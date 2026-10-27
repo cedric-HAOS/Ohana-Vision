@@ -2,6 +2,11 @@
 
 ## Non publié
 
+- Incident de journaux dont l'investigation est terminée sans conclusion : le
+  bouton « Autoriser : étendre aux 24 h précédentes » apparaît à côté de la suite
+  recommandée. Le clic vaut autorisation explicite ; Vision transmet à l'Agent,
+  qui reprend le même motif et les mêmes limites de volume en lecture seule.
+
 ## [1.41.0] — 2026-10-25 — Les relevés de santé (`/api/runtime/vitals`) publient la mémoire résid
 
 - Les relevés de santé (`/api/runtime/vitals`) publient la mémoire résidente de

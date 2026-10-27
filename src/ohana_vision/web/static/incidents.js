@@ -168,6 +168,14 @@ export class IncidentsController {
                 );
                 return;
             }
+            const extendButton = event.target.closest("[data-tsunade-log-extend]");
+            if (extendButton) {
+                void this.extendLogInvestigation(
+                    extendButton.dataset.tsunadeLogExtend,
+                    extendButton,
+                );
+                return;
+            }
             const proposeButton = event.target.closest("[data-tsunade-repair-propose]");
             if (proposeButton) {
                 void this.proposeRepair(proposeButton.dataset.tsunadeRepairPropose, proposeButton);
@@ -1230,6 +1238,7 @@ export class IncidentsController {
                     <div class="incident-card__actions">
                     ${incident.state === "active" && (assessment?.next_action === "diagnose" || !assessment) ? `<button class="${escapeHtml(guidance.buttonClass)}" data-tsunade-diagnose="${escapeHtml(incident.incident_id)}" type="button" ${expertiseState === "ai_queued" ? "disabled" : ""}>${escapeHtml(guidance.buttonLabel)}</button>` : ""}
                         ${assessment?.next_action === "decisions" ? '<a class="configuration-primary-button" href="/shizune/">Examiner la demande dans Shizune</a>' : ""}
+                        ${incident.state === "active" && assessment?.followup?.window_extension_available ? `<button class="configuration-primary-button" data-tsunade-log-extend="${escapeHtml(incident.incident_id)}" type="button">Autoriser : étendre aux 24 h précédentes</button>` : ""}
                         ${this.canRequestRepair(incident, repairs) ? `<button class="configuration-secondary-button" data-tsunade-repair-propose="${escapeHtml(incident.incident_id)}" type="button">Demander la réparation connue</button>` : ""}
                         ${proposedRepair && !proposedRepair.authorized_at ? `<button class="configuration-primary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-tsunade-repair-authorize="${escapeHtml(proposedRepair.repair_id)}" data-repair-risk="${escapeHtml(proposedRepair.risk ?? "low")}" type="button">Autoriser depuis Vision</button>
                         ${proposedRepair.deferred_until ? "" : `<button class="configuration-secondary-button" data-incident-id="${escapeHtml(incident.incident_id)}" data-repair-id="${escapeHtml(proposedRepair.repair_id)}" data-tsunade-repair-decision="defer" type="button">Plus tard</button>`}
@@ -1385,6 +1394,7 @@ export class IncidentsController {
                 <small>${escapeHtml(followupLabel)}${followup.detail ? ` : ${escapeHtml(followup.detail)}` : ""}</small>
                 ${followup.failed_at ? `<small>Interruption du ${escapeHtml(formatDate(followup.failed_at))}</small>` : ""}
                 ${assessment.recommended_action ? `<small>Suite recommandée : ${escapeHtml(assessment.recommended_action)}</small>` : ""}
+                ${followup.window_extension_available ? "<small>Le bouton ci-dessous autorise une nouvelle collecte en lecture seule : même motif, mêmes limites de volume, fenêtre portée à 24 heures.</small>" : ""}
             </section>`;
         }
         if (!record || incident.expertise_state === "ai_queued") return "";
@@ -2027,6 +2037,33 @@ export class IncidentsController {
                 `Investigation des journaux indisponible : `
                 + `${this.errorMessage(error)}`,
             );
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    async extendLogInvestigation(incidentId, button) {
+        // The click is the authorization: Agent re-checks the policy and
+        // reuses the finished follow-up's motif and byte budget.
+        button.disabled = true;
+        this.showError("");
+        try {
+            await requestJson(API.tsunadeLogInvestigateExtend(incidentId), {
+                method: "POST",
+                body: JSON.stringify({
+                    source: "vision",
+                    authorized_by: "utilisateur Vision",
+                }),
+            });
+            this.details.delete(incidentId);
+            this.expandedDetails.delete(incidentId);
+            this.showCommandStatus(
+                "Collecte sur 24 heures autorisée ; Katsuyu la traite puis Tsunade réévalue.",
+                "running",
+            );
+            await this.load();
+        } catch (error) {
+            this.showError(`Extension impossible : ${this.errorMessage(error)}`);
         } finally {
             button.disabled = false;
         }

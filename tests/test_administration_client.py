@@ -47,6 +47,7 @@ def test_backup_operations_allow_slow_cold_icloud_startup(
     client.write_tsunade_log_policy({"enabled": True})
     client.read_job("job id")
     client.request_tsunade_log_investigation("incident id", {"pattern": "Node 17"})
+    client.extend_tsunade_log_investigation("incident id", {"source": "vision"})
     client.propose_tsunade_repair("incident id", {"operation": "restart_service"})
     client.authorize_tsunade_repair("incident id", {"repair_id": "repair id"})
     client.refuse_tsunade_repair("incident id", {"repair_id": "repair id"})
@@ -87,6 +88,10 @@ def test_backup_operations_allow_slow_cold_icloud_startup(
         ("http://127.0.0.1:8765/v1/jobs/job%20id", 10.0),
         (
             "http://127.0.0.1:8765/v1/incidents/incident%20id/logs/investigate",
+            10.0,
+        ),
+        (
+            "http://127.0.0.1:8765/v1/incidents/incident%20id/logs/investigate/extend",
             10.0,
         ),
         (

@@ -326,6 +326,16 @@ class AgentAdministrationClient:
             payload=payload,
         )
 
+    def extend_tsunade_log_investigation(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Authorize the finished log follow-up over the previous 24 hours."""
+        return self._request(
+            "POST",
+            f"/v1/incidents/{quote(incident_id, safe='')}/logs/investigate/extend",
+            payload=payload,
+        )
+
     def propose_tsunade_repair(
         self, incident_id: str, payload: dict[str, Any]
     ) -> dict[str, Any]:

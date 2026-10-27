@@ -45,6 +45,8 @@ export const API = Object.freeze({
         `/api/administration/jobs/${encodeURIComponent(jobId)}`,
     tsunadeLogInvestigate: (incidentId) =>
         `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/logs/investigate`,
+    tsunadeLogInvestigateExtend: (incidentId) =>
+        `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/logs/investigate/extend`,
     tsunadeRepair: (incidentId) =>
         `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/repairs`,
     tsunadeRepairAuthorize: (incidentId) =>

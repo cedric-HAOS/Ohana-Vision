@@ -79,3 +79,78 @@ assert(stale.includes('De nouveaux éléments sont disponibles'));
 """
     result = subprocess.run([node, "-e", script], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+
+def test_window_extension_button_is_offered_once_and_posts_an_explicit_authorization():
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node is required for the JavaScript rendering regression")
+    script = r"""
+const fs = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const source = fs.readFileSync('src/ohana_vision/web/static/incidents.js', 'utf8')
+    .replace(/^import .*;$/gm, '').replace('export class', 'class');
+const calls = [];
+const context = vm.createContext({
+    escapeHtml: value => String(value).replaceAll('<', '&lt;'),
+    formatDate: value => String(value),
+    API: {tsunadeLogInvestigateExtend: id => `/extend/${id}`},
+    requestJson: async (url, options) => { calls.push([url, options]); return {}; },
+});
+vm.runInContext(source + '\nglobalThis.Controller = IncidentsController;', context);
+const controller = Object.create(context.Controller.prototype);
+controller.details = new Map();
+controller.expandedDetails = new Set();
+controller.expandedLogAnomalies = new Set();
+controller.state = {topology: {devices: []}};
+controller.equipmentLabel = value => value;
+const incident = {
+    incident_id: 'case', state: 'active', node_id: 'ha-01',
+    capability_id: 'logs.health', expertise_state: 'ai_completed',
+    context: {}, events: [],
+    latest_decision: {decision: 'investigate',
+        occurred_at: '2026-10-27T05:18:00+01:00'},
+    assessment: {state: 'investigation_exhausted', label: 'Collecte terminée',
+        next_action: 'details',
+        recommended_action: "Étendre la recherche aux 24 heures précédentes.",
+        followup: {status: 'completed', window_hours: 2,
+            window_extension_available: true, detail: 'Terminé'}},
+};
+let html = controller.incidentCard(incident);
+assert(html.includes('data-tsunade-log-extend="case"'));
+assert(html.includes('mêmes limites de volume, fenêtre portée à 24 heures'));
+assert(html.includes('Étendre la recherche aux 24 heures précédentes.'));
+
+incident.assessment.followup.window_extension_available = false;
+assert(!controller.incidentCard(incident).includes('data-tsunade-log-extend='));
+incident.assessment.followup.window_extension_available = true;
+incident.state = 'resolved';
+assert(!controller.incidentCard(incident).includes('data-tsunade-log-extend='));
+
+const button = {disabled: false};
+controller.showError = () => {};
+controller.showCommandStatus = () => {};
+controller.load = async () => {};
+controller.details.set('case', {});
+controller.expandedDetails.add('case');
+(async () => {
+    await controller.extendLogInvestigation('case', button);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0][0], '/extend/case');
+    assert.equal(calls[0][1].method, 'POST');
+    assert.deepEqual(JSON.parse(calls[0][1].body),
+        {source: 'vision', authorized_by: 'utilisateur Vision'});
+    assert.equal(button.disabled, false);
+    assert(!controller.details.has('case'));
+    context.requestJson = async () => { throw new Error('refusé'); };
+    const errors = [];
+    controller.showError = message => errors.push(message);
+    controller.errorMessage = error => error.message;
+    await controller.extendLogInvestigation('case', button);
+    assert(errors.includes('Extension impossible : refusé'));
+    assert.equal(button.disabled, false);
+})().catch(error => { console.error(error); process.exit(1); });
+"""
+    result = subprocess.run([node, "-e", script], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr

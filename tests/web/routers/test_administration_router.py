@@ -321,6 +321,11 @@ class FakeAdministrationClient:
             "parameters": payload,
         }
 
+    def extend_tsunade_log_investigation(
+        self, incident_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {"incident_id": incident_id, "status": "authorized", **payload}
+
     def propose_tsunade_repair(
         self, incident_id: str, payload: dict[str, Any]
     ) -> dict[str, Any]:
@@ -422,6 +427,11 @@ def test_administration_routes_proxy_agent_documents() -> None:
         "11111111-1111-4111-8111-111111111111/logs/investigate",
         json={"pattern": "Node 17"},
     )
+    log_extension = client.post(
+        "/api/administration/tsunade/incidents/"
+        "11111111-1111-4111-8111-111111111111/logs/investigate/extend",
+        json={"source": "vision", "authorized_by": "utilisateur Vision"},
+    )
     repair_proposal = client.post(
         "/api/administration/tsunade/incidents/"
         "11111111-1111-4111-8111-111111111111/repairs",
@@ -473,6 +483,8 @@ def test_administration_routes_proxy_agent_documents() -> None:
     assert job.json()["status"] == "SUCCEEDED"
     assert log_check.json()["type"] == "logs.health_check"
     assert log_investigation.json()["parameters"]["pattern"] == "Node 17"
+    assert log_extension.json()["status"] == "authorized"
+    assert log_extension.json()["source"] == "vision"
     assert repair_proposal.json()["status"] == "proposed"
     assert repair_authorization.json()["status"] == "verifying"
     assert experience.json()["success_count"] == 1
