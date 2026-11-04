@@ -348,6 +348,20 @@ def read_system_updates(request: Request) -> dict[str, Any]:
     return _call(client.read_system_updates)
 
 
+@router.get("/agent/diagnostics/memory")
+def read_memory_diagnostics(request: Request) -> dict[str, Any]:
+    """Where the Agent process keeps its memory (census and allocation growth)."""
+    client = _client(request)
+    return _call(client.read_memory_diagnostics)
+
+
+@router.post("/agent/diagnostics/memory/trace")
+def control_memory_trace(request: Request, payload: dict[str, Any]) -> dict[str, Any]:
+    """Start or stop the Agent's allocation trace while diagnosing a leak."""
+    client = _client(request)
+    return _call(lambda: client.control_memory_trace(str(payload.get("action", ""))))
+
+
 @router.post("/agent/system-updates/refresh")
 def request_system_refresh(request: Request) -> dict[str, Any]:
     """Refresh the package lists of INFRA-01 (apt-get update)."""

@@ -274,6 +274,16 @@ class AgentAdministrationClient:
         """Pending operating-system package updates of the Agent host."""
         return self._request("GET", "/v1/system/updates")
 
+    def read_memory_diagnostics(self) -> dict[str, Any]:
+        """Object census and allocation growth of the Agent process."""
+        return self._request("GET", "/v1/diagnostics/memory", timeout_seconds=60)
+
+    def control_memory_trace(self, action: str) -> dict[str, Any]:
+        """Start or stop the Agent's allocation trace."""
+        return self._request(
+            "POST", "/v1/diagnostics/memory/trace", payload={"action": action}
+        )
+
     def request_system_update(self, action: str) -> dict[str, Any]:
         """Ask the Agent's restricted helper to refresh the lists or upgrade."""
         return self._request("POST", f"/v1/system/updates/{action}")
