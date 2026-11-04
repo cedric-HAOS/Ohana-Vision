@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.43.1] — 2026-11-04 — Relais du diagnostic de mémoire de l'Agent
+
 - Relais du diagnostic de mémoire de l'Agent : `GET /api/administration/agent/diagnostics/memory` et `POST /api/administration/agent/diagnostics/memory/trace` (lecture jusqu'à 60 s). Pas d'interface : usage ponctuel en ligne de commande.
 
 ## [1.43.0] — 2026-11-04 — Page « Mise à jour système »
