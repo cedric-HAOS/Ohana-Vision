@@ -2,6 +2,8 @@
 
 ## Non publié
 
+- Page « Mise à jour système » : la barre latérale ouvre une vue en lecture seule sur les mises à jour du système Linux d'INFRA-01 (verdict, âge des listes de paquets, paquets de sécurité en premier, paquets retenus, redémarrage requis, dernière opération apt). Vision relaie `GET /v1/system/updates` de l'Agent par `/api/administration/agent/system-updates` ; elle demande un Agent 1.54.0 ou plus récent. Deux boutons lancent « Actualiser les listes » et « Mettre à jour » (confirmation avant l'installation, avancement suivi toutes les 4 s) ; « Mettre à jour » reste grisé tant que les listes sont périmées ou que rien n'est en attente.
+
 ## [1.42.0] — 2026-10-27 — Incident de journaux dont l'investigation est terminée sans conclusion
 
 - Incident de journaux dont l'investigation est terminée sans conclusion : le

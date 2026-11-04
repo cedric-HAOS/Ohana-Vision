@@ -270,6 +270,14 @@ class AgentAdministrationClient:
         """Phase 5: scheduler, queues, storage, retention and versions."""
         return self._request("GET", "/v1/vitals")
 
+    def read_system_updates(self) -> dict[str, Any]:
+        """Pending operating-system package updates of the Agent host."""
+        return self._request("GET", "/v1/system/updates")
+
+    def request_system_update(self, action: str) -> dict[str, Any]:
+        """Ask the Agent's restricted helper to refresh the lists or upgrade."""
+        return self._request("POST", f"/v1/system/updates/{action}")
+
     def read_preventive(self) -> dict[str, Any]:
         """Phase 4: the preventive synthesis and the detail of each rule."""
         return self._request("GET", "/v1/preventive")

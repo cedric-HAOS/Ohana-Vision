@@ -125,3 +125,9 @@
     margin: 0;
     color: var(--ohana-text-muted);
 }
+
+.ohana-component__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ohana-space-3);
+}

@@ -30,6 +30,7 @@ import {
 import {AgentPresenceController} from "./agent_presence.js";
 import {OhanaController} from "./ohana.js";
 import {HistoryController} from "./history.js";
+import {SystemUpdatesController} from "./system_updates.js";
 
 import {
     NavigationController,
@@ -267,6 +268,7 @@ export class ApplicationController {
         this.host = new HostController();
         this.ohana = new OhanaController();
         this.history = new HistoryController();
+        this.systemUpdates = new SystemUpdatesController();
         this.agentPresence = new AgentPresenceController({
             onUpdate: (presence) => {
                 this.host.setAgentPresence(presence);
@@ -369,6 +371,10 @@ export class ApplicationController {
 
         if (viewName === "history") {
             void this.history.load();
+        }
+
+        if (viewName === "system-updates") {
+            void this.systemUpdates.load();
         }
 
         if (
@@ -619,6 +625,10 @@ export class ApplicationController {
 
             if (this.navigation.activeView === "history") {
                 dataOperations.push(this.history.load());
+            }
+
+            if (this.navigation.activeView === "system-updates") {
+                dataOperations.push(this.systemUpdates.load());
             }
 
             if (

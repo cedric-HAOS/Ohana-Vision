@@ -341,6 +341,27 @@ def read_agent_vitals(request: Request) -> dict[str, Any]:
     return _call(client.read_agent_vitals)
 
 
+@router.get("/agent/system-updates")
+def read_system_updates(request: Request) -> dict[str, Any]:
+    """Pending package updates of INFRA-01 for the system update view."""
+    client = _client(request)
+    return _call(client.read_system_updates)
+
+
+@router.post("/agent/system-updates/refresh")
+def request_system_refresh(request: Request) -> dict[str, Any]:
+    """Refresh the package lists of INFRA-01 (apt-get update)."""
+    client = _client(request)
+    return _call(lambda: client.request_system_update("refresh"))
+
+
+@router.post("/agent/system-updates/apply")
+def request_system_upgrade(request: Request) -> dict[str, Any]:
+    """Apply the pending upgrades once the owner confirmed in the view."""
+    client = _client(request)
+    return _call(lambda: client.request_system_update("apply"))
+
+
 @router.get("/tsunade/preventive")
 def read_preventive(request: Request) -> dict[str, Any]:
     """Tsunade's preventive synthesis: drifts to watch, never repairs."""

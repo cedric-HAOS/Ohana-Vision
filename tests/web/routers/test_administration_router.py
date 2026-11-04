@@ -250,6 +250,12 @@ class FakeAdministrationClient:
     def read_agent_vitals(self) -> dict[str, Any]:
         return {"schema_version": 1, "scheduler": {"state": "on_time"}}
 
+    def read_system_updates(self) -> dict[str, Any]:
+        return {"status": "security_updates", "security_count": 3}
+
+    def request_system_update(self, action: str) -> dict[str, Any]:
+        return {"started": True, "busy": False, "action": action}
+
     def search_incident_history(self, payload: dict[str, Any]) -> dict[str, Any]:
         return {"filters": payload, "incidents": []}
 
@@ -763,6 +769,25 @@ def test_administration_routes_proxy_the_agent_vitals_detail() -> None:
     response = client.get("/api/administration/agent/vitals")
 
     assert response.json()["scheduler"] == {"state": "on_time"}
+
+
+def test_administration_routes_proxy_the_system_updates() -> None:
+    client = make_client(FakeAdministrationClient())
+
+    response = client.get("/api/administration/agent/system-updates")
+
+    assert response.json() == {"status": "security_updates", "security_count": 3}
+
+
+def test_administration_routes_proxy_the_system_update_actions() -> None:
+    client = make_client(FakeAdministrationClient())
+
+    refresh = client.post("/api/administration/agent/system-updates/refresh")
+    apply = client.post("/api/administration/agent/system-updates/apply")
+
+    assert refresh.json() == {"started": True, "busy": False, "action": "refresh"}
+    # The Agent names the apt action "apply" for the owner's confirmed upgrade.
+    assert apply.json()["action"] == "apply"
 
 
 def test_administration_routes_proxy_a_manual_resolution() -> None:

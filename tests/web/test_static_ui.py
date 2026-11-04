@@ -3181,6 +3181,17 @@ def test_application_loads_the_ohana_view_on_activation() -> None:
     assert 'viewName === "ohana"' in script
 
 
+def test_system_updates_view_is_reachable_and_loaded_on_activation() -> None:
+    page = make_client().get("/ui/").text
+    script = make_client().get("/ui/application.js").text
+
+    assert 'data-navigation-target="system-updates"' in page
+    assert 'data-view="system-updates"' in page
+    assert 'id="system-updates-components"' in page
+    assert 'import {SystemUpdatesController} from "./system_updates.js";' in script
+    assert 'viewName === "system-updates"' in script
+
+
 def test_host_labels_phase_5_reasons() -> None:
     script = make_client().get("/ui/host.js").text
 

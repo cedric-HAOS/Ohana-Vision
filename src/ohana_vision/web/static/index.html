@@ -70,6 +70,10 @@
       <span aria-hidden="true" class="sidebar-navigation__icon sidebar-navigation__icon--ohana"></span>
       <span>Ohana</span>
      </button>
+     <button class="sidebar-navigation__item" data-navigation-target="system-updates" type="button">
+      <span aria-hidden="true" class="sidebar-navigation__icon sidebar-navigation__icon--host"></span>
+      <span>Mise à jour système</span>
+     </button>
      <button class="sidebar-navigation__item" data-navigation-target="history" type="button">
       <span aria-hidden="true" class="sidebar-navigation__icon sidebar-navigation__icon--timeline"></span>
       <span>Historique</span>
@@ -707,6 +711,27 @@
        <p class="ohana-view__note">
         Constats sans action automatique : un composant muet est signalé, jamais redémarré par Ohana.
         L’absence de Katsuyu ou de Shizune est normale et n’ouvre pas d’incident.
+       </p>
+      </div>
+     </section>
+     <section aria-labelledby="system-updates-heading" class="application-view" data-view="system-updates" hidden="">
+      <div class="ohana-view">
+       <div class="panel-heading">
+        <div>
+         <p class="panel-heading__kicker">Maintenance du système</p>
+         <h2 id="system-updates-heading">Mise à jour système</h2>
+         <p class="panel-heading__description">
+          Mises à jour du système Linux d’INFRA-01 : paquets en attente, correctifs de sécurité et redémarrage requis.
+         </p>
+        </div>
+        <span class="ohana-view__updated" id="system-updates-updated">—</span>
+       </div>
+       <div class="ohana-components" id="system-updates-components" aria-live="polite">
+        <p class="ohana-component__empty">Lecture de l’état des mises à jour…</p>
+       </div>
+       <p class="ohana-view__note">
+        L’Agent simule la mise à jour sans rien installer. L’installation ne part qu’après votre confirmation ;
+        aucun paquet n’est supprimé et la machine n’est jamais redémarrée par Ohana.
        </p>
       </div>
      </section>

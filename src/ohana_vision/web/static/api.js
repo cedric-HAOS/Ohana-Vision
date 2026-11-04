@@ -22,6 +22,9 @@ export const API = Object.freeze({
     tsunadeRestoreTests: "/api/administration/tsunade/backups/restore-tests",
     tsunadeArchiveVerify: "/api/administration/tsunade/backups/archives/verify",
     agentVitals: "/api/administration/agent/vitals",
+    systemUpdates: "/api/administration/agent/system-updates",
+    systemUpdatesRefresh: "/api/administration/agent/system-updates/refresh",
+    systemUpdatesApply: "/api/administration/agent/system-updates/apply",
     tsunadeHistory: "/api/administration/tsunade/history",
     tsunadeTimeline: "/api/administration/tsunade/timeline",
     tsunadeEquipmentHistory: (equipmentId) =>
