@@ -14,8 +14,7 @@ def test_expanded_completed_followup_has_no_redundant_diagnosis_button():
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const source = fs.readFileSync('src/ohana_vision/web/static/incidents.js', 'utf8')
-    .replace(/^import .*;$/gm, '').replace('export class', 'class');
+const source = require('./tests/web/incidents_source.js')();
 const context = vm.createContext({
     escapeHtml: value => String(value).replaceAll('<', '&lt;'),
     formatDate: value => String(value),
@@ -89,8 +88,7 @@ def test_window_extension_button_is_offered_once_and_posts_an_explicit_authoriza
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const source = fs.readFileSync('src/ohana_vision/web/static/incidents.js', 'utf8')
-    .replace(/^import .*;$/gm, '').replace('export class', 'class');
+const source = require('./tests/web/incidents_source.js')();
 const calls = [];
 const context = vm.createContext({
     escapeHtml: value => String(value).replaceAll('<', '&lt;'),

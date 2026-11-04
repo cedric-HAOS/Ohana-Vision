@@ -14,8 +14,7 @@ def test_proposed_repair_offers_authorize_defer_and_refuse():
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const source = fs.readFileSync('src/ohana_vision/web/static/incidents.js', 'utf8')
-    .replace(/^import .*;$/gm, '').replace('export class', 'class');
+const source = require('./tests/web/incidents_source.js')();
 const context = vm.createContext({
     escapeHtml: value => String(value).replaceAll('<', '&lt;'),
     formatDate: value => `date(${value})`,
@@ -93,8 +92,7 @@ def test_riskier_repairs_need_an_explicit_confirmation():
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const source = fs.readFileSync('src/ohana_vision/web/static/incidents.js', 'utf8')
-    .replace(/^import .*;$/gm, '').replace('export class', 'class');
+const source = require('./tests/web/incidents_source.js')();
 const requests = [];
 const confirmations = [];
 const context = vm.createContext({

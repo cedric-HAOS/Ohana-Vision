@@ -5,7 +5,7 @@
 - Les demandes d'actualisation et de mise à jour attendent jusqu'à 30 secondes l'Agent, et un refus ou un dépassement de délai rappelle que la demande a pu être prise en compte au lieu d'annoncer « refusée ».
 
 - La page « Mise à jour système » réutilise le rendu de cartes de la vue Ohana au lieu d'en copier le code ; `formatDate` affiche toujours l'heure de Paris, quel que soit le fuseau du navigateur.
-- Les méthodes de la maintenance préventive de la vue Tsunade passent de `incidents.js` (2 713 lignes) à `incidents_preventive.js`, ajoutées au contrôleur au chargement de `application.js`.
+- `incidents.js` (2 713 lignes) est découpé : le contrôleur et son rendu restent dans `incidents.js` (940 lignes) ; la maintenance préventive, les journaux, les réparations, les décisions de Tsunade et les réparations connues passent dans `incidents_preventive.js`, `incidents_logs.js`, `incidents_repairs.js`, `incidents_decisions.js` et `incidents_experiences.js`, et les libellés dans `incidents_shared.js`. Chaque module ajoute ses méthodes au contrôleur à son chargement (importés par `application.js`) ; aucun changement de comportement, 94 méthodes avant et après. Les tests de rendu chargent l'ensemble par `tests/web/incidents_source.js`.
 
 ## [1.43.1] — 2026-11-04 — Relais du diagnostic de mémoire de l'Agent
 

@@ -14,8 +14,7 @@ def test_verified_repair_is_offered_outside_the_resolved_dossier():
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const source = fs.readFileSync('src/ohana_vision/web/static/incidents.js', 'utf8')
-    .replace(/^import .*;$/gm, '').replace('export class', 'class');
+const source = require('./tests/web/incidents_source.js')();
 const fetched = [];
 const dossiers = new Map();
 const context = vm.createContext({

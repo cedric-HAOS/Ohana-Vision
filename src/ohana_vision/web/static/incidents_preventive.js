@@ -6,6 +6,7 @@
 
 import {API, requestJson} from "./api.js";
 import {IncidentsController} from "./incidents.js";
+import {mixInto} from "./incidents_shared.js";
 import {escapeHtml, formatDate} from "./utils.js";
 
 class PreventiveMethods {
@@ -309,12 +310,4 @@ class PreventiveMethods {
     }
 }
 
-for (const name of Object.getOwnPropertyNames(PreventiveMethods.prototype)) {
-    if (name !== "constructor") {
-        Object.defineProperty(
-            IncidentsController.prototype,
-            name,
-            Object.getOwnPropertyDescriptor(PreventiveMethods.prototype, name),
-        );
-    }
-}
+mixInto(IncidentsController, PreventiveMethods);

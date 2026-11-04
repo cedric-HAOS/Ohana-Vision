@@ -324,10 +324,30 @@ def test_static_ui_declares_all_navigation_views() -> None:
     assert 'id="incidents-repair-success-rate"' in content
 
 
+INCIDENT_VIEW_MODULES = (
+    "incidents.js",
+    "incidents_shared.js",
+    "incidents_decisions.js",
+    "incidents_experiences.js",
+    "incidents_logs.js",
+    "incidents_preventive.js",
+    "incidents_repairs.js",
+)
+
+
+def incident_view_script(client):
+    """The incidents view as served: the controller and the modules adding to it."""
+    responses = [client.get(f"/ui/{name}") for name in INCIDENT_VIEW_MODULES]
+    return SimpleNamespace(
+        status_code=max(response.status_code for response in responses),
+        text="\n".join(response.text for response in responses),
+    )
+
+
 def test_static_ui_exposes_incident_center() -> None:
     """The incident center must project Agent-owned Tsunade state."""
     client = make_client()
-    script = client.get("/ui/incidents.js")
+    script = incident_view_script(client)
     stylesheet = client.get("/ui/styles/incidents.css")
 
     assert script.status_code == 200
@@ -3228,8 +3248,9 @@ def test_the_preventive_methods_are_mixed_into_the_incidents_controller() -> Non
     module = make_client().get("/ui/incidents_preventive.js").text
     controller = make_client().get("/ui/incidents.js").text
 
-    assert 'import "./incidents_preventive.js";' in application
-    assert "IncidentsController.prototype" in module
+    for name in INCIDENT_VIEW_MODULES[2:]:
+        assert f'import "./{name}";' in application
+    assert "mixInto(IncidentsController, PreventiveMethods);" in module
     # The controller file stays self-contained for its rendering tests.
     assert "renderPreventive() {" not in controller
     assert "renderPreventive() {" in module

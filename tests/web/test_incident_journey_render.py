@@ -14,8 +14,7 @@ def test_incident_journey_preserves_agent_facts_and_current_assessment():
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const source = fs.readFileSync('src/ohana_vision/web/static/incidents.js', 'utf8')
-    .replace(/^import .*;$/gm, '').replace('export class', 'class');
+const source = require('./tests/web/incidents_source.js')();
 const context = vm.createContext({
     escapeHtml: value => String(value).replaceAll('<', '&lt;'),
     formatDate: value => String(value),
