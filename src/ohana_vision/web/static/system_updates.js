@@ -191,7 +191,7 @@ export class SystemUpdatesController {
             const answer = await requestJson(url, {method: "POST"});
             if (answer?.busy) window.alert("Une opération apt est déjà en cours.");
         } catch (error) {
-            window.alert(`Demande refusée : ${error?.message ?? error}`);
+            window.alert(`La demande n’a pas été confirmée : ${error?.message ?? error}. Vérifiez l’avancement ci-dessous : elle a pu être prise en compte.`);
         }
         await this.load();
     }

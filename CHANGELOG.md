@@ -2,6 +2,8 @@
 
 ## Non publié
 
+- Les demandes d'actualisation et de mise à jour attendent jusqu'à 30 secondes l'Agent, et un refus ou un dépassement de délai rappelle que la demande a pu être prise en compte au lieu d'annoncer « refusée ».
+
 - La page « Mise à jour système » réutilise le rendu de cartes de la vue Ohana au lieu d'en copier le code ; `formatDate` affiche toujours l'heure de Paris, quel que soit le fuseau du navigateur.
 - Les méthodes de la maintenance préventive de la vue Tsunade passent de `incidents.js` (2 713 lignes) à `incidents_preventive.js`, ajoutées au contrôleur au chargement de `application.js`.
 
