@@ -5,8 +5,7 @@
 // simulates the upgrade and never installs anything by itself.
 
 import {API, fetchJson, requestJson} from "./api.js";
-import {formatParis} from "./ohana.js";
-import {escapeHtml} from "./utils.js";
+import {formatParis, renderCard} from "./ohana.js";
 
 const STATUS_PRESENTATION = Object.freeze({
     up_to_date: ["healthy", "À jour"],
@@ -14,12 +13,6 @@ const STATUS_PRESENTATION = Object.freeze({
     security_updates: ["degraded", "Correctifs de sécurité en attente"],
     reboot_required: ["degraded", "Redémarrage requis"],
     stale_lists: ["degraded", "Listes périmées"],
-});
-
-const STATE_LABELS = Object.freeze({
-    healthy: "Opérationnel",
-    degraded: "À surveiller",
-    unknown: "Inconnu",
 });
 
 const DECIMAL = new Intl.NumberFormat("fr-FR", {maximumFractionDigits: 1});
@@ -162,6 +155,7 @@ export function actionsCard(state) {
             : [],
         availability,
     };
+    card.footer = renderActions(card);
     return card;
 }
 
@@ -174,31 +168,6 @@ function renderActions(card) {
           </div>`
         : "";
     return buttons;
-}
-
-function renderCard(card) {
-    const facts = card.facts
-        .map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`)
-        .join("");
-    const rows = card.rows.length
-        ? `<ul class="ohana-component__rows">${card.rows.map((row) => `<li data-state="${escapeHtml(row.state)}">
-            <span class="ohana-component__row-label">${escapeHtml(row.label)}</span>
-            <strong>${escapeHtml(row.value)}</strong>
-            <small>${escapeHtml(row.detail)}</small>
-          </li>`).join("")}</ul>`
-        : card.emptyRows
-            ? `<p class="ohana-component__empty">${escapeHtml(card.emptyRows)}</p>`
-            : "";
-    return `<article class="ohana-component" data-component="${escapeHtml(card.id)}" data-state="${escapeHtml(card.state)}">
-        <header class="ohana-component__header">
-          <h3>${escapeHtml(card.title)}</h3>
-          <span class="ohana-component__badge">${escapeHtml(STATE_LABELS[card.state] ?? card.state)}</span>
-        </header>
-        <p class="ohana-component__summary">${escapeHtml(card.summary)}</p>
-        ${facts ? `<dl class="ohana-component__facts">${facts}</dl>` : ""}
-        ${rows}
-        ${card.availability ? renderActions(card) : ""}
-      </article>`;
 }
 
 const POLL_MILLISECONDS = 4000;

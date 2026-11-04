@@ -93,7 +93,7 @@ export function escapeHtml(value) {
 }
 
 /**
- * Format an ISO date using the French locale.
+ * Format an ISO date using the French locale, at Paris time.
  *
  * @param {unknown} value
  * @returns {string}
@@ -109,9 +109,11 @@ export function formatDate(value) {
         return String(value);
     }
 
+    // Ohana shows Paris time whatever the zone of the browser.
     return new Intl.DateTimeFormat("fr-FR", {
         dateStyle: "short",
         timeStyle: "medium",
+        timeZone: "Europe/Paris",
     }).format(date);
 }
 

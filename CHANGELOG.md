@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- La page « Mise à jour système » réutilise le rendu de cartes de la vue Ohana au lieu d'en copier le code ; `formatDate` affiche toujours l'heure de Paris, quel que soit le fuseau du navigateur.
+- Les méthodes de la maintenance préventive de la vue Tsunade passent de `incidents.js` (2 713 lignes) à `incidents_preventive.js`, ajoutées au contrôleur au chargement de `application.js`.
+
 ## [1.43.1] — 2026-11-04 — Relais du diagnostic de mémoire de l'Agent
 
 - Relais du diagnostic de mémoire de l'Agent : `GET /api/administration/agent/diagnostics/memory` et `POST /api/administration/agent/diagnostics/memory/trace` (lecture jusqu'à 60 s). Pas d'interface : usage ponctuel en ligne de commande.

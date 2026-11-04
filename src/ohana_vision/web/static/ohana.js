@@ -6,7 +6,7 @@
 import {API, fetchJson} from "./api.js";
 import {escapeHtml} from "./utils.js";
 
-const STATE_LABELS = Object.freeze({
+export const STATE_LABELS = Object.freeze({
     healthy: "Opérationnel",
     degraded: "À surveiller",
     critical: "Hors service",
@@ -616,7 +616,7 @@ export function shizuneCard(gateway, devicesDocument, error) {
     };
 }
 
-function renderCard(card) {
+export function renderCard(card) {
     const facts = card.facts
         .map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`)
         .join("");
@@ -637,6 +637,7 @@ function renderCard(card) {
         <p class="ohana-component__summary">${escapeHtml(card.summary)}</p>
         ${facts ? `<dl class="ohana-component__facts">${facts}</dl>` : ""}
         ${rows}
+        ${card.footer ?? ""}
       </article>`;
 }
 

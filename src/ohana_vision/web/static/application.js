@@ -31,6 +31,8 @@ import {AgentPresenceController} from "./agent_presence.js";
 import {OhanaController} from "./ohana.js";
 import {HistoryController} from "./history.js";
 import {SystemUpdatesController} from "./system_updates.js";
+// Adds the preventive-maintenance methods to the incidents controller.
+import "./incidents_preventive.js";
 
 import {
     NavigationController,

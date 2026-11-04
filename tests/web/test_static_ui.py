@@ -3216,11 +3216,23 @@ def test_backup_ui_exposes_the_remote_retention_of_each_haos_target() -> None:
 
 def test_backup_block_shows_the_icloud_session_state() -> None:
     client = make_client()
-    response = client.get("/ui/incidents.js")
+    response = client.get("/ui/incidents_preventive.js")
 
     assert response.status_code == 200
     assert "icloudLine(evidence.icloud)" in response.text
     assert "session expirée : reconnectez iCloud" in response.text
+
+
+def test_the_preventive_methods_are_mixed_into_the_incidents_controller() -> None:
+    application = make_client().get("/ui/application.js").text
+    module = make_client().get("/ui/incidents_preventive.js").text
+    controller = make_client().get("/ui/incidents.js").text
+
+    assert 'import "./incidents_preventive.js";' in application
+    assert "IncidentsController.prototype" in module
+    # The controller file stays self-contained for its rendering tests.
+    assert "renderPreventive() {" not in controller
+    assert "renderPreventive() {" in module
 
 
 def test_waiting_katsuyu_work_says_it_waits_for_the_05_batch() -> None:
@@ -3235,7 +3247,7 @@ def test_waiting_katsuyu_work_says_it_waits_for_the_05_batch() -> None:
 
 def test_restore_tests_reported_by_the_installer_are_labelled() -> None:
     client = make_client()
-    response = client.get("/ui/incidents.js")
+    response = client.get("/ui/incidents_preventive.js")
 
     assert response.status_code == 200
     assert 'last.source === "installer"' in response.text
