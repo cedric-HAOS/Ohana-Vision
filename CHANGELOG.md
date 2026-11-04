@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.43.2] — 2026-11-04 — Les demandes d'actualisation et de mise à jour attendent jusqu'à 30 se
+
 - Les demandes d'actualisation et de mise à jour attendent jusqu'à 30 secondes l'Agent, et un refus ou un dépassement de délai rappelle que la demande a pu être prise en compte au lieu d'annoncer « refusée ».
 
 - La page « Mise à jour système » réutilise le rendu de cartes de la vue Ohana au lieu d'en copier le code ; `formatDate` affiche toujours l'heure de Paris, quel que soit le fuseau du navigateur.

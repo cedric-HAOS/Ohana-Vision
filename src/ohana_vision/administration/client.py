@@ -286,9 +286,7 @@ class AgentAdministrationClient:
 
     def request_system_update(self, action: str) -> dict[str, Any]:
         """Ask the Agent's restricted helper to refresh the lists or upgrade."""
-        return self._request(
-            "POST", f"/v1/system/updates/{action}", timeout_seconds=30
-        )
+        return self._request("POST", f"/v1/system/updates/{action}", timeout_seconds=30)
 
     def read_preventive(self) -> dict[str, Any]:
         """Phase 4: the preventive synthesis and the detail of each rule."""
