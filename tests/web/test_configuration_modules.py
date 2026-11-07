@@ -87,6 +87,42 @@ assert.ok(editor.pluginConfigurationHint(plugin).includes('Shizune'));
 """)
 
 
+def test_zwave_editor_submits_optional_last_seen_alert_delays() -> None:
+    run_module_script(r"""
+import assert from 'node:assert/strict';
+const {PluginsMethods} = await import(`${process.argv[1]}/configuration/plugins.js`);
+globalThis.document = {createElement: () => ({textContent: '',
+    get innerHTML() { return this.textContent
+        .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+        .replaceAll('"', '&quot;'); }})};
+const plugin = {id: 'zwave', enabled: true, configuration: {
+    interval_seconds: 60, timeout: 3, retries: 1, verify_tls: true,
+    last_seen_alert_minutes: 90, sleeping_last_seen_alert_minutes: null}};
+const editor = (values) => Object.assign({}, PluginsMethods, {
+    value: id => values[id] ?? '',
+    checked: id => id !== 'plugin-zwave-verify-tls',
+});
+const html = editor({}).pluginConfigurationFields(plugin);
+assert.ok(html.includes('plugin-zwave-last-seen-alert'));
+assert.ok(html.includes('plugin-zwave-sleeping-last-seen-alert'));
+assert.ok(html.includes('value="90"'));
+const filled = editor({
+    'plugin-interval-seconds': '60', 'plugin-timeout': '3',
+    'plugin-retries': '1', 'plugin-zwave-last-seen-alert': '45',
+    'plugin-zwave-sleeping-last-seen-alert': '1440',
+}).pluginConfigurationPayload(plugin).configuration;
+assert.equal(filled.last_seen_alert_minutes, 45);
+assert.equal(filled.sleeping_last_seen_alert_minutes, 1440);
+const cleared = editor({
+    'plugin-interval-seconds': '60', 'plugin-timeout': '3',
+    'plugin-retries': '1',
+}).pluginConfigurationPayload(plugin).configuration;
+assert.equal(cleared.last_seen_alert_minutes, null);
+assert.equal(cleared.sleeping_last_seen_alert_minutes, null);
+assert.equal(plugin.configuration.last_seen_alert_minutes, 90);
+""")
+
+
 def test_configuration_shared_validators() -> None:
     """Pure helpers keep their network and fingerprint rules."""
     run_module_script(r"""

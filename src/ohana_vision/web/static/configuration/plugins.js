@@ -803,6 +803,17 @@ export const PluginsMethods = {
                     <input id="plugin-zwave-verify-tls" type="checkbox" ${configuration.verify_tls !== false ? "checked" : ""}>
                     Vérifier le certificat TLS des connexions WSS
                 </label>
+                <label>
+                    Alerte sans contact, équipements sur secteur (minutes)
+                    <input id="plugin-zwave-last-seen-alert" type="number" min="1" step="1" placeholder="Désactivée" value="${escapeHtml(configuration.last_seen_alert_minutes ?? "")}">
+                </label>
+                <label>
+                    Alerte sans contact, équipements sur batterie (minutes)
+                    <input id="plugin-zwave-sleeping-last-seen-alert" type="number" min="1" step="1" placeholder="Désactivée" value="${escapeHtml(configuration.sleeping_last_seen_alert_minutes ?? "")}">
+                </label>
+                <small class="configuration-span-2">
+                    Un équipement vivant sans contact au-delà du délai passe en dégradé. Laissez vide pour ne pas surveiller. Les équipements sur batterie se réveillent rarement : prévoyez un délai plus long (par exemple 1440 minutes).
+                </small>
                 <small class="configuration-span-2">
                     Les services Z-Wave utilisent par défaut le serveur WebSocket sur le port 3000.
                 </small>
@@ -1140,6 +1151,16 @@ export const PluginsMethods = {
         } else if (plugin.id === "zwave") {
             configuration.verify_tls = this.checked(
                 "plugin-zwave-verify-tls",
+            );
+            const optionalMinutes = (id) => {
+                const raw = String(this.value(id) ?? "").trim();
+                return raw === "" ? null : Number(raw);
+            };
+            configuration.last_seen_alert_minutes = optionalMinutes(
+                "plugin-zwave-last-seen-alert",
+            );
+            configuration.sleeping_last_seen_alert_minutes = optionalMinutes(
+                "plugin-zwave-sleeping-last-seen-alert",
             );
         } else if (plugin.id === "wireguard") {
             configuration.app_id = this.value(
