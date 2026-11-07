@@ -2,6 +2,10 @@
 
 ## Non publié
 
+## [1.44.0] — 2026-11-07 — La page Plugins permet de régler l'alerte Z-Wave sans contact
+
+- La page Plugins permet de régler l'alerte Z-Wave sans contact : un délai pour les équipements sur secteur et un pour ceux sur batterie (minutes, vide = désactivée). Nécessite l'Agent qui porte ces réglages.
+
 ## [1.43.2] — 2026-11-04 — Les demandes d'actualisation et de mise à jour attendent jusqu'à 30 se
 
 - Les demandes d'actualisation et de mise à jour attendent jusqu'à 30 secondes l'Agent, et un refus ou un dépassement de délai rappelle que la demande a pu être prise en compte au lieu d'annoncer « refusée ».
