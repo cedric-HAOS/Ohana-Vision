@@ -123,6 +123,60 @@ assert.equal(plugin.configuration.last_seen_alert_minutes, 90);
 """)
 
 
+def test_power_plug_editor_never_shows_or_drops_the_stored_token() -> None:
+    run_module_script(r"""
+import assert from 'node:assert/strict';
+const {PluginsMethods} = await import(`${process.argv[1]}/configuration/plugins.js`);
+const shared = await import(`${process.argv[1]}/configuration/shared.js`);
+globalThis.document = {createElement: () => ({textContent: '',
+    get innerHTML() { return this.textContent
+        .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+        .replaceAll('"', '&quot;'); }})};
+assert.ok(shared.PLUGIN_ICONS.power_plug.endsWith('plug.svg'));
+const plugin = {id: 'power_plug', enabled: true, configuration: {
+    home_assistant_url: 'http://192.168.1.20:8123', access_token: null,
+    access_token_configured: true,
+    switch_entity_id: 'switch.shellyplugsg3_80b54e297538',
+    power_entity_id: null, verify_tls: true, boot_delay_seconds: 15,
+    shutdown_grace_seconds: 300, idle_watts: 5, idle_confirm_seconds: 30,
+    poll_seconds: 15}};
+const editor = (values) => Object.assign({}, PluginsMethods, {
+    value: id => values[id] ?? '',
+    checked: id => id === 'plugin-enabled' || id === 'plugin-power-plug-verify-tls',
+});
+const html = editor({}).pluginConfigurationFields(plugin);
+assert.ok(html.includes('plugin-power-plug-url'));
+assert.ok(html.includes('plugin-power-plug-switch'));
+assert.ok(html.includes('Un jeton est déjà enregistré'));
+// the token field is never pre-filled, and no interval/retries noise
+assert.ok(html.includes('id="plugin-power-plug-token" type="password" value=""'));
+assert.ok(!html.includes('plugin-retries'));
+assert.ok(!html.includes('plugin-interval-seconds'));
+assert.equal(editor({}).pluginEnabledLabel(plugin), 'Prise pilotée par Ohana');
+assert.ok(editor({}).pluginConfigurationHint(plugin).includes('surtensions'));
+const saved = editor({
+    'plugin-power-plug-url': ' http://192.168.1.21:8123 ',
+    'plugin-power-plug-token': '',
+    'plugin-power-plug-switch': 'switch.shellyplugsg3_80b54e297538',
+    'plugin-power-plug-power': 'sensor.shellyplugsg3_80b54e297538_power',
+    'plugin-power-plug-boot-delay': '20', 'plugin-power-plug-grace': '300',
+    'plugin-power-plug-idle-watts': '4.5', 'plugin-power-plug-idle-confirm': '30',
+    'plugin-power-plug-poll': '15',
+}).pluginConfigurationPayload(plugin);
+assert.deepEqual(saved, {enabled: true, configuration: {
+    home_assistant_url: 'http://192.168.1.21:8123', access_token: null,
+    switch_entity_id: 'switch.shellyplugsg3_80b54e297538',
+    power_entity_id: 'sensor.shellyplugsg3_80b54e297538_power',
+    verify_tls: true, boot_delay_seconds: 20, shutdown_grace_seconds: 300,
+    idle_watts: 4.5, idle_confirm_seconds: 30, poll_seconds: 15}});
+const typed = editor({'plugin-power-plug-token': 'new-token'})
+    .pluginConfigurationPayload(plugin);
+assert.equal(typed.configuration.access_token, 'new-token');
+assert.ok(!('access_token_configured' in typed.configuration));
+assert.equal(plugin.configuration.access_token_configured, true);
+""")
+
+
 def test_configuration_shared_validators() -> None:
     """Pure helpers keep their network and fingerprint rules."""
     run_module_script(r"""

@@ -128,4 +128,5 @@ export const PLUGIN_ICONS = Object.freeze({
     home_assistant_telemetry: "/ui/assets/icons/observability/activity.svg",
     shelly_telemetry: "/ui/assets/icons/observability/activity.svg",
     teleinformation: "/ui/assets/icons/observability/gauge.svg",
+    power_plug: "/ui/assets/icons/plugins/plug.svg",
 });

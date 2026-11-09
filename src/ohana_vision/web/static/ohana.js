@@ -359,6 +359,20 @@ const POWER_SHUTDOWN_VETOES = Object.freeze({
     session_check_failed: "sessions illisibles",
 });
 const POWER_CYCLES_SHOWN = 3;
+const PLUG_CUT_REASONS = Object.freeze({
+    shutdown_started: "PC éteint",
+    wake_abandoned: "réveil abandonné",
+    wake_unanswered: "PC resté muet",
+    worker_offline: "PC éteint à la main",
+});
+const PLUG_FAILED_ACTIONS = Object.freeze({
+    on: "allumage impossible",
+    read: "état illisible",
+    off: "coupure impossible",
+    confirm: "allumage non confirmé",
+});
+// Plug failures logged before the packet belong to the wake that follows.
+const PLUG_BEFORE_WAKE = new Set(["on", "read"]);
 
 function pendingJobsText(pending) {
     const parts = Object.entries(pending ?? {}).map(
@@ -373,14 +387,29 @@ function pendingJobsText(pending) {
  */
 export function katsuyuPowerRows(worker, now = Date.now()) {
     const cycles = [];
+    let beforeWake = [];
     for (const event of [...(worker.power_events ?? [])].reverse()) {
+        // Smart-plug steps annotate a cycle; they never open or close one.
+        if (event.kind === "plug_on"
+            || (event.kind === "plug_failed" && PLUG_BEFORE_WAKE.has(event.detail.action))) {
+            beforeWake.push(event);
+            continue;
+        }
+        if (event.kind === "plug_off" || event.kind === "plug_failed") {
+            if (cycles.length) cycles[cycles.length - 1].plug.push(event);
+            continue;
+        }
         // A retry continues the cycle whose wake stayed unanswered.
         const startsCycle = (event.kind === "wake_sent" && event.detail.trigger !== "retry")
             || event.kind === "wake_failed";
         if (startsCycle || !cycles.length || cycles[cycles.length - 1].closed) {
-            cycles.push({events: [], closed: false});
+            cycles.push({events: [], closed: false, plug: []});
         }
         const cycle = cycles[cycles.length - 1];
+        if (event.kind === "wake_sent" || event.kind === "wake_failed") {
+            cycle.plug.push(...beforeWake);
+            beforeWake = [];
+        }
         cycle.events.push(event);
         if (event.kind === "wake_failed" || event.kind === "wake_abandoned"
             || event.kind === "shutdown_started" || event.kind === "shutdown_vetoed") {
@@ -408,6 +437,16 @@ export function katsuyuPowerRows(worker, now = Date.now()) {
         }
         if (attempts > 1) {
             parts.push(`${attempts} tentatives`);
+        }
+        const plugOn = cycle.plug.find((event) => event.kind === "plug_on");
+        if (plugOn) {
+            const delay = wake?.detail.wol_delay_seconds;
+            parts.push(`prise allumée ${formatParis(plugOn.occurred_at)}${delay ? `, réveil ${delay} s après` : ""}`);
+        }
+        for (const failure of cycle.plug.filter((event) => event.kind === "plug_failed")) {
+            const action = PLUG_FAILED_ACTIONS[failure.detail.action] ?? "erreur";
+            parts.push(`prise : ${action} (${failure.detail.error ?? "erreur"})`);
+            if (failure.detail.action === "off") state = "degraded";
         }
         const online = byKind.worker_online;
         if (online?.detail.manual) {
@@ -459,6 +498,16 @@ export function katsuyuPowerRows(worker, now = Date.now()) {
         } else if (online && !online.detail.manual && !granted && state !== "degraded") {
             state = "unknown";
             value = "Travail en cours";
+        }
+        const plugOff = cycle.plug.find((event) => event.kind === "plug_off");
+        if (plugOff) {
+            const detail = plugOff.detail;
+            const why = PLUG_CUT_REASONS[detail.reason] ?? detail.reason;
+            const proof = detail.already_off
+                ? "déjà coupée"
+                : detail.watts !== undefined ? `consommation ${DECIMAL.format(detail.watts)} W`
+                    : detail.waited_seconds !== undefined ? `${detail.waited_seconds} s après l'arrêt` : null;
+            parts.push(`prise coupée ${formatParis(plugOff.occurred_at)} (${[why, proof].filter(Boolean).join(", ")})`);
         }
         return {label: "Cycle de réveil", state, value, detail: parts.join(" · ")};
     });

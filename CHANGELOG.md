@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Page Plugins : le plugin « Prise connectée » (Agent avec le plugin `power_plug`) se règle comme les autres : adresse de Home Assistant, jeton d'accès (jamais réaffiché, laissé vide pour le conserver), interrupteur, capteur de puissance optionnel et délais, avec le bouton « Tester » qui lit la prise sans la commander.
+- Vue Ohana : la ligne « Cycle de réveil » indique la prise connectée de Bubule (allumée, délai avant le réveil, coupée avec la raison et la consommation, ou échec d'allumage ou de coupure, une coupure en échec rendant le cycle dégradé) sans ouvrir de cycle de plus. Nécessite l'Agent qui journalise la prise.
+
 ## [1.44.0] — 2026-11-07 — La page Plugins permet de régler l'alerte Z-Wave sans contact
 
 - La page Plugins permet de régler l'alerte Z-Wave sans contact : un délai pour les équipements sur secteur et un pour ceux sur batterie (minutes, vide = désactivée). Nécessite l'Agent qui porte ces réglages.

@@ -328,6 +328,10 @@ export const PluginsMethods = {
             return "Sauvegardes activées";
         }
 
+        if (plugin.id === "power_plug") {
+            return "Prise pilotée par Ohana";
+        }
+
         if (plugin.id === "dhcp") {
             return "Observation DHCP activée";
         }
@@ -341,6 +345,10 @@ export const PluginsMethods = {
         }
         if (plugin.id === "backup") {
             return "Agent protège les systèmes HAOS et INFRA-01 dans iCloud, sans écrire d’archive persistante sur la carte microSD.";
+        }
+
+        if (plugin.id === "power_plug") {
+            return "La prise alimente le PC de Katsuyu (Bubule) uniquement le temps d'un cycle de réveil, ce qui le protège aussi des surtensions. Elle ne coupe jamais un PC qui travaille encore.";
         }
 
         if (plugin.id === "network") {
@@ -554,6 +562,43 @@ export const PluginsMethods = {
                 'min="0" step="1" required',
             )}
         `;
+
+        if (plugin.id === "power_plug") {
+            const tokenHint = configuration.access_token_configured
+                ? "Un jeton est déjà enregistré. Laissez vide pour le conserver."
+                : "Créez un jeton d'accès longue durée dans Home Assistant (profil > Sécurité), de préférence dédié à Ohana.";
+            return `
+                <label class="configuration-span-2">
+                    Adresse de Home Assistant
+                    <input id="plugin-power-plug-url" type="url" value="${escapeHtml(configuration.home_assistant_url ?? "")}" placeholder="http://192.168.1.20:8123" autocomplete="off">
+                </label>
+                <label class="configuration-span-2">
+                    Jeton d'accès Home Assistant
+                    <input id="plugin-power-plug-token" type="password" value="" autocomplete="new-password" placeholder="Laisser vide pour conserver le jeton actuel">
+                    <small>${escapeHtml(tokenHint)}</small>
+                </label>
+                <label>
+                    Interrupteur de la prise
+                    <input id="plugin-power-plug-switch" type="text" value="${escapeHtml(configuration.switch_entity_id ?? "")}" placeholder="switch.shellyplugsg3_80b54e297538" autocomplete="off">
+                </label>
+                <label>
+                    Capteur de puissance (recommandé)
+                    <input id="plugin-power-plug-power" type="text" value="${escapeHtml(configuration.power_entity_id ?? "")}" placeholder="sensor.shellyplugsg3_80b54e297538_power" autocomplete="off">
+                </label>
+                <label class="configuration-check configuration-span-2">
+                    <input id="plugin-power-plug-verify-tls" type="checkbox" ${configuration.verify_tls !== false ? "checked" : ""}>
+                    Vérifier le certificat TLS de Home Assistant
+                </label>
+                ${numberField("plugin-power-plug-boot-delay", "Délai avant le réveil (secondes)", configuration.boot_delay_seconds ?? 15, 'min="0" max="120" step="1" required')}
+                ${numberField("plugin-power-plug-grace", "Attente sans mesure après l'arrêt (secondes)", configuration.shutdown_grace_seconds ?? 300, 'min="60" max="1800" step="1" required')}
+                ${numberField("plugin-power-plug-idle-watts", "Consommation d'un PC éteint (watts)", configuration.idle_watts ?? 5, 'min="0" max="50" step="0.1" required')}
+                ${numberField("plugin-power-plug-idle-confirm", "Durée sous ce seuil avant coupure (secondes)", configuration.idle_confirm_seconds ?? 30, 'min="0" max="300" step="1" required')}
+                ${numberField("plugin-power-plug-poll", "Relevé de la prise (secondes)", configuration.poll_seconds ?? 15, 'min="5" max="300" step="1" required')}
+                <small class="configuration-span-2">
+                    Ohana allume la prise avant de réveiller Bubule, attend le délai indiqué, puis coupe la prise une fois le PC éteint. Avec un capteur de puissance, la coupure n'a lieu que sous le seuil pendant la durée indiquée ; sans capteur, elle a lieu après l'attente configurée suivant l'arrêt. Le bouton « Tester » lit la prise sans la commander.
+                </small>
+            `;
+        }
 
         if (plugin.id === "adguard_sync") {
             return `
@@ -1083,6 +1128,25 @@ export const PluginsMethods = {
             return {
                 enabled: this.checked("plugin-enabled"),
                 configuration,
+            };
+        }
+        if (plugin.id === "power_plug") {
+            const optionalText = (id) => String(this.value(id) ?? "").trim() || null;
+            return {
+                enabled: this.checked("plugin-enabled"),
+                configuration: {
+                    home_assistant_url: optionalText("plugin-power-plug-url"),
+                    // Blank keeps the stored token: the Agent never sends it back.
+                    access_token: optionalText("plugin-power-plug-token"),
+                    switch_entity_id: optionalText("plugin-power-plug-switch"),
+                    power_entity_id: optionalText("plugin-power-plug-power"),
+                    verify_tls: this.checked("plugin-power-plug-verify-tls"),
+                    boot_delay_seconds: Number(this.value("plugin-power-plug-boot-delay")),
+                    shutdown_grace_seconds: Number(this.value("plugin-power-plug-grace")),
+                    idle_watts: Number(this.value("plugin-power-plug-idle-watts")),
+                    idle_confirm_seconds: Number(this.value("plugin-power-plug-idle-confirm")),
+                    poll_seconds: Number(this.value("plugin-power-plug-poll")),
+                },
             };
         }
         configuration.interval_seconds = Number(

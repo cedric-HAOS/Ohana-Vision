@@ -151,6 +151,56 @@ const manual = {power_events: [
 [row] = rows(manual, now);
 assert.equal(row.value, 'PC démarré à la main');
 
+// smart plug: switched on before the packet, cut after the shutdown, one cycle
+const plugged = {power_events: [
+    {kind: 'plug_off', occurred_at: at(3, 14, 30), detail: {reason: 'shutdown_started', watts: 0.8, idle_seconds: 40, after_seconds: 325}},
+    {kind: 'shutdown_started', occurred_at: at(3, 9, 5), detail: {}},
+    {kind: 'shutdown_granted', occurred_at: at(3, 9), detail: {executed: {'logs.health_check': 3}, failed: 0}},
+    {kind: 'worker_online', occurred_at: at(3, 1, 20), detail: {after_seconds: 80}},
+    {kind: 'wake_sent', occurred_at: at(3, 0), detail: {trigger: 'queued_jobs', pending_jobs: {'logs.health_check': 3}, timeout_seconds: 180, plug: 'turned_on', wol_delay_seconds: 15}},
+    {kind: 'plug_on', occurred_at: at(3, 0), detail: {trigger: 'queued_jobs'}},
+]};
+const pluggedRows = rows(plugged, now);
+assert.equal(pluggedRows.length, 1);
+assert.equal(pluggedRows[0].state, 'healthy');
+assert.equal(pluggedRows[0].value, 'Cycle terminé');
+assert.match(pluggedRows[0].detail, /prise allumée .*réveil 15 s après/);
+assert.match(pluggedRows[0].detail, /prise coupée .*PC éteint, consommation 0,8 W/);
+
+// two plugged cycles stay two rows (the plug events open no cycle of their own)
+const twoDays = {power_events: [
+    {kind: 'plug_off', occurred_at: '2026-09-30T03:14:00+02:00', detail: {reason: 'shutdown_started', waited_seconds: 310}},
+    {kind: 'shutdown_started', occurred_at: '2026-09-30T03:09:00+02:00', detail: {}},
+    {kind: 'worker_online', occurred_at: '2026-09-30T03:01:00+02:00', detail: {after_seconds: 60}},
+    {kind: 'wake_sent', occurred_at: '2026-09-30T03:00:00+02:00', detail: {trigger: 'queued_jobs', pending_jobs: {}, timeout_seconds: 180, plug: 'turned_on', wol_delay_seconds: 15}},
+    {kind: 'plug_on', occurred_at: '2026-09-30T03:00:00+02:00', detail: {}},
+    ...plugged.power_events,
+]};
+const twoRows = rows(twoDays, now);
+assert.equal(twoRows.length, 2);
+assert.match(twoRows[0].detail, /310 s après l'arrêt/);
+
+// a plug that cannot be cut is a degraded cycle, a plug that could not be
+// switched on is told but the wake outcome decides the state
+const stuck = {power_events: [
+    {kind: 'plug_failed', occurred_at: at(3, 15), detail: {action: 'off', reason: 'shutdown_started', error: 'Home Assistant answered HTTP 500'}},
+    {kind: 'shutdown_started', occurred_at: at(3, 9, 5), detail: {}},
+    {kind: 'worker_online', occurred_at: at(3, 1), detail: {after_seconds: 50}},
+    {kind: 'wake_sent', occurred_at: at(3, 0), detail: {trigger: 'queued_jobs', pending_jobs: {}, timeout_seconds: 180, plug: 'failed'}},
+    {kind: 'plug_failed', occurred_at: at(3, 0), detail: {action: 'on', error: 'Home Assistant unreachable (down)'}},
+]};
+const [stuckRow] = rows(stuck, now);
+assert.equal(stuckRow.state, 'degraded');
+assert.match(stuckRow.detail, /prise : allumage impossible \(Home Assistant unreachable \(down\)\)/);
+assert.match(stuckRow.detail, /prise : coupure impossible \(Home Assistant answered HTTP 500\)/);
+
+const alreadyOff = {power_events: [
+    {kind: 'plug_off', occurred_at: at(3, 15), detail: {reason: 'shutdown_started', already_off: true}},
+    {kind: 'shutdown_started', occurred_at: at(3, 9, 5), detail: {}},
+    {kind: 'wake_sent', occurred_at: at(3, 0), detail: {trigger: 'queued_jobs', pending_jobs: {}, timeout_seconds: 180}},
+]};
+assert.match(rows(alreadyOff, now)[0].detail, /prise coupée .*déjà coupée/);
+
 // reliability row
 assert.equal(context.stats({}).length, 0);
 assert.equal(context.stats({wake_stats: {attempts: 0}}).length, 0);
