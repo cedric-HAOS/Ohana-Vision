@@ -583,6 +583,20 @@ def test_configuration_keeps_dhcp_page_accessible_when_unavailable() -> None:
     assert "La page DHCP reste accessible" in response.text
 
 
+def test_configuration_declares_a_critical_equipment() -> None:
+    """The equipment editor stores a critical flag only when it differs."""
+    page = make_client().get("/ui/")
+    script = get_configuration_script(make_client())
+
+    assert page.status_code == 200
+    assert script.status_code == 200
+    assert 'id="architecture-device-critical"' in page.text
+    assert "Équipement critique" in page.text
+    assert "hostsCriticalService(device)" in script.text
+    assert "device.metadata.critical = critical" in script.text
+    assert "delete device.metadata.critical" in script.text
+
+
 def test_configuration_controls_network_presence_per_device() -> None:
     """Network presence selection must live in the equipment editor."""
     page = make_client().get("/ui/")

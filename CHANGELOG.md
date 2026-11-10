@@ -2,6 +2,8 @@
 
 ## Non publié
 
+- Architecture : la fiche d'un équipement porte la case « Équipement critique ». Son absence du réseau ouvre alors un incident critique ; sinon l'incident est dégradé. La case est cochée d'office pour un équipement qui héberge un service critique actif, et seul un choix différent de ce défaut est enregistré (`metadata.critical`). Nécessite l'Agent qui lit ce champ pour la gravité des incidents.
+
 ## [1.45.0] — 2026-11-09 — Page Plugins
 
 - Page Plugins : le plugin « Prise connectée » (Agent avec le plugin `power_plug`) se règle comme les autres : adresse de Home Assistant, jeton d'accès (jamais réaffiché, laissé vide pour le conserver), interrupteur, capteur de puissance optionnel et délais, avec le bouton « Tester » qui lit la prise sans la commander.
