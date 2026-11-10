@@ -65,6 +65,12 @@ export const ArchitectureEditorMethods = {
             device.metadata
                 ?.network_presence_enabled !== false,
         );
+        this.setChecked(
+            "architecture-device-critical",
+            typeof device.metadata?.critical === "boolean"
+                ? device.metadata.critical
+                : this.hostsCriticalService(device),
+        );
         const monitoringSchedule = device.metadata?.monitoring_schedule;
         const monitoringPeriod = monitoringSchedule?.periods?.[0] ?? {};
         this.setChecked(
@@ -126,6 +132,10 @@ export const ArchitectureEditorMethods = {
             true,
         );
         this.setChecked(
+            "architecture-device-critical",
+            false,
+        );
+        this.setChecked(
             "architecture-device-monitoring-schedule-enabled",
             false,
         );
@@ -140,6 +150,17 @@ export const ArchitectureEditorMethods = {
         this.updateNetworkPresenceControl();
         this.updateMonitoringScheduleFields();
         this.renderAssociatedServices(null);
+    },
+
+    // Same default as the Agent: an equipment is critical when it hosts an
+    // enabled critical service, unless its own flag says otherwise.
+    hostsCriticalService(device) {
+        return Boolean(device?.node)
+            && (this.infrastructure.services ?? []).some(
+                (service) => service.node === device.node
+                    && service.enabled !== false
+                    && service.critical === true,
+            );
     },
 
     updateNetworkPresenceControl() {
@@ -899,6 +920,17 @@ export const ArchitectureEditorMethods = {
         } else {
             delete device.metadata
                 .network_presence_enabled;
+        }
+
+        // Only a choice that differs from the default is stored, so the
+        // default keeps following the services of the equipment.
+        const critical = this.checked(
+            "architecture-device-critical",
+        );
+        if (critical === this.hostsCriticalService(device)) {
+            delete device.metadata.critical;
+        } else {
+            device.metadata.critical = critical;
         }
 
         if (monitoringScheduleEnabled) {
