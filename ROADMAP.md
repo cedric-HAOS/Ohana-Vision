@@ -13,7 +13,13 @@ l'Agent.
 
 ## État actuel
 
-**Version : 1.22.14 — Priorités Tsunade et état courant cohérent.**
+**Version publiée au 10 novembre 2026 : 1.45.0**, dans la composition
+Ohana-Platform 1.0.157. Le numéro courant fait foi dans `pyproject.toml` et le
+[CHANGELOG](CHANGELOG.md) : cette page ne suit pas chaque release.
+
+Depuis la 1.22.14, Vision avance avec la [roadmap commune](https://github.com/cedric-HAOS/Ohana-Platform/blob/main/ROADMAP.md)
+d'Ohana-Platform. Sa Phase 8 (Vision rend Ohana compréhensible techniquement)
+est close ; cette page résume ce que les phases ont changé dans Vision.
 
 Les cartes exposent la conclusion, sa fraîcheur et la prochaine étape ; le dossier
 contient les détails. L’état courant suit la topologie actuelle et conserve
@@ -40,7 +46,16 @@ Le socle actuel couvre notamment :
   Katsuyu ;
 - les réparations supervisées, leur autorisation explicite et leur résultat ;
 - la PWA Shizune et sa passerelle bornée, sans exposition du jeton Agent au
-  navigateur.
+  navigateur ;
+- le dossier d'incident : preuves et limites, hypothèses qualifiées, étapes de
+  réparation datées, historique et incidents semblables ;
+- la maintenance préventive, les sauvegardes restaurées et la session iCloud
+  dans l'onglet « À surveiller » ;
+- la vue Ohana : composants de l'Agent, Katsuyu, Shizune, cycles de réveil et
+  prise connectée de Bubule ;
+- la détection de l'Agent silencieux par Vision elle-même ;
+- la page « Mise à jour système » d'INFRA-01 ;
+- la configuration de la synchronisation AdGuard et des plugins de l'Agent.
 
 Le détail exhaustif des versions et correctifs publiés est conservé dans le
 [CHANGELOG](CHANGELOG.md).
@@ -128,21 +143,67 @@ Le détail exhaustif des versions et correctifs publiés est conservé dans le
 
 **Statut : livré.**
 
+### 1.23 à 1.29 — Réparations supervisées et expérience
+
+- dépendances de services et réparations du catalogue ;
+- risque visible avant l'autorisation, refus et report d'une réparation ;
+- réparations à confirmer, réparations connues et résolution manuelle ;
+- bruit de fond et anomalies connues des journaux ;
+- checkpoint du WAL hors du chemin d'ingestion.
+
+**Statut : livré (Phases 2 et 3).**
+
+### 1.30 à 1.35 — Prévention, Ohana vu par Ohana, Katsuyu et Shizune
+
+- maintenance préventive dans la page Tsunade ;
+- vue Ohana et bandeau « Agent silencieux » ;
+- historique des incidents, fiche par équipement et frise de 30 jours ;
+- page Tsunade en deux colonnes, composants de journaux et statistiques ;
+- cycles de réveil de Katsuyu expliqués ;
+- suivi des décisions dans la passerelle Shizune.
+
+**Statut : livré (Phases 4 à 7).**
+
+### 1.36 à 1.38 — Dossier d'incident et AdGuard
+
+- dossier d'incident explicable : parcours, preuves, limites et hypothèses ;
+- supervision puis capacité de synchronisation AdGuard, réglées depuis Vision.
+
+**Statut : livré (Phase 8 close).**
+
+### 1.39 à 1.42 — Sauvegardes restaurées et mémoire
+
+- déclaration d'une restauration, vérification d'archive et état iCloud ;
+- mémoire résidente de Vision publiée dans ses relevés de santé ;
+- extension d'une investigation de journaux aux 24 heures précédentes.
+
+**Statut : livré (Phase 10 ouverte : restauration HAOS réelle à déclarer).**
+
+### 1.43 à 1.45 — Mise à jour système et plugins
+
+- page « Mise à jour système » : état, actualisation des listes, mise à jour
+  confirmée ;
+- `incidents.js` découpé par domaine, helpers de cartes et de dates partagés ;
+- réglage de l'alerte Z-Wave sans contact et du plugin « Prise connectée ».
+
+**Statut : livré.**
+
 ---
 
 ## Prochaines priorités
 
-### Maintenant — Lisibilité opérationnelle de Tsunade
+Les priorités sont celles de la [roadmap commune](https://github.com/cedric-HAOS/Ohana-Platform/blob/main/ROADMAP.md#priorité-immédiate).
+Ce qui suit est la part de Vision, relevée le 10 novembre 2026.
 
-- stabiliser le rendu des cartes longues : décision, actions, journaux,
-  analyse, réparation et évolution ;
-- faciliter le diagnostic des timeouts Katsuyu et des réveils manqués depuis
-  l'interface ;
-- clarifier les états `À approfondir`, `Surveillance`, `Action nécessaire` et
-  leurs conséquences opérateur ;
-- vérifier le confort mobile et bureau des cartes Tsunade les plus denses.
+### Maintenant — Usage réel et accès
 
-**Statut : en consolidation.**
+- décider des pages qui se recoupent (Timeline, Historique et Observations ;
+  Hôte, Ohana et Infrastructure) d'après celles réellement ouvertes : point 10
+  de l'[audit de simplification](https://github.com/cedric-HAOS/Ohana-Platform/blob/main/docs/Audit-Simplification-2026-11.md) ;
+- décider si l'authentification, classée « Plus tard » ci-dessous, doit passer
+  avant : Vision est servie sur le LAN de confiance sans contrôle d'accès.
+
+**Statut : à décider.**
 
 ### Ensuite — Historique et rapports
 
