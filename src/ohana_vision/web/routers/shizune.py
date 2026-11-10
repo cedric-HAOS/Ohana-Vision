@@ -1,7 +1,7 @@
 """Same-origin, bounded bridge from the Shizune PWA to Agent/Tsunade."""
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse
@@ -130,6 +130,33 @@ def respond(
             device_id,
             token,
         ),
+    )
+
+
+@router.get("/system/updates")
+def read_system_updates(
+    request: Request,
+    authorization: str | None = Header(default=None),
+    companion_id: str | None = Header(default=None, alias="X-Ohana-Companion-Id"),
+) -> JSONResponse:
+    device_id, token = _identity(authorization, companion_id)
+    return _call(
+        request, lambda: _client(request).read_system_updates(device_id, token)
+    )
+
+
+@router.post("/system/updates/{action}")
+def request_system_update(
+    action: Literal["refresh", "apply"],
+    request: Request,
+    authorization: str | None = Header(default=None),
+    companion_id: str | None = Header(default=None, alias="X-Ohana-Companion-Id"),
+) -> JSONResponse:
+    """Forward the request as it is; the Agent holds every guard."""
+    device_id, token = _identity(authorization, companion_id)
+    return _call(
+        request,
+        lambda: _client(request).request_system_update(action, device_id, token),
     )
 
 

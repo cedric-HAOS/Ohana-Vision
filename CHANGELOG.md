@@ -3,6 +3,7 @@
 ## Non publié
 
 - Architecture : la fiche d'un équipement porte la case « Équipement critique ». Son absence du réseau ouvre alors un incident critique ; sinon l'incident est dégradé. La case est cochée d'office pour un équipement qui héberge un service critique actif, et seul un choix différent de ce défaut est enregistré (`metadata.critical`). Nécessite l'Agent qui lit ce champ pour la gravité des incidents.
+- Passerelle Shizune : `GET /api/shizune/system/updates` relaie l'état des mises à jour du système de l'hôte de l'Agent, et `POST /api/shizune/system/updates/refresh` et `/apply` relaient les deux demandes du compagnon (lecture jusqu'à 30 s). Toute autre action est refusée par la passerelle, et un refus de l'Agent est transmis avec son motif. Nécessite l'Agent qui expose ces routes au compagnon.
 
 ## [1.45.0] — 2026-11-09 — Page Plugins
 

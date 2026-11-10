@@ -10,6 +10,9 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+# Reading the updates runs the apt simulation, slow on a Raspberry Pi.
+SYSTEM_UPDATE_TIMEOUT_SECONDS = 30.0
+
 
 class AgentCompanionError(RuntimeError):
     """Raised when Agent's companion listener rejects a request."""
@@ -107,6 +110,31 @@ class AgentCompanionClient:
             token=token,
         )
 
+    def read_system_updates(self, device_id: str, token: str) -> dict[str, Any]:
+        """Package updates of the Agent's host; the apt simulation is slow."""
+        return self._request(
+            "GET",
+            "/v1/system/updates",
+            device_id=device_id,
+            token=token,
+            timeout_seconds=SYSTEM_UPDATE_TIMEOUT_SECONDS,
+        )
+
+    def request_system_update(
+        self, action: str, device_id: str, token: str
+    ) -> dict[str, Any]:
+        """Ask the Agent to refresh the package lists or apply the upgrade."""
+        if action not in {"refresh", "apply"}:
+            raise ValueError("action must be refresh or apply")
+        return self._request(
+            "POST",
+            f"/v1/system/updates/{action}",
+            {},
+            device_id=device_id,
+            token=token,
+            timeout_seconds=SYSTEM_UPDATE_TIMEOUT_SECONDS,
+        )
+
     def _request(
         self,
         method: str,
@@ -115,6 +143,7 @@ class AgentCompanionClient:
         *,
         device_id: str | None = None,
         token: str | None = None,
+        timeout_seconds: float | None = None,
     ) -> dict[str, Any]:
         data = json.dumps(payload).encode("utf-8") if payload is not None else None
         headers = {"Accept": "application/json"}
@@ -134,7 +163,7 @@ class AgentCompanionClient:
             context = ssl.create_default_context(cafile=str(self.ca_certificate_file))
             with urlopen(
                 request,
-                timeout=self.timeout_seconds,
+                timeout=timeout_seconds or self.timeout_seconds,
                 context=context,
             ) as response:
                 document = json.load(response)
