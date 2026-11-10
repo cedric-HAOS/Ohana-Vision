@@ -20,7 +20,11 @@ Vision expose également `/api/shizune`, une passerelle strictement limitée au
 contrat compagnon synthétique d’Agent/Tsunade. Elle relaie l’association, la
 synthèse, les demandes (en attente ou déjà traitées, `GET
 /api/shizune/requests/recent`), l’activité et les réponses structurées, sans conserver
-le jeton compagnon et sans exposer les routes d’administration.
+le jeton compagnon et sans exposer les routes d’administration. Depuis le
+10 novembre 2026, elle relaie aussi l’état des mises à jour du système
+d’INFRA-01 (`GET /api/shizune/system/updates`) et les deux demandes
+`POST /api/shizune/system/updates/refresh` et `/apply` : l’Agent applique les
+mêmes refus que depuis la page « Mise à jour système ».
 2. Choisir **Configuration** dans la barre latérale.
 3. Choisir **Réseau Agent**, **Baux DHCP**, **Architecture** ou **Plugins**.
 

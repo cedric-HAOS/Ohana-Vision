@@ -54,6 +54,20 @@ class FakeCompanionClient:
         self.calls.append(("diagnose", incident_id, device_id, token))
         return {"schema_version": 1, "status": "AI_QUEUED"}
 
+    def read_system_updates(self, device_id: str, token: str) -> dict[str, Any]:
+        self.calls.append(("system_updates", device_id, token))
+        return {"schema_version": 1, "status": "up_to_date", "pending_count": 0}
+
+    def request_system_update(
+        self, action: str, device_id: str, token: str
+    ) -> dict[str, Any]:
+        self.calls.append(("system_update", action, device_id, token))
+        if action == "apply":
+            raise AgentCompanionError(
+                "Aucune mise à jour n'est en attente", status_code=422
+            )
+        return {"started": True, "busy": False, "action": action}
+
 
 def make_client() -> tuple[TestClient, FakeCompanionClient]:
     companion = FakeCompanionClient()
@@ -211,3 +225,37 @@ def test_gateway_state_follows_relayed_calls() -> None:
 def test_gateway_is_unconfigured_without_companion_client() -> None:
     _, runtime = _gateway_client(None)
     assert runtime.vitals()["shizune_gateway"]["state"] == "unconfigured"
+
+
+def test_system_update_requires_identity_and_forwards_only_two_actions():
+    client, companion = make_client()
+    headers = {
+        "Authorization": "Bearer session-secret",
+        "X-Ohana-Companion-Id": "iphone-cedric",
+    }
+
+    assert client.get("/api/shizune/system/updates").status_code == 401
+    assert client.post("/api/shizune/system/updates/refresh").status_code == 401
+    assert companion.calls == []
+
+    updates = client.get("/api/shizune/system/updates", headers=headers)
+    assert updates.status_code == 200
+    assert updates.json()["status"] == "up_to_date"
+    assert updates.headers["cache-control"] == "no-store"
+
+    refreshed = client.post("/api/shizune/system/updates/refresh", headers=headers)
+    assert refreshed.json() == {"started": True, "busy": False, "action": "refresh"}
+
+    # An Agent refusal reaches Shizune with its reason, not as an outage.
+    refused = client.post("/api/shizune/system/updates/apply", headers=headers)
+    assert refused.status_code == 422
+    assert refused.json()["detail"] == "Aucune mise à jour n'est en attente"
+
+    for action in ("upgrade", "dist-upgrade", "reboot"):
+        response = client.post(f"/api/shizune/system/updates/{action}", headers=headers)
+        assert response.status_code == 422
+    assert companion.calls == [
+        ("system_updates", "iphone-cedric", "session-secret"),
+        ("system_update", "refresh", "iphone-cedric", "session-secret"),
+        ("system_update", "apply", "iphone-cedric", "session-secret"),
+    ]
