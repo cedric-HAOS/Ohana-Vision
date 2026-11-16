@@ -292,12 +292,6 @@
     background: color-mix(in srgb, var(--ohana-brand-primary) 14%, transparent);
 }
 
-.incidents-list {
-    display: grid;
-    gap: var(--ohana-space-3);
-    padding: var(--ohana-space-5);
-}
-
 .incident-card {
     --incident-color: var(--ohana-health-critical);
     position: relative;
@@ -825,21 +819,6 @@
     gap: var(--ohana-space-3);
 }
 
-.incidents-empty-state {
-    display: grid;
-    min-height: 16rem;
-    place-items: center;
-    align-content: center;
-    gap: var(--ohana-space-2);
-    color: var(--ohana-text-muted);
-    text-align: center;
-}
-
-.incidents-empty-state h3,
-.incidents-empty-state p {
-    margin: 0;
-}
-
 .incident-tsunade-decision {
     display: grid;
     gap: var(--ohana-space-3);
@@ -975,73 +954,6 @@
     }
 }
 
-@media (min-width: 1001px) {
-    /* The panel has the viewport height and hides its overflow: the incidents
-       and the side column each scroll on their own, so nothing a section
-       shows can squeeze the other one to zero height. */
-    .incidents-panel {
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
-        overflow: hidden;
-    }
-
-    .incidents-layout {
-        display: grid;
-        flex: 1 1 auto;
-        grid-template-columns: minmax(0, 1fr) minmax(20rem, 27rem);
-        min-height: 0;
-    }
-
-    .incidents-main,
-    .incidents-side {
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
-    }
-
-    .incidents-main__scroll,
-    .incidents-side__scroll {
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow-x: hidden;
-        overflow-y: auto;
-        overscroll-behavior-y: contain;
-        scrollbar-gutter: stable;
-        scrollbar-width: thin;
-        scrollbar-color: var(--ohana-border-default) transparent;
-    }
-
-    .incidents-main__scroll::-webkit-scrollbar,
-    .incidents-side__scroll::-webkit-scrollbar {
-        width: 0.55rem;
-    }
-
-    .incidents-main__scroll::-webkit-scrollbar-track,
-    .incidents-side__scroll::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .incidents-main__scroll::-webkit-scrollbar-thumb,
-    .incidents-side__scroll::-webkit-scrollbar-thumb {
-        border-radius: var(--ohana-radius-round);
-        background: var(--ohana-border-default);
-    }
-
-    .incidents-side {
-        border-left: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
-    }
-
-    .incident-card {
-        flex: 0 0 auto;
-    }
-
-    .incidents-list {
-        display: flex;
-        flex-direction: column;
-    }
-}
-
 /* Status bar: what to watch and the last log check, one line. */
 .incidents-statusbar {
     display: flex;
@@ -1076,10 +988,6 @@
     border-color: var(--ohana-brand-primary);
 }
 
-.incidents-layout {
-    min-height: 0;
-}
-
 /* Filters carry the incident counts. */
 .incidents-filter b {
     margin-left: var(--ohana-space-1);
@@ -1088,17 +996,22 @@
     font-weight: 600;
 }
 
-.incidents-main .incidents-toolbar {
+/* Tab bar: incidents first, then the four watch sections; the log check
+   stays reachable from every section. */
+.incidents-tabbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--ohana-space-2) var(--ohana-space-4);
+    padding: var(--ohana-space-2) var(--ohana-space-5);
     border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
 }
 
-/* Side column: tabs above one panel. */
 .incidents-tabs {
     display: flex;
     flex-wrap: wrap;
     gap: var(--ohana-space-1);
-    padding: var(--ohana-space-3) var(--ohana-space-4) 0;
-    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
 }
 
 .incidents-tab {
@@ -1117,43 +1030,337 @@
     font-weight: 600;
 }
 
+.incidents-tab:focus-visible {
+    outline: 2px solid var(--ohana-border-focus);
+    outline-offset: 2px;
+}
+
+.incidents-layout {
+    min-height: 0;
+}
+
 .incidents-tabpanel {
     display: grid;
     align-content: start;
     gap: var(--ohana-space-3);
-    padding: var(--ohana-space-4) var(--ohana-space-4);
+    padding: var(--ohana-space-4) var(--ohana-space-5);
 }
 
 .incidents-tabpanel[hidden] {
     display: none;
 }
 
+/* The watch sections keep a readable width now that they span the page. */
+.incidents-tabpanel:not(.incidents-tabpanel--incidents) > * {
+    max-width: 72rem;
+}
+
 .incidents-tabpanel .panel-heading__kicker {
     margin: 0;
 }
 
-.incidents-side .incidents-summary {
-    grid-template-columns: 1fr;
+.incidents-tabpanel--incidents {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
     padding: 0;
+}
+
+.incidents-search {
+    flex: 1 1 16rem;
+    min-width: 12rem;
+    max-width: 28rem;
+    padding: var(--ohana-space-2) var(--ohana-space-3);
+    border: var(--ohana-border-width-thin) solid var(--ohana-border-default);
+    border-radius: var(--ohana-radius-md);
+    color: var(--ohana-text-primary);
+    background: var(--ohana-background-canvas);
+    font: inherit;
+}
+
+.incidents-search:focus-visible {
+    outline: 2px solid var(--ohana-border-focus);
+    outline-offset: 1px;
+}
+
+.incidents-toolbar__grouping {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ohana-space-2);
+    color: var(--ohana-text-secondary);
+    font-size: var(--ohana-font-size-sm);
+}
+
+/* Triage table on the left, the selected incident's card on the right. */
+.incidents-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 30rem);
+    align-items: start;
+}
+
+.incidents-table-scroll {
+    min-width: 0;
+    overflow-x: auto;
+}
+
+.incidents-table {
+    width: 100%;
+    min-width: 40rem;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: var(--ohana-font-size-sm);
+}
+
+.incidents-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: var(--ohana-space-2) var(--ohana-space-3);
+    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-default);
+    color: var(--ohana-text-muted);
+    background: var(--ohana-background-surface-raised);
+    font-size: var(--ohana-font-size-xs);
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.incidents-table__col-subject {
+    width: 12rem;
+}
+
+.incidents-table__col-time {
+    width: 7.5rem;
+}
+
+.incidents-table td {
+    padding: var(--ohana-space-2) var(--ohana-space-3);
+    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+    color: var(--ohana-text-secondary);
+    vertical-align: top;
+}
+
+.incidents-table__group th {
+    padding: var(--ohana-space-4) var(--ohana-space-3) var(--ohana-space-2);
+    border-bottom: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+    color: var(--ohana-text-primary);
+    background: var(--ohana-background-canvas);
+    font-weight: 600;
+    text-align: left;
+}
+
+.incidents-table__group th span {
+    margin-left: var(--ohana-space-2);
+    color: var(--ohana-text-muted);
+    font-weight: 400;
+}
+
+.incidents-table__row {
+    cursor: pointer;
+}
+
+.incidents-table__row:hover td {
+    background: var(--ohana-background-surface-raised);
+}
+
+.incidents-table__row.is-selected td {
+    background: var(--ohana-brand-primary-soft);
+}
+
+.incidents-table__row.is-selected td:first-child {
+    box-shadow: inset 3px 0 0 var(--ohana-brand-primary);
+}
+
+.incidents-table__row:focus-visible {
+    outline: 2px solid var(--ohana-border-focus);
+    outline-offset: -2px;
+}
+
+.incidents-table__state {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ohana-space-1);
+    margin-top: var(--ohana-space-1);
+}
+
+.incidents-table__severity {
+    display: inline-flex;
+    padding: var(--ohana-space-1) var(--ohana-space-2);
+    border-radius: var(--ohana-radius-round);
+    color: var(--incident-color);
+    background: color-mix(in srgb, var(--incident-color) 12%, transparent);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.incidents-table__severity--critical { --incident-color: var(--ohana-health-critical); }
+.incidents-table__severity--degraded { --incident-color: var(--ohana-health-degraded); }
+
+.incidents-table__row.is-resolved .incidents-table__severity {
+    --incident-color: var(--ohana-text-muted);
+}
+
+.incidents-table__subject strong {
+    display: block;
+    color: var(--ohana-text-primary);
+}
+
+.incidents-table__subject > span:not(.incidents-table__state) {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.incidents-table__clip {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow-wrap: anywhere;
+}
+
+.incidents-table .is-muted {
+    color: var(--ohana-text-muted);
+    font-style: italic;
+}
+
+.incidents-table td small {
+    display: block;
+    margin-top: var(--ohana-space-1);
+    color: var(--ohana-health-degraded);
+}
+
+.incidents-table__awaiting {
+    color: var(--ohana-brand-primary);
+}
+
+.incidents-table__time {
+    font-family: var(--ohana-font-family-mono);
+    font-size: var(--ohana-font-size-xs);
+    white-space: nowrap;
+}
+
+.incidents-table__time span {
+    display: block;
+    color: var(--ohana-text-muted);
+}
+
+.incidents-table td > .incident-certainty {
+    margin-bottom: var(--ohana-space-1);
+}
+
+.incidents-table__empty {
+    padding: var(--ohana-space-8) var(--ohana-space-4);
+    color: var(--ohana-text-muted);
+    text-align: center;
+}
+
+.incidents-table__more td {
+    padding: var(--ohana-space-4) var(--ohana-space-3);
     border-bottom: 0;
+    color: var(--ohana-text-muted);
 }
 
-.incidents-side .incidents-log-health__content ul {
-    grid-template-columns: 1fr;
+.incidents-table__more button {
+    margin-left: var(--ohana-space-3);
 }
 
-.incidents-side .incidents-experiences__content ul {
-    grid-template-columns: 1fr;
+/* Certainty of the probable cause: the label carries it, colour only helps. */
+.incident-certainty {
+    display: inline-flex;
+    padding: 1px var(--ohana-space-2);
+    border: var(--ohana-border-width-thin) solid transparent;
+    border-radius: var(--ohana-radius-sm);
+    font-size: var(--ohana-font-size-xs);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.incident-certainty--confirmed {
+    color: var(--ohana-health-healthy);
+    background: var(--ohana-health-healthy-soft);
+}
+
+.incident-certainty--probable {
+    color: var(--ohana-health-degraded);
+    background: var(--ohana-health-degraded-soft);
+}
+
+.incident-certainty--insufficient,
+.incident-certainty--unknown,
+.incident-certainty--none {
+    border-style: dashed;
+    border-color: var(--ohana-border-default);
+    color: var(--ohana-text-muted);
+    font-weight: 500;
+}
+
+.incidents-detail {
+    min-width: 0;
+    padding: var(--ohana-space-4);
+    border-left: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+}
+
+.incidents-detail__hint {
+    margin: 0;
+    color: var(--ohana-text-muted);
+}
+
+@media (min-width: 1001px) {
+    /* The panel has the viewport height and hides its overflow: the table,
+       the selected dossier and each watch section scroll on their own. */
+    .incidents-panel {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .incidents-layout {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .incidents-tabpanel:not([hidden]) {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .incidents-tabpanel:not(.incidents-tabpanel--incidents),
+    .incidents-table-scroll,
+    .incidents-detail {
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
+        scrollbar-gutter: stable;
+        scrollbar-width: thin;
+        scrollbar-color: var(--ohana-border-default) transparent;
+    }
+
+    .incidents-workspace {
+        flex: 1 1 auto;
+        align-items: stretch;
+        min-height: 0;
+    }
+
+    .incidents-table-scroll,
+    .incidents-detail {
+        min-height: 0;
+    }
 }
 
 @media (max-width: 1000px) {
-    /* One column, one page scroll: the side column follows the incidents. */
-    .incidents-layout {
-        display: block;
+    /* One page scroll: the selected dossier follows the table. */
+    .incidents-workspace {
+        grid-template-columns: minmax(0, 1fr);
     }
 
-    .incidents-side {
+    .incidents-detail {
         border-top: var(--ohana-border-width-thin) solid var(--ohana-border-subtle);
+        border-left: 0;
     }
 }
 

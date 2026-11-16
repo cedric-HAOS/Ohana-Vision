@@ -33,9 +33,18 @@ export class IncidentsController {
         this.similar = new Map();
         this.logCheckAvailable = false;
         this.expandedLogAnomalies = new Set();
-        this.filter = "active";
-        // Side column: one tab open at a time, remembered for the session.
-        this.sideTab = this.storedSideTab();
+        // The table lists every incident; the filters narrow it down.
+        this.filter = "all";
+        this.query = "";
+        this.groupBy = this.storedValue("ohana.tsunade.group", "equipment");
+        // The row whose card and dossier are shown beside the table.
+        this.selectedIncident = null;
+        // Resolved pages older than the list Agent serves, loaded on demand;
+        // kept across the periodic reload, which only returns the latest 100.
+        this.olderIncidents = [];
+        this.olderExhausted = false;
+        // One section open at a time, remembered for the session.
+        this.sideTab = this.storedValue("ohana.tsunade.tab", "incidents");
         // Preventive rules the user unfolded: kept across the periodic refresh.
         this.openPreventiveRules = new Set();
         this.loaded = false;
@@ -43,6 +52,10 @@ export class IncidentsController {
         this.elements = {
             error: document.querySelector("#incidents-error"),
             list: document.querySelector("#incidents-list"),
+            rows: document.querySelector("#incidents-rows"),
+            detail: document.querySelector("#incidents-detail"),
+            search: document.querySelector("#incidents-search"),
+            groupings: Array.from(document.querySelectorAll("[data-incidents-group]")),
             activeCount: document.querySelector("#incidents-active-count"),
             newCount: document.querySelector("#incidents-unacknowledged-count"),
             treatedCount: document.querySelector("#incidents-silenced-count"),
@@ -87,14 +100,32 @@ export class IncidentsController {
         this.renderSideTabs();
         this.elements.filters.forEach((button) => {
             button.addEventListener("click", () => {
-                this.filter = button.dataset.incidentsFilter ?? "active";
-                this.render();
+                this.filter = button.dataset.incidentsFilter ?? "all";
+                this.renderIncidentList();
             });
         });
+        this.elements.groupings.forEach((button) => {
+            button.addEventListener("click", () => this.selectGrouping(button.dataset.incidentsGroup));
+        });
+        this.elements.search?.addEventListener("input", () => {
+            this.query = this.elements.search.value;
+            this.renderIncidentList();
+        });
+        this.elements.rows?.addEventListener("keydown", (event) => this.handleRowKey(event));
         this.elements.logCheck?.addEventListener("click", () => {
             void this.checkLogs(this.elements.logCheck);
         });
         this.elements.list?.addEventListener("click", (event) => {
+            const olderButton = event.target.closest("[data-tsunade-older]");
+            if (olderButton) {
+                void this.loadOlderIncidents(olderButton);
+                return;
+            }
+            const row = event.target.closest("[data-tsunade-select]");
+            if (row) {
+                void this.selectIncident(row.dataset.tsunadeSelect);
+                return;
+            }
             const copyButton = event.target.closest("[data-tsunade-copy-command]");
             if (copyButton) {
                 void this.copyCommand(copyButton);
@@ -335,7 +366,8 @@ export class IncidentsController {
             if (this.focusedIncident) {
                 const incident = this.incidents.find(item => item.incident_id === this.focusedIncident);
                 if (incident) {
-                    this.filter = incident.state === "resolved" ? "resolved" : "active";
+                    this.filter = "all";
+                    this.selectedIncident = incident.incident_id;
                     this.details.set(incident.incident_id, await fetchJson(API.tsunadeIncident(incident.incident_id)));
                     this.expandedDetails.add(incident.incident_id);
                 }
@@ -360,36 +392,39 @@ export class IncidentsController {
             this.render();
         } catch (error) {
             this.showError(`Tsunade est indisponible : ${this.errorMessage(error)}`);
-            if (this.elements.list) {
-                this.elements.list.innerHTML = this.emptyState(
-                    "Incidents indisponibles",
-                    "La liste sera rechargée dès qu’Ohana-Agent répondra.",
+            if (this.elements.rows) {
+                this.elements.rows.innerHTML = this.tableMessage(
+                    "Incidents indisponibles : la liste sera rechargée dès qu’Ohana-Agent répondra.",
                 );
             }
         }
     }
 
-    storedSideTab() {
+    storedValue(key, fallback) {
         try {
-            return window.sessionStorage.getItem("ohana.tsunade.tab") || "preventive";
+            return window.sessionStorage.getItem(key) || fallback;
         } catch {
-            return "preventive";
+            return fallback;
+        }
+    }
+
+    storeValue(key, value) {
+        try {
+            window.sessionStorage.setItem(key, value);
+        } catch {
+            // Storage can be blocked: the choice still holds for this page.
         }
     }
 
     selectSideTab(name) {
         this.sideTab = name;
-        try {
-            window.sessionStorage.setItem("ohana.tsunade.tab", name);
-        } catch {
-            // Storage can be blocked: the tab still works for this page.
-        }
+        this.storeValue("ohana.tsunade.tab", name);
         this.renderSideTabs();
     }
 
     renderSideTabs() {
         const known = this.elements.panels.some((panel) => panel.dataset.tsunadePanel === this.sideTab);
-        const current = known ? this.sideTab : "preventive";
+        const current = known ? this.sideTab : "incidents";
         this.elements.tabs.forEach((tab) => {
             const active = tab.dataset.tsunadeTab === current;
             tab.classList.toggle("is-active", active);
@@ -433,59 +468,7 @@ export class IncidentsController {
         this.renderExperiences();
         this.renderPreventive();
         this.renderExperiencePending();
-        this.elements.filters.forEach((button) => {
-            const active = button.dataset.incidentsFilter === this.filter;
-            button.classList.toggle("is-active", active);
-            button.setAttribute("aria-pressed", String(active));
-        });
-        if (!this.elements.list) {
-            return;
-        }
-        if (!this.loaded) {
-            this.elements.list.innerHTML = this.emptyState(
-                "Chargement des incidents Tsunade…",
-            );
-            return;
-        }
-        const visible = this.incidents.filter((incident) => {
-            if (this.filter === "all") {
-                return true;
-            }
-            if (this.filter === "active") {
-                // A form being filled stays in view when the incident closes.
-                return incident.state === "active"
-                    || (this.manualForms.has(incident.incident_id) && this.manualDeclarable(incident));
-            }
-            return incident.workflow_state === this.filter;
-        });
-        if (visible.length === 0) {
-            this.elements.list.innerHTML = this.emptyState(
-                "Aucun incident dans cet état",
-                "Les décisions et investigations de Tsunade apparaîtront ici.",
-            );
-            return;
-        }
-        visible.sort((a, b) => (a.assessment?.priority ?? 9) - (b.assessment?.priority ?? 9));
-        let previousGroup = null;
-        this.elements.list.innerHTML = visible
-            .map((incident) => {
-                const group = this.incidentGroup(incident);
-                const heading = group !== previousGroup
-                    ? `<h3 class="incidents-group-heading">${escapeHtml(group)}</h3>` : "";
-                previousGroup = group;
-                return heading + this.incidentCard(incident);
-            })
-            .join("");
-    }
-
-    incidentGroup(incident) {
-        const state = incident.assessment?.state;
-        if (incident.state === "resolved") return "Résolus";
-        if (state === "analyzing") return "Analyses en cours";
-        if (state === "stale") return "Diagnostics à actualiser";
-        if (state === "watch") return "Sous surveillance";
-        if (state === "investigate") return "À approfondir";
-        return "À examiner en priorité";
+        this.renderIncidentList();
     }
 
     renderSummary() {
@@ -566,7 +549,7 @@ export class IncidentsController {
                             <strong>${escapeHtml(formatDate(incident.started_at))}</strong>
                         </span>` : ""}
                     </header>
-                    <p class="incident-card__message">${escapeHtml(incident.message ?? "Incident sans résumé")}</p>
+                    <p class="incident-card__message">${escapeHtml(this.cardMessage(incident))}</p>
                     ${!assessment && (expertiseState === "ai_queued" || !decisionRecord)
                         ? this.incidentGuidanceView(guidance)
                         : ""}
@@ -636,6 +619,14 @@ export class IncidentsController {
         }
         return `${this.serviceLabel(incident.node_id, incident.service_id)} · `
             + this.equipmentLabel(incident.node_id);
+    }
+
+    /** Once resolved, the last message only says the capability is healthy again. */
+    cardMessage(incident) {
+        if (incident.state === "resolved" && incident.opening_message) {
+            return `À l’ouverture : ${incident.opening_message}`;
+        }
+        return incident.message ?? "Incident sans résumé";
     }
 
     displaySeverity(incident, severity) {
@@ -893,10 +884,6 @@ export class IncidentsController {
 
     readableIdentifier(value) {
         return String(value ?? "—").replaceAll("_", " ").replaceAll("-", " ");
-    }
-
-    emptyState(title, message = "") {
-        return `<div class="incidents-empty-state"><h3>${escapeHtml(title)}</h3>${message ? `<p>${escapeHtml(message)}</p>` : ""}</div>`;
     }
 
     showError(message) {

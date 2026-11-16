@@ -274,6 +274,9 @@ class FakeAdministrationClient:
     def read_similar_incidents(self, incident_id: str) -> dict[str, Any]:
         return {"incident_id": incident_id, "similar": []}
 
+    def list_older_incidents(self, incident_id: str) -> dict[str, Any]:
+        return {"before": incident_id, "has_more": False, "incidents": []}
+
     def read_restore_tests(self) -> dict[str, Any]:
         return {"schema_version": 1, "max_age_days": 180, "targets": []}
 
@@ -729,6 +732,7 @@ def test_administration_routes_proxy_the_incident_history() -> None:
     timeline = client.get("/api/administration/tsunade/timeline")
     sheet = client.get("/api/administration/tsunade/equipment/infra-01/history")
     similar = client.get("/api/administration/tsunade/incidents/i-1/similar")
+    older = client.get("/api/administration/tsunade/incidents/i-1/older")
 
     assert searched.json()["filters"] == {
         "equipment_id": "infra-01",
@@ -738,6 +742,7 @@ def test_administration_routes_proxy_the_incident_history() -> None:
     assert timeline.json() == {"incidents": [], "repairs": []}
     assert sheet.json() == {"equipment_id": "infra-01"}
     assert similar.json() == {"incident_id": "i-1", "similar": []}
+    assert older.json() == {"before": "i-1", "has_more": False, "incidents": []}
 
 
 def test_administration_routes_proxy_the_restore_tests() -> None:

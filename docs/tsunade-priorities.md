@@ -1,14 +1,39 @@
 # Lire les priorités Tsunade
 
-Les incidents actifs sont classés selon leur priorité et leur prochaine étape.
-Chaque carte montre le constat, la conclusion Tsunade, sa confiance lorsqu’elle
-est disponible et la fraîcheur des éléments analysés. Une conclusion antérieure
-à de nouveaux journaux reste explicitement datée. Le nombre total d’anomalies
-est distingué des huit exemples présentés.
+Les incidents sont présentés dans un tableau de triage, une ligne par incident :
+équipement et problème suivi (avec gravité et état), cause probable et
+certitude, action, date d’ouverture et durée. Les incidents actifs viennent en
+premier, classés selon leur priorité, puis les plus récents.
 
-« Voir le dossier » ouvre les journaux, hypothèses, décisions, propositions et
-événements. Une demande explicite de diagnostic conserve l’intention de
-l’opérateur jusqu’à Agent.
+- **Problème** : le service ou le contrôle surveillé, jamais le dernier message,
+  qui décrit le retour à la normale une fois l’incident résolu.
+- **Cause probable** : l’interprétation propre à l’incident
+  (`latest_decision.interpretation`), à défaut la conclusion. « Conclusion à
+  actualiser » signale une observation plus récente que la décision.
+- **Certitude** : `diagnostic_level` (Confirmée, Probable, Contexte insuffisant)
+  et la confiance. Le libellé porte l’information, la couleur l’accompagne.
+- **Action** : une réparation en attente d’autorisation (« À autoriser ») ou une
+  demande à examiner dans Shizune passent avant la suite recommandée ; pour un
+  incident résolu, la dernière réparation et son issue.
+
+La recherche ignore accents et majuscules ; chaque mot doit apparaître dans
+l’équipement, le problème, le message, le symptôme d’ouverture
+(`opening_message`), la cause, l’action ou le jour. Le tableau
+se regroupe par équipement, gravité ou jour (choix retenu pour la session), en
+plus des filtres d’état. La liste charge les 100 derniers incidents ; en bas du
+tableau, « Charger les 100 incidents résolus plus anciens » remonte l’historique
+page par page (Agent avec `/v1/incidents/{id}/older`), et la ligne indique combien
+d’incidents sont chargés sur le total. La recherche porte sur les incidents
+chargés.
+
+Choisir une ligne affiche à droite la carte de l’incident et ouvre son dossier :
+journaux, hypothèses, décisions, propositions et événements, avec les mêmes
+boutons qu’avant (autoriser, refuser, analyser, « J’ai corrigé
+manuellement »...). Les flèches parcourent les lignes, Entrée ouvre la ligne
+choisie. Une demande explicite de diagnostic conserve l’intention de
+l’opérateur jusqu’à Agent. Une conclusion antérieure à de nouveaux journaux reste
+explicitement datée, et le nombre total d’anomalies est distingué des huit
+exemples présentés.
 
 ## Parcours, preuves et réparation
 
@@ -27,15 +52,20 @@ y compris lorsque le dossier en cache contient une ancienne décision.
 
 ## Disposition de la page
 
-Sur écran large, la page Tsunade a deux colonnes qui défilent chacune de leur
-côté : à gauche les incidents (filtres avec leurs compteurs et « Contrôler les
-journaux » figés en haut), à droite la surveillance en quatre onglets.
-Un bandeau d’une ligne donne le nombre de dérives à surveiller et l’heure du
-dernier contrôle des journaux. Sous 1000 px, une seule colonne et un seul
-défilement. L’onglet choisi est retenu pour la session.
+La page Tsunade a cinq onglets ; « Contrôler les journaux » reste à droite des
+onglets, accessible depuis chacun. Un bandeau d’une ligne donne le nombre de
+dérives à surveiller et l’heure du dernier contrôle des journaux. L’onglet
+choisi est retenu pour la session.
+
+Sur écran large, l’onglet Incidents a deux zones qui défilent chacune de leur
+côté : le tableau à gauche (filtres, recherche et regroupement figés au-dessus),
+la carte et le dossier de l’incident choisi à droite. Sous 1000 px, le dossier
+passe sous le tableau. Aucune présentation téléphone n’est prévue : Shizune
+sert sur iPhone.
 
 | Onglet | Contenu |
 | --- | --- |
+| Incidents | tableau de triage et dossier de l’incident choisi |
 | À surveiller | synthèse préventive, dérives (avec dépendances déclarées et incident amont), règles appliquées (une ligne par règle, critère au clic), rattrapage de l’historique |
 | Journaux | par source, les composants (Tapo, Kasa, Shelly...) avec occurrences et gravité, « Accepter » ou « Compter à nouveau », anomalies acceptées |
 | Réparations connues | réparations classées par fiabilité (`#1`, fiable, instable...), désactivation, obsolescence |

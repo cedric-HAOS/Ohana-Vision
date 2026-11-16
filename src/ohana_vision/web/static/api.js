@@ -31,6 +31,8 @@ export const API = Object.freeze({
         `/api/administration/tsunade/equipment/${encodeURIComponent(equipmentId)}/history`,
     tsunadeSimilarIncidents: (incidentId) =>
         `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/similar`,
+    tsunadeOlderIncidents: (incidentId) =>
+        `/api/administration/tsunade/incidents/${encodeURIComponent(incidentId)}/older`,
     tsunadePreventiveBackfill: "/api/administration/tsunade/preventive/backfill",
     tsunadePreventiveMute: "/api/administration/tsunade/preventive/mute",
     tsunadePreventiveUnmute: "/api/administration/tsunade/preventive/unmute",

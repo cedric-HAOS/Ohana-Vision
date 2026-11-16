@@ -266,6 +266,12 @@ class AgentAdministrationClient:
             "GET", f"/v1/incidents/{quote(incident_id, safe='')}/similar"
         )
 
+    def list_older_incidents(self, incident_id: str) -> dict[str, Any]:
+        """Next page of resolved incidents, older than one Vision already lists."""
+        return self._request(
+            "GET", f"/v1/incidents/{quote(incident_id, safe='')}/older"
+        )
+
     def read_agent_vitals(self) -> dict[str, Any]:
         """Phase 5: scheduler, queues, storage, retention and versions."""
         return self._request("GET", "/v1/vitals")

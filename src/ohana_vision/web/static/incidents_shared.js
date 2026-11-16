@@ -56,6 +56,27 @@ export const TSUNADE_DECISION_SOURCE_LABELS = Object.freeze({
     fallback: "Décision de repli",
 });
 
+// Niveau de certitude d'un diagnostic (latest_decision.diagnostic_level).
+export const DIAGNOSTIC_LEVELS = Object.freeze({
+    CONFIRMED: {label: "Confirmée", tone: "confirmed"},
+    PROBABLE: {label: "Probable", tone: "probable"},
+    INSUFFICIENT_CONTEXT: {label: "Contexte insuffisant", tone: "insufficient"},
+});
+// Problème suivi, quand l'incident ne porte pas de service distinct.
+export const CAPABILITY_LABELS = Object.freeze({
+    "logs.health": "Journaux",
+    "adguard_sync.status": "Synchronisation AdGuard",
+    "dns.resolve": "Résolution DNS",
+    "home_assistant.telemetry.freshness": "Télémétrie Home Assistant",
+    "teleinformation.freshness": "Téléinformation",
+    "network.reachable": "Présence sur le réseau",
+    "zwave.node.alive": "Nœud Z-Wave",
+    "zwave.status": "Pilote Z-Wave JS",
+    "host.health": "Santé de l’hôte",
+    "backup.run": "Sauvegarde",
+});
+export const INCIDENT_GROUPINGS = Object.freeze(["equipment", "severity", "day", "none"]);
+
 /** Ajoute les méthodes d'une classe auxiliaire à un contrôleur (sans les constructeurs). */
 export function mixInto(target, mixin) {
     for (const name of Object.getOwnPropertyNames(mixin.prototype)) {

@@ -317,6 +317,12 @@ def test_static_ui_declares_all_navigation_views() -> None:
     assert 'data-view="observations"' in content
     assert 'data-view="incidents"' in content
     assert 'id="incidents-list"' in content
+    assert 'id="incidents-rows"' in content
+    assert 'id="incidents-detail"' in content
+    assert 'id="incidents-search"' in content
+    assert 'data-incidents-group="equipment"' in content
+    assert 'data-tsunade-tab="incidents"' in content
+    assert 'data-tsunade-panel="incidents"' in content
     assert 'id="incidents-active-count"' in content
     assert 'id="tsunade-log-check"' in content
     assert 'id="tsunade-log-health"' in content
@@ -332,6 +338,7 @@ INCIDENT_VIEW_MODULES = (
     "incidents_logs.js",
     "incidents_preventive.js",
     "incidents_repairs.js",
+    "incidents_table.js",
 )
 
 

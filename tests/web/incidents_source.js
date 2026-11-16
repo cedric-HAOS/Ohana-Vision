@@ -14,6 +14,7 @@ const FILES = [
     'incidents_logs.js',
     'incidents_preventive.js',
     'incidents_repairs.js',
+    'incidents_table.js',
 ];
 
 module.exports = () => FILES

@@ -75,7 +75,10 @@ class DecisionMethods {
             const followup = assessment.followup;
             const stale = assessment.state === "stale" || assessment.decision_current === false
                 || (record && this.decisionFreshness(incident, record) === "stale");
-            const reason = assessment.reason || assessment.conclusion || record?.payload?.reason;
+            // The interpretation names this incident's cause; the reason is
+            // often a generic sentence shared by every investigation.
+            const reason = record?.payload?.interpretation || assessment.reason
+                || assessment.conclusion || record?.payload?.reason;
             const followupLabel = {
                 pending: "Collecte à autoriser", authorized: "Collecte autorisée",
                 queued: "Collecte en attente ou en cours", reviewing: "Réévaluation en attente ou en cours",
@@ -105,7 +108,7 @@ class DecisionMethods {
         if (stale) return `<p class="incident-compact-decision"><small>Conclusion précédente du ${escapeHtml(formatDate(record.occurredAt))}${escapeHtml(confidenceText)}. De nouveaux éléments sont disponibles.</small></p>`;
         return `<section class="incident-compact-decision">
             <strong>${escapeHtml(stale ? "Analyse à actualiser" : TSUNADE_DECISION_LABELS[decision.decision] ?? "Analyse incomplète")}</strong>
-            <span>${escapeHtml(stale ? "De nouveaux éléments sont disponibles depuis la dernière conclusion." : decision.reason || decision.conclusion || "Les éléments disponibles ne permettent pas de conclure.")}</span>
+            <span>${escapeHtml(stale ? "De nouveaux éléments sont disponibles depuis la dernière conclusion." : decision.interpretation || decision.reason || decision.conclusion || "Les éléments disponibles ne permettent pas de conclure.")}</span>
             <small>${escapeHtml(stale ? "Conclusion précédente" : "Décision")} du ${escapeHtml(formatDate(record.occurredAt))}${escapeHtml(confidenceText)}</small>
         </section>`;
     }
@@ -235,6 +238,9 @@ class DecisionMethods {
                     : ""}
 
                 <dl>
+                    ${decision.interpretation
+                        ? `<div><dt>Cause probable</dt><dd>${escapeHtml(decision.interpretation)}</dd></div>`
+                        : ""}
                     ${decision.reason
                         ? `<div><dt>Justification</dt><dd>${escapeHtml(decision.reason)}</dd></div>`
                         : ""}

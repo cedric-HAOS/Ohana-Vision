@@ -37,6 +37,7 @@ import "./incidents_experiences.js";
 import "./incidents_logs.js";
 import "./incidents_preventive.js";
 import "./incidents_repairs.js";
+import "./incidents_table.js";
 
 import {
     NavigationController,
@@ -548,6 +549,16 @@ export class ApplicationController {
     }
 
     /**
+     * The incident table names equipment from the topology, which may arrive
+     * after the incidents: redraw it without reloading anything.
+     */
+    renderIncidentLabels() {
+        if (this.incidents?.loaded) {
+            this.incidents.renderIncidentList();
+        }
+    }
+
+    /**
      * Reload the topology only when Agent announces a new snapshot.
      */
     async refreshInfrastructure() {
@@ -573,6 +584,7 @@ export class ApplicationController {
 
             await Promise.allSettled(operations);
             this.timeline.render();
+            this.renderIncidentLabels();
             this.renderLastRefresh();
         } finally {
             this.setRefreshing(false);
@@ -654,6 +666,7 @@ export class ApplicationController {
             );
             await this.topology.load();
             this.timeline.render();
+            this.renderIncidentLabels();
 
             if (
                 this.navigation.activeView

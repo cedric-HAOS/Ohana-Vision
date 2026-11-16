@@ -334,6 +334,13 @@ def read_similar_incidents(request: Request, incident_id: str) -> dict[str, Any]
     return _call(lambda: client.read_similar_incidents(incident_id))
 
 
+@router.get("/tsunade/incidents/{incident_id}/older")
+def list_older_incidents(request: Request, incident_id: str) -> dict[str, Any]:
+    """Resolved incidents older than this one, a page at a time."""
+    client = _client(request)
+    return _call(lambda: client.list_older_incidents(incident_id))
+
+
 @router.get("/agent/vitals")
 def read_agent_vitals(request: Request) -> dict[str, Any]:
     """The Agent's own detail for the Ohana view."""

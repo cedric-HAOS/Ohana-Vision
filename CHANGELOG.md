@@ -2,6 +2,12 @@
 
 ## Non publié
 
+- Page Tsunade : les incidents deviennent un tableau de triage. Chaque ligne donne l'équipement et le problème suivi (plus le message de rétablissement d'un incident résolu), la cause probable propre à l'incident (`interpretation`), sa certitude (Confirmée, Probable, Contexte insuffisant, avec la confiance), l'action (réparation à autoriser en premier) et la date d'ouverture avec la durée. Recherche sans accents ni majuscules, regroupement par équipement, gravité ou jour, et filtres d'état conservés. Choisir une ligne affiche à droite la carte de l'incident et ouvre son dossier, avec les mêmes boutons qu'avant. La surveillance (À surveiller, Journaux, Réparations connues, Bilan) passe en onglets à côté de « Incidents ».
+- Page Tsunade : en bas du tableau, « Charger les 100 incidents résolus plus anciens » remonte l'historique au-delà des 100 derniers (`GET /api/administration/tsunade/incidents/{id}/older`, relayé vers l'Agent). Les pages chargées restent pendant les rafraîchissements et la ligne indique combien d'incidents sont chargés sur le total. Nécessite l'Agent qui sert `/v1/incidents/{id}/older` ; avec un Agent plus ancien, le bouton affiche que l'historique plus ancien est indisponible.
+- Page Tsunade : la carte et le dossier d'un incident donnent sa cause probable propre (`interpretation`) au lieu de la phrase générique commune aux investigations ; le dossier l'affiche sur une ligne « Cause probable ».
+- Page Tsunade : un incident résolu se retrouve par son symptôme d'ouverture (`opening_message`, servi par l'Agent), que la carte affiche (« À l'ouverture : … ») à la place du message de rétablissement ; sans analyse, la ligne du tableau donne ce constat. Avec un Agent plus ancien, le comportement reste celui d'avant.
+- Page Tsunade : les noms d'équipements du tableau sont redessinés quand la topologie arrive après les incidents.
+
 ## [1.46.0] — 2026-11-15 — Architecture
 
 - Architecture : la fiche d'un équipement porte la case « Équipement critique ». Son absence du réseau ouvre alors un incident critique ; sinon l'incident est dégradé. La case est cochée d'office pour un équipement qui héberge un service critique actif, et seul un choix différent de ce défaut est enregistré (`metadata.critical`). Nécessite l'Agent qui lit ce champ pour la gravité des incidents.
