@@ -2,6 +2,8 @@
 
 ## Non publié
 
+## [1.47.0] — 2026-11-16 — Page Tsunade
+
 - Page Tsunade : les incidents deviennent un tableau de triage. Chaque ligne donne l'équipement et le problème suivi (plus le message de rétablissement d'un incident résolu), la cause probable propre à l'incident (`interpretation`), sa certitude (Confirmée, Probable, Contexte insuffisant, avec la confiance), l'action (réparation à autoriser en premier) et la date d'ouverture avec la durée. Recherche sans accents ni majuscules, regroupement par équipement, gravité ou jour, et filtres d'état conservés. Choisir une ligne affiche à droite la carte de l'incident et ouvre son dossier, avec les mêmes boutons qu'avant. La surveillance (À surveiller, Journaux, Réparations connues, Bilan) passe en onglets à côté de « Incidents ».
 - Page Tsunade : en bas du tableau, « Charger les 100 incidents résolus plus anciens » remonte l'historique au-delà des 100 derniers (`GET /api/administration/tsunade/incidents/{id}/older`, relayé vers l'Agent). Les pages chargées restent pendant les rafraîchissements et la ligne indique combien d'incidents sont chargés sur le total. Nécessite l'Agent qui sert `/v1/incidents/{id}/older` ; avec un Agent plus ancien, le bouton affiche que l'historique plus ancien est indisponible.
 - Page Tsunade : la carte et le dossier d'un incident donnent sa cause probable propre (`interpretation`) au lieu de la phrase générique commune aux investigations ; le dossier l'affiche sur une ligne « Cause probable ».
