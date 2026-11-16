@@ -1,5 +1,7 @@
 """The Tsunade triage table: problem, specific cause, certainty and action per row."""
 
+# ruff: noqa: E501 (the embedded script keeps one fixture per line)
+
 import shutil
 import subprocess
 
